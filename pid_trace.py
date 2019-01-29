@@ -1,4 +1,6 @@
 import logging
+import os
+import sys
 import re
 
 class PID:
@@ -30,6 +32,9 @@ class PIDtracer:
 
     def findMainPID(self):
         res = self.adb_device.runCommand("ps | grep " + self.name)
+        if res == "":
+            self.logger.error("No process running matching given process name")
+            sys.exit('Need valid application name')
         res = res.split()
         self.logger.debug("Found main PID of " + res[1] + " for process "
                 + res[8])
@@ -46,8 +51,3 @@ class PIDtracer:
             after_name = split_line[2].split()
             self.allPID.append(PID(before_name[0], before_name[1],
                 before_name[2], after_name[0], split_line[1]))
-            self.logger.debug("Found related process:  " + before_name [0] + "  "
-                    + split_line[1])
-
-
-

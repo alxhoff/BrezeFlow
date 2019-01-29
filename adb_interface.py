@@ -26,8 +26,8 @@ class adbInterface:
     def __del__(self):
         self.logger.debug("ADB interface closed")
 
-    def createTracer(self, name, function="none", trace_type="function", duration=1):
-        new_trace = tracer(self, name, function, trace_type, duration)
+    def createTracer(self, name, functions=[], trace_type="function", duration=1):
+        new_trace = tracer(self, name, functions, trace_type, duration)
         self.tracers.append(new_trace)
 
     def createPIDtool(self, name):

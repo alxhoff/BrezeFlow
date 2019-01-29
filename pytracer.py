@@ -11,11 +11,11 @@ class tracer:
 
     ftrace_path = '/d/tracing/'
 
-    def __init__(self, adb_device, name, function="none", trace_type="function", duration=1):
+    def __init__(self, adb_device, name, functions=[], trace_type="function", duration=1):
         self.adb_device = adb_device
         self.name = name
         self.trace_type = trace_type
-        self.function = function
+        self.functions = functions
         self.duration = duration
         logging.basicConfig(filename="pytracer.log",
                 format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
@@ -50,16 +50,26 @@ class tracer:
     def _getFilterFunctions(self):
         return self.adb_device.readFromFile(self.ftrace_path + "available_filter_functions")
 
-    def setFilterFunction(self, function):
-        if(function == "none"):
+    def setFilterFunction(self, functions):
+        if(functions == []):
             return
 
-        functions = self._getFilterFunctions()
+        avail_functions = self._getFilterFunctions()
 
-        for f in function:
-            if function in functions:
-                self.adb_device.writeToFile(self.ftrace_path + "set_ftrace_filter", function)
-                self.logger.debug('Filter function set to ' + function)
+        if(isinstance(functions, list)):
+            for f in range(0, len(functions)):
+                self.logger.debug("Checking function '" + functions[f] + "' is valid")
+                if functions[f] in avail_functions:
+                    self.adb_device.appendToFile(self.ftrace_path + "set_ftrace_filter",
+                        functions[f])
+                    self.logger.debug('Appended function filter: ' + functions[f])
+        else:
+            self.logger.debug("Checking function '" + functions + "' is valid")
+            if functions in avail_functions:
+                self.adb_device.appendToFile(self.ftrace_path + "set_ftrace_filter",
+                    functions)
+                self.logger.debug('Appended function filter: ' + functions)
+
 
     def getAvailableTracer(self):
         return self.adb_device.readFromFile(self.ftrace_path + "available_tracers")
@@ -71,11 +81,13 @@ class tracer:
             self.logger.debug("Current tracer set to " + tracer)
 
     def run(self):
+        self.logger.debug("Running tracer: " + self.name)
         #set trace type
         self.setAvailableTracer(self.trace_type)
 
         #set filters
-        #TODO implement filters etc
+        self.adb_device.clearFile(self.ftrace_path + "set_ftrace_filter")
+        self.setFilterFunction(self.functions)
 
         #run
         self.traceForTime(self.duration)
