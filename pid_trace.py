@@ -1,12 +1,14 @@
 import logging
+import re
 
 class PID:
 
-    def __init__(self, pid, user, time, name, ppid=0):
+    def __init__(self, pid, user, time, pname, tname):
         self.pid = pid
         self.user = user
         self.time = time
-        self.name = name
+        self.pname = pname
+        self.tname = tname
 
 
 class PIDtracer:
@@ -31,18 +33,21 @@ class PIDtracer:
         res = res.split()
         self.logger.debug("Found main PID of " + res[1] + " for process "
                 + res[8])
-        ret = PID(res[1], res[0], 0, res[7])
+        ret = PID(res[1], res[0], 0, res[7], "main")
 
     def findAllPID(self):
         res = self.adb_device.runCommand("busybox ps -T | grep " + self.name)
         res = res.splitlines()
         for line in res:
-            split_line = line.split()
-            print split_line
-            for x in split_line:
-                self.allPID.append(PID(x[0], x[1], x[2], x[3]))
-            self.logger.debug("Found related process " + x[0] + "  "
-                    + x[3])
+            if "grep" in line:
+                continue
+            split_line = re.split('{|}', line)
+            before_name = split_line[0].split()
+            after_name = split_line[2].split()
+            self.allPID.append(PID(before_name[0], before_name[1],
+                before_name[2], after_name[0], split_line[1]))
+            self.logger.debug("Found related process:  " + before_name [0] + "  "
+                    + split_line[1])
 
 
 

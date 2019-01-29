@@ -38,8 +38,8 @@ class adbInterface:
 
     def writeToFile(self, filename, contents):
         command = 'echo ' + contents + ' > ' + filename
-        self.logger.debug(command)
         self.device.Shell(command)
+        self.logger.debug(command)
 
     def clearFile(self, filename):
         self.writeToFile(filename, "")
@@ -47,8 +47,8 @@ class adbInterface:
 
     def appendToFile(self, filename, contents):
         command = 'echo ' + contents + ' >> ' + filename
-        self.logger.debug(command)
         self.device.Shell(command)
+        self.logger.debug(command)
 
     def readFromFile(self, filename):
         return self.device.Pull(filename)
