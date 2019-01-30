@@ -11,9 +11,11 @@ class tracer:
 
     ftrace_path = '/d/tracing/'
 
-    def __init__(self, adb_device, name, functions=[], trace_type="function", duration=1):
+    def __init__(self, adb_device, name, functions=[],
+            trace_type="function", duration=1, PID_filter=None):
         self.adb_device = adb_device
         self.name = name
+        self.filename = op.dirname(op.realpath(__file__)) + '/' + name + "_tracer.trace"
         self.trace_type = trace_type
         self.functions = functions
         self.duration = duration
@@ -21,6 +23,8 @@ class tracer:
                 format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Tracer " + name + " created")
+        if PID_filter is not None:
+            self.PID_filter = PID_filter
 
     def __del__(self):
         self.logger.debug("Tracer " + self.name + " cleaned up")
@@ -41,11 +45,10 @@ class tracer:
         self.logger.debug("Trace finished after " + str(duration) + " seconds")
 
     def getTraceResults(self, filename="results.trace"):
-        full_path = op.dirname(op.realpath(__file__)) + '/' + filename
-        out_file = open(full_path, "w+")
+        out_file = open(self.filename, "w+")
         out_file.write(self.adb_device.readFromFile(self.ftrace_path + "trace"))
         out_file.close()
-        self.logger.debug("Trace results written to file " + full_path)
+        self.logger.debug("Trace results written to file " + self.filename)
 
     def _getFilterFunctions(self):
         return self.adb_device.readFromFile(self.ftrace_path + "available_filter_functions")
@@ -70,6 +73,13 @@ class tracer:
                     functions)
                 self.logger.debug('Appended function filter: ' + functions)
 
+    def clearFilterPID(self):
+        self.adb_device.clearFile(self.ftrace_path + "set_ftrace_pid")
+
+    def setFilterPID(self, PIDs):
+        self.clearFilterPID()
+        for x, PID in enumerate(PIDs):
+            self.adb_device.appendToFile(self.ftrace_path + "set_frace_pid", PID.pid)
 
     def getAvailableTracer(self):
         return self.adb_device.readFromFile(self.ftrace_path + "available_tracers")
@@ -86,8 +96,13 @@ class tracer:
         self.setAvailableTracer(self.trace_type)
 
         #set filters
+        #functions
         self.adb_device.clearFile(self.ftrace_path + "set_ftrace_filter")
         self.setFilterFunction(self.functions)
+
+        #PID
+        if self.PID_filter is not None:
+            self.setFilterPID(self.PID_filter)
 
         #run
         self.traceForTime(self.duration)

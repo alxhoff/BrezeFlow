@@ -4,9 +4,6 @@ import os.path as op
 from adb import adb_commands
 from adb import sign_m2crypto
 
-from pytracer import tracer
-from pid_trace import PIDtracer
-
 class adbInterface:
 
     def __init__(self):
@@ -25,13 +22,6 @@ class adbInterface:
 
     def __del__(self):
         self.logger.debug("ADB interface closed")
-
-    def createTracer(self, name, functions=[], trace_type="function", duration=1):
-        new_trace = tracer(self, name, functions, trace_type, duration)
-        self.tracers.append(new_trace)
-
-    def createPIDtool(self, name):
-        self.PIDtool = PIDtracer(self, name)
 
     def runCommand(self, command):
         return self.device.Shell(command)
@@ -52,7 +42,3 @@ class adbInterface:
 
     def readFromFile(self, filename):
         return self.device.Pull(filename)
-
-    def runTracers(self):
-        for tracer in self.tracers:
-            tracer.run()

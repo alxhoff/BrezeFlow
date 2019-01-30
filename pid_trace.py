@@ -12,7 +12,6 @@ class PID:
         self.pname = pname
         self.tname = tname
 
-
 class PIDtracer:
 
     def __init__(self, adb_device, name):
@@ -25,6 +24,7 @@ class PIDtracer:
         self.name = name
         self.mainPID = self.findMainPID()
         self.allPID = []
+        self.allPIDstrings = []
         self.findAllPID()
 
     def __del__(self):
@@ -51,3 +51,5 @@ class PIDtracer:
             after_name = split_line[2].split()
             self.allPID.append(PID(before_name[0], before_name[1],
                 before_name[2], after_name[0], split_line[1]))
+            self.allPIDstrings.append(before_name[0])
+            self.logger.debug("Found thread with PID: " + before_name[0])
