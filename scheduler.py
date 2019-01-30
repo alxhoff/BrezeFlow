@@ -13,6 +13,7 @@ def main():
                             "schedule",
                             functions="schedule",
                             trace_type="function",
+                            PID_filter=PIDt,
                             duration=5)
     schedule_tracer.run()
     tp.filterTracePID(schedule_tracer, PIDt)

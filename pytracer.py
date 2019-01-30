@@ -23,8 +23,7 @@ class tracer:
                 format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Tracer " + name + " created")
-        if PID_filter is not None:
-            self.PID_filter = PID_filter
+        self.PID_filter = PID_filter
 
     def __del__(self):
         self.logger.debug("Tracer " + self.name + " cleaned up")
@@ -78,8 +77,10 @@ class tracer:
 
     def setFilterPID(self, PIDs):
         self.clearFilterPID()
-        for x, PID in enumerate(PIDs):
-            self.adb_device.appendToFile(self.ftrace_path + "set_frace_pid", PID.pid)
+        print PIDs.allPIDstrings
+        for x, PID in enumerate(PIDs.allPIDstrings):
+            self.adb_device.appendToFile(self.ftrace_path + "set_ftrace_pid", PID)
+            self.logger.debug("Filtering PID: " + PID)
 
     def getAvailableTracer(self):
         return self.adb_device.readFromFile(self.ftrace_path + "available_tracers")
