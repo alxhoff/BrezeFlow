@@ -11,15 +11,12 @@ def main():
     #trace schedule
     schedule_tracer = tracer(adbBridge,
                             "schedule",
-                            events=["sched_switch", "sched_wakeup"],
+                            events=["sched_switch"],
                             PID_filter=PIDt,
                             duration=1)
     schedule_tracer.runTracer()
 
     tp.filterTracePID(schedule_tracer, PIDt)
-
-
-
 
 if __name__ == '__main__':
     main()
