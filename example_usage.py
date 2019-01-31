@@ -13,16 +13,16 @@ def main():
                             "schedule",
                             events=["sched_switch"],
                             PID_filter=PIDt,
-                            duration=10)
+                            duration=1)
     schedule_tracer.runTracer()
 
     tp.filterTracePID(schedule_tracer, PIDt)
 
-    freq_tracer = tracer(adbBridge,
-                            "frequency",
-                            events=["cpu_idle"],
-                            duration=1)
-    freq_tracer.runTracer()
+    #freq_tracer = tracer(adbBridge,
+    #                        "frequency",
+    #                        events=["cpu_idle"],
+    #                        duration=1)
+    #freq_tracer.runTracer()
 
 
 if __name__ == '__main__':

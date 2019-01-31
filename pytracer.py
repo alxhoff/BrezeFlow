@@ -165,6 +165,7 @@ class tracer:
 
     def clearTracer(self):
         self.adb_device.writeToFile(self.ftrace_path + "current_tracer", "nop")
+        self.adb_device.clearFile(self.ftrace_path + "trace")
         self.logger.debug("Current tracer cleared (set to nop)")
 
     ##  RUNNING CONFIGURED TRACER OBJECT  ###
