@@ -11,11 +11,11 @@ def main():
     #trace schedule
     schedule_tracer = tracer(adbBridge,
                             "schedule",
-                            functions="schedule",
-                            trace_type="function",
+                            events=["sched_switch", "sched_wakeup"],
                             PID_filter=PIDt,
-                            duration=5)
-    schedule_tracer.run()
+                            duration=1)
+    schedule_tracer.runTracer()
+
     tp.filterTracePID(schedule_tracer, PIDt)
 
 
