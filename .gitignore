@@ -5,7 +5,7 @@ __pycache__/
 
 #logs and traces
 *.log
-*.trace
+*.trace*
 
 # C extensions
 *.so
