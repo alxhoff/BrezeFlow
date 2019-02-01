@@ -25,7 +25,7 @@ class PIDtracer:
     def getPIDStrings(self):
         strings = []
         for x, pid in enumerate(self.allPID):
-            strings.append(pid.pid)
+            strings.append(str(pid.pid))
         return strings
 
     def findMainPID(self):
@@ -33,17 +33,24 @@ class PIDtracer:
         if res == "":
             self.logger.error("No process running matching given process name")
             sys.exit('Need valid application name')
-        res = res.split()
-        self.logger.debug("Found main PID of " + res[1] + " for process "
-                + res[8])
-        ret = PID(res[1], res[0], 0, res[7], "main")
+        pid = int(re.findall(" +(\d+) +\d+ +\d+", res)[0])
+        user = int(self.adb_device.runCommand("id -u "
+            + re.findall("^([^ ]+) +\d+", res)[0]))
+        pname = re.findall("([^ ]+)$", res)[-1]
+        self.logger.debug("Found main PID of " + str(pid) + " for process " + pname + " from user " + str(user))
+        return PID( pid, user, pname, "main")
 
     def findAllPID(self):
         res = self.adb_device.runCommand("busybox ps -T | grep " + self.name)
+        res = res.splitlines()
         for line in res:
+            if line.isspace():
+                continue
             #remove grep process
-            pid = int(re.findall("(\d+) *\d+ *\d*:\d* ?{?.*?}[^g][^r][^e][^p].*", line)[0])
-            user = int(re.findall("\d+ *(\d+) *\d*:\d* ?{?.*?}[^g][^r][^e][^p].*")[0])
+            if not re.match("^((?!grep).)*$", line):
+                continue
+            pid = int(re.findall("(\d+) +\d+ +\d+:\d+", line)[0])
+            user = int(re.findall("\d+ +(\d+) +\d+:\d+", line)[0])
             tname = re.findall("\d+ *\d+ *\d*:\d* ?({?.*?})[^g][^r][^e][^p].*", line)[0]
             pname= re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)", line)[0]
 
