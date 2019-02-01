@@ -11,7 +11,8 @@ class event_sched_switch(event):
 
     def __init__(self, PID, time, cpu, prev_state, next_pid):
         event.__init__(self, PID, time, cpu)
-        self.prev_state
+        self.prev_state = prev_state
+        self.next_pid = next_pid
 
 class event_freq_change(event):
 

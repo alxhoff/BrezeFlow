@@ -46,7 +46,7 @@ class traceProcessor:
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
         cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
-        pre_state = re.findall("prev_state=([RSD]{1})", line)[0]
+        prev_state = re.findall("prev_state=([RSDx]{1})", line)[0]
         next_pid = int(re.findall("next_pid=(\d+)", line)[0])
 
         return event_sched_switch(pid, time, cpu, prev_state, next_pid)
@@ -76,7 +76,7 @@ class traceProcessor:
         except IOError:
             self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer unable to be opened for processing")
-
+        raw_lines = []
         raw_lines = f.readlines()
         processed_events = []
         #determine tracer type
@@ -87,10 +87,9 @@ class traceProcessor:
             if "sched_wakeup" in line:
                 processed_events.append(self._processSchedWakeup(line))
                 self.logger.debug("Wakeup event line: " + line)
-            #elif sched_switch in line:
-            #    processed_events = self._processSchedSwitch(raw_lines)
-            #    self.logger.debug("Trace " + tracer.filename + " of type switch")
-            #    break
+            elif "sched_switch" in line:
+                processed_events.append(self._processSchedSwitch(line))
+                self.logger.debug("Sched switch: " + line)
             elif "cpu_idle" in line:
                 processed_events.append(self._processSchedIdle(line))
                 self.logger.debug("Idle event line: " + line)
@@ -109,31 +108,56 @@ class traceProcessor:
         output_worksheet = output_workbook.add_worksheet()
 
         time_col = 0
-        freq_freq_col = 2
-        freq_load_col = 3
-        cpu_col = 4
-        wakeup_pid_col = 6
-        idle_state_col = 9
+        cpu_col = 1
+        PID_col = 2
+
+        prev_state_col = 3
+        next_pid_col = 4
+
+        freq_freq_col = 5
+        freq_load_col = 6
+
+        idle_state_col = 7
+
+        wake_event_col = 8
 
         output_worksheet.write_string(0, time_col, "Time")
+        output_worksheet.write_string(0, cpu_col, "CPU")
+        output_worksheet.write_string(0, PID_col, "PID")
+        output_worksheet.write_string(0, prev_state_col, "Prev State")
+        output_worksheet.write_string(0, next_pid_col, "Next PID")
         output_worksheet.write_string(0, freq_freq_col, "Frequency Change")
         output_worksheet.write_string(0, freq_load_col, "Load")
-        output_worksheet.write_string(0, cpu_col, "CPU")
-        output_worksheet.write_string(0, wakeup_pid_col, "PID")
         output_worksheet.write_string(0, idle_state_col, "Idle")
+        output_worksheet.write_string(0, wake_event_col, "Wake Event")
 
         for event in processed_events:
             if isinstance(event, event_wakeup):
                 output_worksheet.write_number(event.time - start_time + 1,
                         time_col, event.time - start_time + 1)
                 output_worksheet.write_number(event.time - start_time + 1,
-                        wakeup_pid_col, event.PID)
+                        PID_col, event.PID)
                 output_worksheet.write_number(event.time - start_time + 1,
                         cpu_col, event.cpu)
+                output_worksheet.write_string(event.time - start_time + 1,
+                        wake_event_col, "X")
                 self.logger.debug("Wakeup event added to row: " +
                         str(event.time - start_time + 1))
 
-            #elif isinstance(event, event_run_slice):
+            elif isinstance(event, event_sched_switch):
+                output_worksheet.write_number(event.time - start_time + 1,
+                        time_col, event.time - start_time + 1)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        PID_col, event.PID)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        cpu_col, event.cpu)
+                output_worksheet.write_string(event.time - start_time + 1,
+                        prev_state_col, event.prev_state)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        next_pid_col, event.next_pid)
+
+                self.logger.debug("Switch event added to row: " +
+                        str(event.time - start_time + 1))
 
             elif isinstance(event, event_freq_change):
                 output_worksheet.write_number(event.time - start_time + 1,
