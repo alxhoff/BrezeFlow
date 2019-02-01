@@ -1,7 +1,7 @@
 from pytracer import tracer
 from adbinterface import adbInterface
 from traceprocessor import traceProcessor
-from pid_trace import PIDtracer
+from pidtrace import PIDtracer
 from grapher import *
 
 def main():
