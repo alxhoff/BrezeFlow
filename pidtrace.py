@@ -2,15 +2,8 @@ import logging
 import os
 import sys
 import re
+from pid import PID
 
-class PID:
-
-    def __init__(self, pid, user, time, pname, tname):
-        self.pid = pid
-        self.user = user
-        self.time = time
-        self.pname = pname
-        self.tname = tname
 
 class PIDtracer:
 
@@ -24,11 +17,16 @@ class PIDtracer:
         self.name = name
         self.mainPID = self.findMainPID()
         self.allPID = []
-        self.allPIDstrings = []
         self.findAllPID()
 
     def __del__(self):
         self.logger.debug("PID tracer closed")
+
+    def getPIDStrings(self):
+        strings = []
+        for x, pid in enumerate(self.allPID):
+            strings.append(pid.pid)
+        return strings
 
     def findMainPID(self):
         res = self.adb_device.runCommand("ps | grep " + self.name)
@@ -51,5 +49,4 @@ class PIDtracer:
             after_name = split_line[2].split()
             self.allPID.append(PID(before_name[0], before_name[1],
                 before_name[2], after_name[0], split_line[1]))
-            self.allPIDstrings.append(before_name[0])
             self.logger.debug("Found thread with PID: " + before_name[0])
