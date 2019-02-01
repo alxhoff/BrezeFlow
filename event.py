@@ -43,10 +43,11 @@ class event_wakeup(event):
 
 class event_idle(event):
 
-    def __init__(self, time, cpu):
+    def __init__(self, time, cpu, state):
         event.__init__(self, 0, eventType.IDLE)
         self.time = time
         self.cpu = cpu
+        self.state = state
 
 class process_exec:
 
@@ -65,6 +66,3 @@ class process_exec:
     def addRunSlice(self, run_slice):
         self.run_slices.append(run_slice)
         self.updateRunTime()
-
-
-

@@ -1,13 +1,7 @@
 import logging
 from aenum import Enum
 from event import *
-
-class traceType(Enum):
-    UNKNOWN             = 0
-    SCHED_WAKEUP        = 1
-    SCHED_SWITCH        = 2
-    SCHED_FREQ          = 3
-    SCHED_IDLE          = 4
+import xlsxwriter
 
 class traceProcessor:
 
@@ -43,62 +37,51 @@ class traceProcessor:
 
         return filtered
 
-    def _processSchedWakeup(self, tracer_lines):
-        events = []
-        for x, line in enumerate(tracer_lines, 11):
-            split_line = line.split()
-            #get PID
-            pid = split_line.split('-')[-1]
-            #get time
-            time = split_line[3]
-            #get cpu
-            for x, chunk in enumerate(split_line):
-                if "target_cpu=" in chunk:
-                    cpu = int(chunk[-3:-1])
-                    break
-            #append to known events
-            events.append(even_wakeup(pid, time, cpu))
+    def _processSchedWakeup(self, line):
+        split_line = line.split()
+        #get PID
+        pid = int(split_line.split('-')[-1])
+        #get time
+        time = int(float(split_line[3][:-2]) * 1000000)
+        #get cpu
+        for x, chunk in enumerate(split_line):
+            if "target_cpu=" in chunk:
+                cpu = int(chunk[-3:-1])
+                break
 
-        return events
+        return even_wakeup(pid, time, cpu)
 
-    def _processSchedSwitch(self, tracer_lines):
+    def _processSchedSwitch(self, line):
         events = []
         for x, line in enumerate(tracer_lines, 11):
             split_line = line.split()
             #get  PI
 
-    def _processSchedIdle(self, tracer_lines):
-        events = []
-        for x, line in enumerate(tracer_lines, 11):
-            if "cpu_idle" in line:
-                split_line = line.split()
-                #get time
-                time = split_line[3]
-                #get cpu
-                cpu = int(split_line[6][-1])
-                events.append(event_idle(time, cpu))
+    def _processSchedIdle(self, line):
+        split_line = line.split()
+        #get time
+        time = int(float(split_line[3][:-2]) * 1000000)
+        #get cpu
+        cpu = int(split_line[6][-1])
+        #get idle
+        idle = int(split_line[5][6:])
 
-        return events
+        return event_idle(time, cpu, idle)
 
-    def _processSchedFreq(self, tracer_lines):
-        events = []
-        for line in tracer_lines[11:]:
-            if "update_cpu_metric" in line:
-                split_line = line.split()
-                print split_line
-                #get PID
-                pid = split_line[0].split('-')[-1]
-                #get time
-                time = split_line[3]
-                #get freq
-                freq = split_line[9]
-                #get load
-                load = split_line[11]
-                #get cpu
-                cpu = int(split_line[7])
-                events.append(event_freq_change(pid, time, freq, load, cpu))
+    def _processSchedFreq(self, line):
+        split_line = line.split()
+        #get PID
+        pid = int(split_line[0].split('-')[-1])
+        #get time
+        time = int(float(split_line[3][:-2]) * 1000000)
+        #get freq
+        freq = int(split_line[9])
+        #get load
+        load = int(split_line[11])
+        #get cpu
+        cpu = int(split_line[7])
 
-        return events
+        return event_freq_change(pid, time, freq, load, cpu)
 
     def processTrace(self, tracer, PIDtracer):
         #open trace
@@ -111,54 +94,83 @@ class traceProcessor:
             sys.exit("Tracer unable to be opened for processing")
 
         raw_lines = f.readlines()
+        print raw_lines
         processed_events = []
-        trace_type = traceType.UNKNOWN
         #determine tracer type
-        for x, line in enumerate(raw_lines, 11):
+        self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
+        for line in raw_lines[11:]:
             if "shed_wakeup" in line:
-                trace_type = traceType.SCHED_WAKEUP
-                self.logger.debug("Trace " + tracer.filename + " of type wakeup")
-                break
+                processed_events.append(self._processSchedWakeup(line))
+                self.logger.debug("Wakeup event line: " + line)
             #elif sched_switch in line:
-            #    trace_type = traceType.SCHED_SWITCH
+            #    processed_events = self._processSchedSwitch(raw_lines)
             #    self.logger.debug("Trace " + tracer.filename + " of type switch")
             #    break
             elif "cpu_idle" in line:
-                trace_type = traceType.SCHED_IDLE
-                self.logger.debug("Trace " + tracer.filename + " of type idle")
+                processed_events.append(self._processSchedIdle(line))
+                self.logger.debug("Idle event line: " + line)
             elif "update_cpu_metric" in line:
-                trace_type = traceType.SCHED_FREQ
-                self.logger.debug("Trace " + tracer.filename + " of type freq")
-                break
-
-        #filter trace
-        if trace_type == (traceType.SCHED_SWITCH or traceType.SCHED_WAKEUP):
-            raw_lines = keepPIDLines(raw_lines, PIDtracer)
-
-        #paid processing
-        if trace_type == traceType.UNKNOWN:
-            self.logger.debug("Trace could not be processed, unknown type")
-            sys.exit("Trace type unknown, could not be processed")
-        elif trace_type == traceType.SCHED_WAKEUP:
-            processed_events = self._processSchedWakeup(raw_lines)
-        elif trace_type == traceType.SCHED_SWITCH:
-            processed_events = self._processSchedSwitch(raw_lines)
-        elif trace_type == traceType.SCHED_FREQ:
-            processed_events = self._processSchedFreq(raw_lines)
-        elif trace_type == traceType.SCHED_IDLE:
-            processed_events = self._processSchedIdle(raw_lines)
+                processed_events.append(self._processSchedFreq(line))
+                self.logger.debug("Freq event line: " + line)
 
         if processed_events == []:
             self.logger.debug("Processing trace failed")
             sys.exit("Processing trace failed")
 
-        try:
-            f = open(tracer.filename, 'w')
-        except IOError:
-            self.logger.error("Could not write to trace file " + tracer.filename)
-            sys.exit("Could not write to trace file " + tracer.filename)
+        #write events into excel file
+        start_time = processed_events[0].time
 
+        output_workbook = xlsxwriter.Workbook(tracer.name + "_events.xlsx")
+        output_worksheet = output_workbook.add_worksheet()
 
+        time_col = 0
+        freq_freq_col = 2
+        freq_load_col = 3
+        cpu_col = 4
+        wakeup_pid_col = 6
+        idle_state_col = 9
 
+        output_worksheet.write_string(0, time_col, "Time")
+        output_worksheet.write_string(0, freq_freq_col, "Frequency Change")
+        output_worksheet.write_string(0, freq_load_col, "Load")
+        output_worksheet.write_string(0, cpu_col, "CPU")
+        output_worksheet.write_string(0, wakeup_pid_col, "PID")
+        output_worksheet.write_string(0, idle_state_col, "Idle")
 
+        for event in processed_events:
+            if isinstance(event, event_wakeup):
+                output_worksheet.write_number(event.time - start_time + 1,
+                        time_col, event.time - start_time + 1)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        wakeup_pid_col, event.PID)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        cpu_col, event.cpu)
+                self.logger.debug("Wakeup event added to row: " +
+                        str(event.time - start_time + 1))
 
+            #elif isinstance(event, event_run_slice):
+
+            elif isinstance(event, event_freq_change):
+                output_worksheet.write_number(event.time - start_time + 1,
+                        time_col, event.time - start_time + 1)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        freq_freq_col, event.freq)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        freq_load_col, event.load)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        cpu_col, event.cpu)
+                self.logger.debug("Freq event added to row: " +
+                        str(event.time - start_time + 1))
+            elif isinstance(event, event_idle):
+                output_worksheet.write_number(event.time - start_time + 1,
+                        time_col, event.time - start_time + 1)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        cpu_col, event.cpu)
+                output_worksheet.write_number(event.time - start_time + 1,
+                        idle_state_col, event.state)
+                self.logger.debug("Idle event added to row: " +
+                        str(event.time - start_time + 1))
+            else:
+                self.logger.debug("Unknown event")
+
+        output_workbook.close()
