@@ -2,9 +2,8 @@ from aenum import Enum
 
 class event:
 
-    def __init__(self, PID, event, time, cpu):
+    def __init__(self, PID, time, cpu):
         self.PID = PID
-        self.event = event
         self.time = time
         self.cpu = cpu
 

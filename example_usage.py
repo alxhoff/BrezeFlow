@@ -9,13 +9,6 @@ def main():
     tp = traceProcessor()
     PIDt  = PIDtracer(adbBridge, "hillclimb")
 
-    #trace schedule
-    schedule_tracer = tracer(adbBridge,
-                            "schedule",
-                            events=["sched_switch"],
-                            PID_filter=PIDt,
-                            duration=1)
-    schedule_tracer.runTracer()
 
 
     wakeup_tracer = tracer(adbBridge,
@@ -24,8 +17,18 @@ def main():
                             duration=1)
     wakeup_tracer.runTracer()
 
-    #tp.processTrace(wakeup_tracer, PIDt)
+    tp.processTrace(wakeup_tracer, PIDt)
     #tp.filterTracePID(schedule_tracer, PIDt)
+
+    #trace schedule
+    schedule_tracer = tracer(adbBridge,
+                            "schedule",
+                            events=["sched_switch"],
+                            PID_filter=PIDt,
+                            duration=1)
+    schedule_tracer.runTracer()
+
+    tp.processTrace(schedule_tracer, PIDt)
 
     freq_tracer = tracer(adbBridge,
                             "frequency",
@@ -33,7 +36,7 @@ def main():
                             duration=1)
     freq_tracer.runTracer()
 
-    #tp.processTrace(freq_tracer, PIDt)
+    tp.processTrace(freq_tracer, PIDt)
 
     idle_tracer = tracer(adbBridge,
                         "idle",
@@ -41,7 +44,7 @@ def main():
                         duration = 1)
     idle_tracer.runTracer()
 
-    #tp.processTrace(idle_tracer, PIDt)
+    tp.processTrace(idle_tracer, PIDt)
 
 if __name__ == '__main__':
     main()
