@@ -1,6 +1,7 @@
 import logging
 from aenum import Enum
 from event import *
+import re
 import xlsxwriter
 
 class traceProcessor:
@@ -11,13 +12,13 @@ class traceProcessor:
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Trace processor created")
 
-    def filterTracePID(self, tracer, PIDtracer, output_filename=""):
+    def filterTracePID(self, tracer, PIDt, output_filename=""):
         if output_filename == "":
             output_filename = tracer.filename + "_filtered"
         f = open(tracer.filename)
         unfiltered = f.readlines()
         filtered = []
-        pids = PIDtracer.getPIDStrings()
+        pids = PIDt.getPIDStrings()
         for x, line in enumerate(unfiltered): #make sure that PID isn't in time stamp
             if any((("=" + pid) or ("-" + pid)) in line for pid in pids) or x < 11:
                 filtered.append(line)
@@ -27,63 +28,46 @@ class traceProcessor:
         self.logger.debug("Written filtered lines to: " + output_filename)
         f.close()
 
-    def keepPIDLines(self, tracer_lines, PIDtracer):
-        filtered = []
-        pids = PIDtracer.getPIDStrings()
+    def keepPIDLine(self, line, PIDt):
+        pids = PIDt.getPIDStrings()
 
-        for x, line in enumerate(tracer_lines, 11):
-            if any(("=" + pid) or ("-" + pid) in line for pid in pids):
-                filtered.append(line)
-
-        return filtered
+        if any(("=" + pid) or ("-" + pid) in line for pid in pids):
+            return True
+        return False
 
     def _processSchedWakeup(self, line):
-        split_line = line.split()
-        #get PID
-        pid = int(split_line.split('-')[-1])
-        #get time
-        time = int(float(split_line[3][:-2]) * 1000000)
-        #get cpu
-        for x, chunk in enumerate(split_line):
-            if "target_cpu=" in chunk:
-                cpu = int(chunk[-3:-1])
-                break
+        pid =  int(re.findall("-(\d+) *\[", line)[0])
+        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
 
-        return even_wakeup(pid, time, cpu)
+        return event_wakeup(pid, time, cpu)
 
     def _processSchedSwitch(self, line):
-        events = []
-        for x, line in enumerate(tracer_lines, 11):
-            split_line = line.split()
-            #get  PI
+        pid =  int(re.findall("-(\d+) *\[", line)[0])
+        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
+        pre_state = re.findall("prev_state=([RSD]{1})", line)[0]
+        next_pid = int(re.findall("next_pid=(\d+)", line)[0])
+
+        return event_sched_switch(pid, time, cpu, prev_state, next_pid)
 
     def _processSchedIdle(self, line):
-        split_line = line.split()
-        #get time
-        time = int(float(split_line[3][:-2]) * 1000000)
-        #get cpu
-        cpu = int(split_line[6][-1])
-        #get idle
-        idle = int(split_line[5][6:])
+        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
+        state = int(re.findall("state=(\d+)", line)[0])
 
         return event_idle(time, cpu, idle)
 
     def _processSchedFreq(self, line):
-        split_line = line.split()
-        #get PID
-        pid = int(split_line[0].split('-')[-1])
-        #get time
-        time = int(float(split_line[3][:-2]) * 1000000)
-        #get freq
-        freq = int(split_line[9])
-        #get load
-        load = int(split_line[11])
-        #get cpu
-        cpu = int(split_line[7])
+        pid =  int(re.findall("-(\d+) *\[", line)[0])
+        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
+        freq = int(re.findall("freq: (\d+) ", line)[0])
+        load = inf(re.findall(" load: (\d+)", line)[0])
 
         return event_freq_change(pid, time, freq, load, cpu)
 
-    def processTrace(self, tracer, PIDtracer):
+    def processTrace(self, tracer, PIDt):
         #open trace
         try:
             f = open(tracer.filename, "r")
@@ -94,12 +78,13 @@ class traceProcessor:
             sys.exit("Tracer unable to be opened for processing")
 
         raw_lines = f.readlines()
-        print raw_lines
         processed_events = []
         #determine tracer type
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
         for line in raw_lines[11:]:
-            if "shed_wakeup" in line:
+            if not self.keepPIDLine(line, PIDt):
+                continue
+            if "sched_wakeup" in line:
                 processed_events.append(self._processSchedWakeup(line))
                 self.logger.debug("Wakeup event line: " + line)
             #elif sched_switch in line:
@@ -110,6 +95,7 @@ class traceProcessor:
                 processed_events.append(self._processSchedIdle(line))
                 self.logger.debug("Idle event line: " + line)
             elif "update_cpu_metric" in line:
+                print "freq"
                 processed_events.append(self._processSchedFreq(line))
                 self.logger.debug("Freq event line: " + line)
 

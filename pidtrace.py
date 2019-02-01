@@ -40,13 +40,12 @@ class PIDtracer:
 
     def findAllPID(self):
         res = self.adb_device.runCommand("busybox ps -T | grep " + self.name)
-        res = res.splitlines()
         for line in res:
-            if "grep" in line:
-                continue
-            split_line = re.split('{|}', line)
-            before_name = split_line[0].split()
-            after_name = split_line[2].split()
-            self.allPID.append(PID(before_name[0], before_name[1],
-                before_name[2], after_name[0], split_line[1]))
-            self.logger.debug("Found thread with PID: " + before_name[0])
+            #remove grep process
+            pid = int(re.findall("(\d+) *\d+ *\d*:\d* ?{?.*?}[^g][^r][^e][^p].*", line)[0])
+            user = int(re.findall("\d+ *(\d+) *\d*:\d* ?{?.*?}[^g][^r][^e][^p].*")[0])
+            tname = re.findall("\d+ *\d+ *\d*:\d* ?({?.*?})[^g][^r][^e][^p].*", line)[0]
+            pname= re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)", line)[0]
+
+            self.allPID.append(PID(pid, user, pname, tname))
+            self.logger.debug("Found thread with PID: " + str(pid))
