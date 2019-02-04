@@ -2,6 +2,7 @@ import logging
 from aenum import Enum
 from event import *
 import re
+import sys
 import xlsxwriter
 
 class traceProcessor:
@@ -131,54 +132,60 @@ class traceProcessor:
         output_worksheet.write_string(0, idle_state_col, "Idle")
         output_worksheet.write_string(0, wake_event_col, "Wake Event")
 
+        start_row = 2
         for event in processed_events:
             if isinstance(event, event_wakeup):
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         PID_col, event.PID)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         cpu_col, event.cpu)
-                output_worksheet.write_string(event.time - start_time + 1,
+                output_worksheet.write_string(start_row,
                         wake_event_col, "X")
                 self.logger.debug("Wakeup event added to row: " +
                         str(event.time - start_time + 1))
+                start_row += 1
 
             elif isinstance(event, event_sched_switch):
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         PID_col, event.PID)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         cpu_col, event.cpu)
-                output_worksheet.write_string(event.time - start_time + 1,
+                output_worksheet.write_string(start_row,
                         prev_state_col, event.prev_state)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         next_pid_col, event.next_pid)
 
                 self.logger.debug("Switch event added to row: " +
                         str(event.time - start_time + 1))
+                start_row += 1
 
             elif isinstance(event, event_freq_change):
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         freq_freq_col, event.freq)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         freq_load_col, event.load)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         cpu_col, event.cpu)
                 self.logger.debug("Freq event added to row: " +
                         str(event.time - start_time + 1))
+                start_row += 1
+
             elif isinstance(event, event_idle):
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         cpu_col, event.cpu)
-                output_worksheet.write_number(event.time - start_time + 1,
+                output_worksheet.write_number(start_row,
                         idle_state_col, event.state)
                 self.logger.debug("Idle event added to row: " +
                         str(event.time - start_time + 1))
+                start_row += 1
             else:
                 self.logger.debug("Unknown event")
 
