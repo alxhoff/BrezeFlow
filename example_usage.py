@@ -19,7 +19,6 @@ def main():
 
     tp.processTrace(schedule_tracer, PIDt)
 
-"""
     wakeup_tracer = tracer(adbBridge,
                             "wakeup",
                             events=["sched_wakeup"],
@@ -28,6 +27,7 @@ def main():
 
     tp.processTrace(wakeup_tracer, PIDt)
     #tp.filterTracePID(schedule_tracer, PIDt)
+"""
 
     freq_tracer = tracer(adbBridge,
                             "frequency",
