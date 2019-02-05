@@ -1,5 +1,18 @@
 from aenum import Enum
 
+class binder_type(Enum):
+    UNKNOWN = 0
+    CALL = 1
+    REPLY = 2
+    ASYNC = 3
+
+class event_type_chars(Enum):
+    SCHED_SWITCH = 'S'
+    FREQ_CHANGE = 'F'
+    WAKEUP = 'W'
+    IDLE = 'I'
+    BINDER = 'B'
+
 class event:
 
     def __init__(self, PID, time, cpu):
@@ -31,6 +44,24 @@ class event_idle(event):
     def __init__(self, time, cpu, state):
         event.__init__(self, 0, time, cpu)
         self.state = state
+
+class event_binder_call(event):
+
+    def __init__(self, PID, time, trans_type, to_proc, trans_ID, flags, code):
+        event.__init__(self, PID, time, 99)
+        if trans_type == 0:
+            if flags & 0b1:
+                self.trans_type = binder_type.ASYNC
+            else:
+                self.trans_type = binder_type.CALL
+        elif trans_type == 1:
+            self.trans_type = binder_type.REPLY
+        else:
+            self.trans_type = binder_type.UNKNOWN
+        self.to_proc = to_proc
+        self.trans_ID = trans_ID
+        self.flags = flags
+        self.code = code
 
 class process_exec:
 

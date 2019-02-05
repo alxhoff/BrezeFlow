@@ -15,14 +15,15 @@ def main():
                             duration=10)
     binder_tracer.runTracer()
 
+    tp.processTrace(binder_tracer, PIDt)
+'''
     combo_tracer = tracer(adbBridge,
                         "combo",
                         events=["cpu_frequency","sched_wakeup","sched_switch","cpu_idle"],
                         PID_filter=PIDt,
                         duration=2)
     combo_tracer.runTracer()
-
-    #tp.processTrace(combo_tracer, PIDt)
+'''
 
 if __name__ == '__main__':
     main()
