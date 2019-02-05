@@ -12,7 +12,7 @@ class tracer:
     ftrace_path = '/d/tracing/'
 
     def __init__(self, adb_device, name, functions=[], events=[],
-            trace_type="nop", duration=1, PID_filter=None):
+            trace_type="nop", duration=1, PID_filter=None, binder_loger=False):
         logging.basicConfig(filename="pytracer.log",
                 format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
@@ -53,6 +53,12 @@ class tracer:
         out_file.write(self.adb_device.readFromFile(self.ftrace_path + "trace"))
         out_file.close()
         self.logger.debug("Trace results written to file " + self.filename)
+
+    def getBinderLogs(self):
+        binder_log = open("binder_transactions.log", "w+")
+        binder_log.write(self.adb_device.readFromFile("/d/binder/transaction_log"))
+        binder_log.close()
+        self.logger.debug("Binder transactions log pulled")
 
     ###  FUNCTION TRACING  ###
     def _getFilterFunctions(self):
@@ -169,6 +175,7 @@ class tracer:
         self.adb_device.clearFile(self.ftrace_path + "trace")
         self.logger.debug("Trace output file cleared")
 
+
     ##  RUNNING CONFIGURED TRACER OBJECT  ###
     def runTracer(self):
         self.logger.debug("Running tracer: " + self.name)
@@ -193,5 +200,6 @@ class tracer:
         self.traceForTime(self.duration)
 
         #get results
+        self.getBinderLogs();
         self.getTraceResults(self.name + "_tracer.trace")
         self.logger.debug("Tracer " + self.name + " finished running")

@@ -9,6 +9,12 @@ def main():
     tp = traceProcessor()
     PIDt  = PIDtracer(adbBridge, "hillclimb")
 
+    binder_tracer = tracer(adbBridge,
+                            "binder",
+                            events=["binder_transaction"],
+                            duration=10)
+    binder_tracer.runTracer()
+
     combo_tracer = tracer(adbBridge,
                         "combo",
                         events=["cpu_frequency","sched_wakeup","sched_switch","cpu_idle"],
@@ -16,7 +22,7 @@ def main():
                         duration=2)
     combo_tracer.runTracer()
 
-    tp.processTrace(combo_tracer, PIDt)
+    #tp.processTrace(combo_tracer, PIDt)
 
 if __name__ == '__main__':
     main()
