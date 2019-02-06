@@ -55,4 +55,4 @@ class PIDtracer:
             pname= re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)", line)[0]
 
             self.allPID.append(PID(pid, user, pname, tname))
-            self.logger.debug("Found thread with PID: " + str(pid))
+            self.logger.debug("Found thread " + tname + " with PID: " + str(pid))

@@ -31,7 +31,7 @@ class traceProcessor:
     def keepPIDLine(self, line, PIDt):
         pids = PIDt.getPIDStrings()
 
-        if any(("=" + pid) or ("-" + pid) in line for pid in pids):
+        if any(re.search("-(" + str(pid) + ") +", line) for pid in pids):
             return True
         return False
 
@@ -71,7 +71,6 @@ class traceProcessor:
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
         trans_type = int(re.findall(" +reply=(\d) +", line)[0])
-        print line
         to_proc = int(re.findall(" +dest_proc=(\d+) +", line)[0])
         trans_ID = int(re.findall(" +transaction=(\d+) +", line)[0])
         flags = int(re.findall(" +flags=(0x[0-9a-f]+) +", line)[0], 16)
@@ -140,7 +139,8 @@ class traceProcessor:
 
         idle_state_col = 12
 
-        wake_event_col = 13
+        wake_pid_col = 13
+        wake_event_col = 14
 
         output_worksheet.write_string(0, time_col, "Time")
         output_worksheet.write_string(0, event_col, "Event")
