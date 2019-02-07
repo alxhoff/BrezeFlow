@@ -29,6 +29,7 @@ class PIDtracer:
         return strings
 
     def getPIDStringIndex(self, pid_string):
+        print self.getPIDStrings()
         for x, pid in enumerate(self.allPID):
             if pid.pid == pid_string:
                 return x
@@ -46,7 +47,31 @@ class PIDtracer:
                 + pname + " from user " + str(user))
         return PID( pid, user, pname, "main")
 
-    def findAllPID(self):
+    def findSystemServerPIDs(self):
+        res = self.adb_device.runCommand("busybox ps -T | grep system_server")
+        res = res.splitlines()
+        for line in res:
+            if line.isspace():
+                continue
+            #remove grep process
+            if not re.match("^((?!grep).)*$", line):
+                continue
+            pid = int(re.findall("(\d+) +\d+ +\d+:\d+", line)[0])
+            user = int(re.findall("\d+ +(\d+) +\d+:\d+", line)[0])
+            tname = re.findall("\d+ \d+ *\d+:\d+ +({.*}) +[^g][^r][^e][^p].*",
+                    line)
+            pname= re.findall("\d+ +\d+ *\d+:\d+ ?{?.*?}? +([^g][^r][^e][^p].*)",
+                    line)[0]
+            if tname == []:
+                self.allPID.append(PID(pid, user, pname, pname))
+                self.logger.debug("Found system thread main with PID: " \
+                    + str(pid))
+            else:
+                self.allPID.append(PID(pid, user, pname, tname))
+                self.logger.debug("Found system thread " + tname[0] + " with PID: " \
+                    + str(pid))
+
+    def findAllAppPID(self):
         res = self.adb_device.runCommand("busybox ps -T | grep " + self.name)
         res = res.splitlines()
         for line in res:
@@ -64,3 +89,8 @@ class PIDtracer:
 
             self.allPID.append(PID(pid, user, pname, tname))
             self.logger.debug("Found thread " + tname + " with PID: " + str(pid))
+
+    def findAllPID(self):
+        self.findMainPID
+        self.findAllAppPID()
+        self.findSystemServerPIDs()

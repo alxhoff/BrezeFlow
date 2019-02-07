@@ -4,6 +4,7 @@ from event import *
 import re
 import sys
 import xlsxwriter
+import os.path as op
 
 class traceProcessor:
 
@@ -128,7 +129,7 @@ class traceProcessor:
                 output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
-                        event_col, str(event_type_chars.WAKEUP.value))
+                        event_col, str(jobType.WAKEUP.value))
                 output_worksheet.write_number(start_row,
                         PID_col, event.PID)
                 output_worksheet.write_number(start_row,
@@ -143,7 +144,7 @@ class traceProcessor:
                 output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
-                        event_col, str(event_type_chars.SCHED_SWITCH.value))
+                        event_col, str(jobType.SCHED_SWITCH.value))
                 output_worksheet.write_number(start_row,
                         PID_col, event.PID)
                 output_worksheet.write_number(start_row,
@@ -161,7 +162,7 @@ class traceProcessor:
                 output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
-                        event_col, str(event_type_chars.FREQ_CHANGE.value))
+                        event_col, str(jobType.FREQ_CHANGE.value))
                 output_worksheet.write_number(start_row,
                         freq_freq_col, event.freq)
                 output_worksheet.write_number(start_row,
@@ -176,7 +177,7 @@ class traceProcessor:
                 output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
-                        event_col, str(event_type_chars.IDLE.value))
+                        event_col, str(jobType.IDLE.value))
                 output_worksheet.write_number(start_row,
                         cpu_col, event.cpu)
                 output_worksheet.write_number(start_row,
@@ -188,7 +189,7 @@ class traceProcessor:
                 output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
-                        event_col, str(event_type_chars.BINDER.value))
+                        event_col, str(jobType.BINDER_SEND.value))
                 output_worksheet.write_number(start_row,
                         PID_col, event.PID)
                 output_worksheet.write_number(start_row,
@@ -211,12 +212,15 @@ class traceProcessor:
     def processTrace(self, tracer, PIDt):
         #open trace
         try:
-            f = open(tracer.filename, "r")
+            #f = open(tracer.filename, "r")
+            filename = op.dirname(op.realpath(__file__)) + '/' \
+                + "test/test_tracer.trace"
+            f = open(filename, "r")
             self.logger.debug("Tracer " + tracer.filename + " opened for \
                     processing ")
         except IOError:
             self.logger.error("Could not open trace file" + tracer.filename)
-            sys.exit("Tracer unable to be opened for processing")
+            sys.exit("Tracer " + filename + " unable to be opened for processing")
 
         raw_lines = []
         raw_lines = f.readlines()
@@ -258,11 +262,8 @@ class traceProcessor:
         self.writeToXlsx(processed_events, tracer.name)
 
         #generate pointers to most recent nodes for each PID (branch heads)
-        process_branches = []
-        for x, pid in enumerate(pids):
-            process_branches.append(process_branch(int(pid), None))
+        process_tree = processTree(PIDt)
 
-        print len(processed_events)
         for x, event in enumerate(processed_events):
-            process_branches[PIDt.getPIDStringIndex(event.PID)].handle_event(event)
+            process_tree.handle_event(event)
 
