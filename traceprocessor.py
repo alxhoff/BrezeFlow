@@ -28,6 +28,7 @@ class traceProcessor:
         f.writelines(filtered)
         self.logger.debug("Written filtered lines to: " + output_filename)
         f.close()
+
     def keepPIDLine(self, line, PIDt):
         pids = PIDt.getPIDStrings()
 
@@ -78,47 +79,11 @@ class traceProcessor:
 
         return event_binder_call(pid, time, trans_type, to_proc, trans_ID, flags, code)
 
-    def processTrace(self, tracer, PIDt):
-        #open trace
-        try:
-            f = open(tracer.filename, "r")
-            self.logger.debug("Tracer " + tracer.filename + " opened for \
-                    processing ")
-        except IOError:
-            self.logger.error("Could not open trace file" + tracer.filename)
-            sys.exit("Tracer unable to be opened for processing")
-        raw_lines = []
-        raw_lines = f.readlines()
-        processed_events = []
-        #determine tracer type
-        self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
-        for line in raw_lines[11:]:
-            if not self.keepPIDLine(line, PIDt):
-                continue
-            if "sched_wakeup" in line:
-                processed_events.append(self._processSchedWakeup(line))
-                self.logger.debug("Wakeup event line: " + line)
-            elif "sched_switch" in line:
-                processed_events.append(self._processSchedSwitch(line))
-                self.logger.debug("Sched switch: " + line)
-            elif "cpu_idle" in line:
-                processed_events.append(self._processSchedIdle(line))
-                self.logger.debug("Idle event line: " + line)
-            elif "update_cpu_metric" in line:
-                processed_events.append(self._processSchedFreq(line))
-                self.logger.debug("Freq event line: " + line)
-            elif "binder" in line:
-                processed_events.append(self._processBinderTransaction(line))
-                self.logger.debug("Binder event line: " + line)
-
-        if processed_events == []:
-            self.logger.debug("Processing trace failed")
-            sys.exit("Processing trace failed")
-
+    def writeToXlsx(self, processed_events, filename):
         #write events into excel file
         start_time = processed_events[0].time
 
-        output_workbook = xlsxwriter.Workbook(tracer.name + "_events.xlsx")
+        output_workbook = xlsxwriter.Workbook(filename + "_events.xlsx")
         output_worksheet = output_workbook.add_worksheet()
 
         time_col = 0
@@ -241,3 +206,63 @@ class traceProcessor:
                 self.logger.debug("Unknown event: " + line)
 
         output_workbook.close()
+
+
+    def processTrace(self, tracer, PIDt):
+        #open trace
+        try:
+            f = open(tracer.filename, "r")
+            self.logger.debug("Tracer " + tracer.filename + " opened for \
+                    processing ")
+        except IOError:
+            self.logger.error("Could not open trace file" + tracer.filename)
+            sys.exit("Tracer unable to be opened for processing")
+
+        raw_lines = []
+        raw_lines = f.readlines()
+        processed_events = []
+        pids = PIDt.getPIDStrings()
+
+        #Filter and sort events
+        self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
+
+        for line in raw_lines[11:]:
+            if not self.keepPIDLine(line, PIDt):
+                continue
+
+            if "sched_wakeup" in line:
+                processed_events.append(self._processSchedWakeup(line))
+                self.logger.debug("Wakeup event line: " + line)
+
+            elif "sched_switch" in line:
+                processed_events.append(self._processSchedSwitch(line))
+                self.logger.debug("Sched switch: " + line)
+
+            elif "cpu_idle" in line:
+                processed_events.append(self._processSchedIdle(line))
+                self.logger.debug("Idle event line: " + line)
+
+            elif "update_cpu_metric" in line:
+                processed_events.append(self._processSchedFreq(line))
+                self.logger.debug("Freq event line: " + line)
+
+            elif "binder" in line:
+                processed_events.append(self._processBinderTransaction(line))
+                self.logger.debug("Binder event line: " + line)
+
+        if processed_events == []:
+            self.logger.debug("Processing trace failed")
+            sys.exit("Processing trace failed")
+
+        #export to XLSX
+        self.writeToXlsx(processed_events, tracer.name)
+
+        #generate pointers to most recent nodes for each PID (branch heads)
+        process_branches = []
+        for x, pid in enumerate(pids):
+            process_branches.append(process_branch(int(pid), None))
+
+        print len(processed_events)
+        for x, event in enumerate(processed_events):
+            process_branches[PIDt.getPIDStringIndex(event.PID)].handle_event(event)
+

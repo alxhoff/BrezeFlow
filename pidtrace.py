@@ -28,6 +28,11 @@ class PIDtracer:
             strings.append(str(pid.pid))
         return strings
 
+    def getPIDStringIndex(self, pid_string):
+        for x, pid in enumerate(self.allPID):
+            if pid.pid == pid_string:
+                return x
+
     def findMainPID(self):
         res = self.adb_device.runCommand("ps | grep " + self.name)
         if res == "":
@@ -37,7 +42,8 @@ class PIDtracer:
         user = int(self.adb_device.runCommand("id -u "
             + re.findall("^([^ ]+) +\d+", res)[0]))
         pname = re.findall("([^ ]+)$", res)[-1]
-        self.logger.debug("Found main PID of " + str(pid) + " for process " + pname + " from user " + str(user))
+        self.logger.debug("Found main PID of " + str(pid) + " for process "
+                + pname + " from user " + str(user))
         return PID( pid, user, pname, "main")
 
     def findAllPID(self):
@@ -51,8 +57,10 @@ class PIDtracer:
                 continue
             pid = int(re.findall("(\d+) +\d+ +\d+:\d+", line)[0])
             user = int(re.findall("\d+ +(\d+) +\d+:\d+", line)[0])
-            tname = re.findall("\d+ *\d+ *\d*:\d* ?({?.*?})[^g][^r][^e][^p].*", line)[0]
-            pname= re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)", line)[0]
+            tname = re.findall("\d+ *\d+ *\d*:\d* ?({?.*?})[^g][^r][^e][^p].*",
+                    line)[0]
+            pname= re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)",
+                    line)[0]
 
             self.allPID.append(PID(pid, user, pname, tname))
             self.logger.debug("Found thread " + tname + " with PID: " + str(pid))
