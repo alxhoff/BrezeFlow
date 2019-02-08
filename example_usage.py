@@ -12,7 +12,7 @@ def main():
                         #events=["binder_transaction","cpu_frequency","sched_wakeup","sched_switch","cpu_idle"],
     combo_tracer = tracer(adbBridge,
                         "combo",
-                        events=["binder_transaction","sched_wakeup","sched_switch"],
+                        events=["binder_transaction","sched_switch"],
                         PID_filter=PIDt,
                         duration=2)
     combo_tracer.runTracer()

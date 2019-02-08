@@ -17,6 +17,7 @@ class PIDtracer:
         self.name = name
         self.mainPID = self.findMainPID()
         self.allPID = []
+        self.allPID.append(PID(0,0,"idle_proc", "idle_thread"))#idle process
         self.findAllPID()
 
     def __del__(self):
@@ -29,7 +30,6 @@ class PIDtracer:
         return strings
 
     def getPIDStringIndex(self, pid_string):
-        print self.getPIDStrings()
         for x, pid in enumerate(self.allPID):
             if pid.pid == pid_string:
                 return x

@@ -206,7 +206,7 @@ class processTree:
 
     def handle_event(self, event):
         process_branch = self.process_branches[self.PIDt.getPIDStringIndex(event.PID)]
-
+        print event
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs
         if isinstance(event, event_wakeup):
@@ -217,6 +217,7 @@ class processTree:
         # previous task's state
         elif  isinstance(event, event_sched_switch):
             process_branch.add_job(event, event_type=job_state.SCHED_SWITCH)
+            self.logger.debug("Sched switch event added as job")
             return
 
         # Freq change events give the time at which a frequency change occured.
@@ -238,9 +239,12 @@ class processTree:
         elif isinstance(event, event_binder_call):
             #create job in client thread tree (current tree)
             process_branch.add_job(event, event_type=jobType.BINDER_SEND)
+            self.logger.debug("Binder event added as job")
             #create job in server thread tree (binder target thred)
-            print event
-            print event.to_proc
+            print "event: " + str(event)
+            print self.PIDt.getPIDStrings()
+            print "from proc pid: " + str(event.PID)
+            print "to proc pid: " + str(event.to_proc)
             print self.PIDt.getPIDStringIndex(event.to_proc)
             self.process_branches[self.PIDt.getPIDStringIndex(event.to_proc)]\
                     .add_job(event, event_type=jobType.BINDER_RECV)

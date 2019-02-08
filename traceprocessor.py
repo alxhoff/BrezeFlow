@@ -32,9 +32,14 @@ class traceProcessor:
 
     def keepPIDLine(self, line, PIDt):
         pids = PIDt.getPIDStrings()
-
+        #print line
+        #for x,pid in enumerate(pids):
+        #    search_expression = "-(" + str(pid) + ") +"
+        #    print search_expression
+        #    if re.search("-(" + str(pid) + ") +", line):
         if any(re.search("-(" + str(pid) + ") +", line) for pid in pids):
-            return True
+                print "valid line"
+                return True
         return False
 
     def _processSchedWakeup(self, line):
@@ -212,10 +217,7 @@ class traceProcessor:
     def processTrace(self, tracer, PIDt):
         #open trace
         try:
-            #f = open(tracer.filename, "r")
-            filename = op.dirname(op.realpath(__file__)) + '/' \
-                + "test/test_tracer.trace"
-            f = open(filename, "r")
+            f = open(tracer.filename, "r")
             self.logger.debug("Tracer " + tracer.filename + " opened for \
                     processing ")
         except IOError:
@@ -230,8 +232,9 @@ class traceProcessor:
         #Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:]:
+        for line in raw_lines[11:300]:
             if not self.keepPIDLine(line, PIDt):
+                print "Invalid line"
                 continue
 
             if "sched_wakeup" in line:
