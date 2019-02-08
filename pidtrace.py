@@ -16,16 +16,27 @@ class PIDtracer:
         self.adb_device = adb_device
         self.name = name
         self.mainPID = self.findMainPID()
-        self.allPID = []
-        self.allPID.append(PID(0,"idle_proc", "idle_thread"))#idle process
+        self.allAppPID = []
+        self.allAppPID.append(PID(0,"idle_proc", "idle_thread"))#idle process
+        self.allBinderPID = []
         self.findAllPID()
+        self.allAppPIDStrings = self.getAppPIDStrings()
+        self.allBinderPIDStrings = self.getBinderPIDStrings()
+        self.allPIDStrings = self.allAppPIDStrings + self.allBinderPIDStrings
+        self.allPID = self.allAppPID + self.allBinderPID
 
     def __del__(self):
         self.logger.debug("PID tracer closed")
 
-    def getPIDStrings(self):
+    def getAppPIDStrings(self):
         strings = []
-        for x, pid in enumerate(self.allPID):
+        for x, pid in enumerate(self.allAppPID):
+            strings.append(str(pid.pid))
+        return strings
+
+    def getBinderPIDStrings(self):
+        strings = []
+        for x, pid in enumerate(self.allBinderPID):
             strings.append(str(pid.pid))
         return strings
 
@@ -45,17 +56,21 @@ class PIDtracer:
                 + pname )
         return PID( pid, pname, "main")
 
-    def findSystemServerPIDs(self):
-        res = self.adb_device.runCommand("cat /proc/`pidof system_server`/task/*/stat")
+    def findSystemServerBinderPIDs(self):
+        # Get all processes except the system_server itself
+        res = self.adb_device.runCommand("busybox ps -T | grep Binder")
         res = res.splitlines()
         for line in res:
             if line.isspace():
                 continue
             #remove grep process
+            if not re.match("^((?!grep).)*$", line):
+                continue
+            #remove grep process
             pid = int(re.findall("^ *(\d+)", line)[0])
-            tname = re.findall("^ *\d+ \((.*)\)", line)[0]
-            pname = "system_server"
-            self.allPID.append(PID(pid, pname, tname))
+            tname = re.findall("\{(.*)\}", line)[0]
+            pname = re.findall(".* +(.*)$", line)[0]
+            self.allBinderPID.append(PID(pid, pname, tname))
             self.logger.debug("Found system thread " + tname[0] + " with PID: " \
                     + str(pid))
 
@@ -67,7 +82,7 @@ class PIDtracer:
         for line in res:
             if line.isspace():
                 continue
-            child_PIDs.append(int(re.findall("^ (\d+)", line)[0]))
+            child_PIDs.append(int(re.findall(" *(\d+)", line)[0]))
         return child_PIDs
 
     def findAllAppPID(self):
@@ -85,10 +100,10 @@ class PIDtracer:
             pname= re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)",
                     line)[0]
 
-            self.allPID.append(PID(pid, pname, tname))
+            self.allAppPID.append(PID(pid, pname, tname))
             self.logger.debug("Found thread " + tname + " with PID: " + str(pid))
 
     def findAllPID(self):
         self.findMainPID
         self.findAllAppPID()
-        self.findSystemServerPIDs()
+        self.findSystemServerBinderPIDs()

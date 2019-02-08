@@ -20,9 +20,9 @@ class traceProcessor:
         f = open(tracer.filename)
         unfiltered = f.readlines()
         filtered = []
-        pids = PIDt.getPIDStrings()
         for x, line in enumerate(unfiltered): #make sure that PID isn't in time stamp
-            if any((("=" + pid) or ("-" + pid)) in line for pid in pids) or x < 11:
+            if any((("=" + pid) or ("-" + pid)) in line \
+                    for pid in PIDt.allAppPIDStrings) or x < 11:
                 filtered.append(line)
 
         f = open(output_filename, 'w')
@@ -31,14 +31,8 @@ class traceProcessor:
         f.close()
 
     def keepPIDLine(self, line, PIDt):
-        pids = PIDt.getPIDStrings()
-        #print line
-        #for x,pid in enumerate(pids):
-        #    search_expression = "-(" + str(pid) + ") +"
-        #    print search_expression
-        #    if re.search("-(" + str(pid) + ") +", line):
+        pids = PIDt.allPIDStrings
         if any(re.search("-(" + str(pid) + ") +", line) for pid in pids):
-                print "valid line"
                 return True
         return False
 
@@ -227,14 +221,12 @@ class traceProcessor:
         raw_lines = []
         raw_lines = f.readlines()
         processed_events = []
-        pids = PIDt.getPIDStrings()
 
         #Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
         for line in raw_lines[11:300]:
             if not self.keepPIDLine(line, PIDt):
-                print "Invalid line"
                 continue
 
             if "sched_wakeup" in line:

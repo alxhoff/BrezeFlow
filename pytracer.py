@@ -148,12 +148,14 @@ class tracer:
 
     def setFilterPID(self, PIDs):
         self.clearFilterPID()
-        for x, PID in enumerate(PIDs.getPIDStrings()):
+        PID_strings = PIDs.getAppPIDStrings()
+        PID_strings += PIDs.getBinderPIDStrings()
+        for PID in PID_strings:
             self.adb_device.appendToFile(self.ftrace_path + "set_ftrace_pid", PID)
             self.logger.debug("Filtering PID: " + PID)
 
         if self.events != []:
-            for x, PID in enumerate(PIDs.getPIDStrings()):
+            for PID in PID_strings:
                 self.adb_device.appendToFile(self.ftrace_path + "set_ftrace_pid", PID)
                 self.logger.debug("Filtering events with PID: " + PID)
 
