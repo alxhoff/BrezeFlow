@@ -17,7 +17,7 @@ class PIDtracer:
         self.name = name
         self.mainPID = self.findMainPID()
         self.allPID = []
-        self.allPID.append(PID(0,0,"idle_proc", "idle_thread"))#idle process
+        self.allPID.append(PID(0,"idle_proc", "idle_thread"))#idle process
         self.findAllPID()
 
     def __del__(self):
@@ -40,36 +40,35 @@ class PIDtracer:
             self.logger.error("No process running matching given process name")
             sys.exit('Need valid application name')
         pid = int(re.findall(" +(\d+) +\d+ +\d+", res)[0])
-        user = int(self.adb_device.runCommand("id -u "
-            + re.findall("^([^ ]+) +\d+", res)[0]))
         pname = re.findall("([^ ]+)$", res)[-1]
         self.logger.debug("Found main PID of " + str(pid) + " for process "
-                + pname + " from user " + str(user))
-        return PID( pid, user, pname, "main")
+                + pname )
+        return PID( pid, pname, "main")
 
     def findSystemServerPIDs(self):
-        res = self.adb_device.runCommand("busybox ps -T | grep system_server")
+        res = self.adb_device.runCommand("cat /proc/`pidof system_server`/task/*/stat")
         res = res.splitlines()
         for line in res:
             if line.isspace():
                 continue
             #remove grep process
-            if not re.match("^((?!grep).)*$", line):
+            pid = int(re.findall("^ *(\d+)", line)[0])
+            tname = re.findall("^ *\d+ \((.*)\)", line)[0]
+            pname = "system_server"
+            self.allPID.append(PID(pid, pname, tname))
+            self.logger.debug("Found system thread " + tname[0] + " with PID: " \
+                    + str(pid))
+
+    def findChildBinderThreads(self, PID):
+        res = self.adb_device.runCommand("busybox ps -T | grep Binder | grep " + \
+                str(PID))
+        res = res.splitlines()
+        child_PIDs = []
+        for line in res:
+            if line.isspace():
                 continue
-            pid = int(re.findall("(\d+) +\d+ +\d+:\d+", line)[0])
-            user = int(re.findall("\d+ +(\d+) +\d+:\d+", line)[0])
-            tname = re.findall("\d+ \d+ *\d+:\d+ +({.*}) +[^g][^r][^e][^p].*",
-                    line)
-            pname= re.findall("\d+ +\d+ *\d+:\d+ ?{?.*?}? +([^g][^r][^e][^p].*)",
-                    line)[0]
-            if tname == []:
-                self.allPID.append(PID(pid, user, pname, pname))
-                self.logger.debug("Found system thread main with PID: " \
-                    + str(pid))
-            else:
-                self.allPID.append(PID(pid, user, pname, tname))
-                self.logger.debug("Found system thread " + tname[0] + " with PID: " \
-                    + str(pid))
+            child_PIDs.append(int(re.findall("^ (\d+)", line)[0]))
+        return child_PIDs
 
     def findAllAppPID(self):
         res = self.adb_device.runCommand("busybox ps -T | grep " + self.name)
@@ -81,13 +80,12 @@ class PIDtracer:
             if not re.match("^((?!grep).)*$", line):
                 continue
             pid = int(re.findall("(\d+) +\d+ +\d+:\d+", line)[0])
-            user = int(re.findall("\d+ +(\d+) +\d+:\d+", line)[0])
             tname = re.findall("\d+ *\d+ *\d*:\d* ?({?.*?})[^g][^r][^e][^p].*",
                     line)[0]
             pname= re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)",
                     line)[0]
 
-            self.allPID.append(PID(pid, user, pname, tname))
+            self.allPID.append(PID(pid, pname, tname))
             self.logger.debug("Found thread " + tname + " with PID: " + str(pid))
 
     def findAllPID(self):

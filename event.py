@@ -189,9 +189,23 @@ class processBranch:
         #all other job types
         self.tasks[-1].add_job(event, event_type)
 
+# Binder transactions are sometimes directed to the parent binder thread of a
+# system service. The exact PID of the child thread is not known when the
+# transaction is done. A list of open transaction is to be maintained where each
+# entry shows possible child thread PID that could appear in the corresponding
+# wake event. Allowing binder transactions to be matched to their corresponding
+# wake event.
+class pendingBinderTransaction:
+
+    def __init__(self, event, PIDt):
+        self.parent_PID = event.to_proc
+        self.child_PIDs = PIDt.findChilderBinderThreads(parent_PID)
+        self.event = event
+
 class processTree:
 
     process_branches = []
+    pending_binder_transactions = []
 
     def __init__(self, PIDt):
         logging.basicConfig(filename="pytracer.log",
@@ -216,6 +230,20 @@ class processTree:
         # They show us which process was slept and which was woken. Showing the
         # previous task's state
         elif  isinstance(event, event_sched_switch):
+            # Check if the switch event is being called from a binder thread that
+            # could be the child of a binder processed that was the target of a
+            # previous binder transaction. If it is then the binder transaction
+            # can be completed. This will be useful during graph generation
+            if self.pending_binder_transactions != []:
+                for x, transaction in enumerate(pending_binder_transactions):
+                    if any(pid == event.PID for pid in transaction.child_PIDs):
+                        #TODO handle binder transaction (edge creation)
+                        transaction.event.PID = event.PID
+                        process_branchs[self.PIDt.getPIDStringIndex(event.PID)]\
+                                .add_job(transaction.event, \
+                                     event_type=job_state.BINDER_WAKE)
+                        del pending_binder_transactions[x]
+
             process_branch.add_job(event, event_type=job_state.SCHED_SWITCH)
             self.logger.debug("Sched switch event added as job")
             return
@@ -237,17 +265,16 @@ class processTree:
         # are used for the actual wake event as the binder transaction itself
         # may block for a period.
         elif isinstance(event, event_binder_call):
-            #create job in client thread tree (current tree)
+            # create binder send job in client thread tree (current tree)
             process_branch.add_job(event, event_type=jobType.BINDER_SEND)
             self.logger.debug("Binder event added as job")
-            #create job in server thread tree (binder target thred)
+            # create pending binder transaction that can be resolved by next
+            # sched wake event
             print "event: " + str(event)
             print self.PIDt.getPIDStrings()
             print "from proc pid: " + str(event.PID)
             print "to proc pid: " + str(event.to_proc)
-            print self.PIDt.getPIDStringIndex(event.to_proc)
-            self.process_branches[self.PIDt.getPIDStringIndex(event.to_proc)]\
-                    .add_job(event, event_type=jobType.BINDER_RECV)
+            pending_binder_transactions.append(pendingBinderTransaction(event))
             return
 
         else:
