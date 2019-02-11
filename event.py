@@ -118,27 +118,14 @@ class taskNode:
     # At the task level a job changes the state of the task
     # Switch event with prev state R puts the task into a blocked state.
     # A switch event with a prev state of D puts the task into a running state.
-    # TODO binder transactions will be processed to form dependency connections
-    def add_job(self, event, jobType):
-        self.jobs.append(event)
+    def add_job(self, event, jobType, initial=False):
+        if not initial:
+            self.jobs.append(event)
         # add event node
         self.graph.add_node(self.jobs[-1])
-        #self.graph.add_node(self.getIndex(), data=self.jobs[-1])
-        # create graph edge
-        #print self.graph.node[len(self.graph.node) - 1]
-        #print self.graph.node[len(self.graph.node) - 2]
-        #  self.graph.add_edge(self.graph.node[len(self.graph.node) - 2],
-        #                      self.graph.node[len(self.graph.node) - 1])
-        self.graph.add_edge(self.jobs[-2], self.jobs[-1])
-
-        # handle event a
-        if jobType == jobType.SCHED_SWITCH:
-            # thread sleep
-            if event.prev_state == threadState.RUNNING_R.value:
-                self.state = taskState.BLOCKED
-            # thread wakeup
-            elif event.prev_state == threadState.UNINTERRUPTIBLE_SLEEP_D.value:
-                self.state = taskState.FINISHED
+        # create graph edge if not the first job
+        if len(self.jobs) > 1:
+            self.graph.add_edge(self.jobs[-2], self.jobs[-1])
 
     def finished(self):
         self.state = taskState.FINISHED
@@ -167,15 +154,18 @@ class processBranch:
         #first job/task
         if self.tasks == []: #TODO check if first event is task sleeping
             self.tasks.append(taskNode(event, event_type))
+            self.tasks[-1].add_job(event, event_type, initial=True)
+            return
 
         #if the state marks the last sched switch event as a sleep event
         if event_type == jobState.SCHED_SWITCH and \
-                event.prev_state == threadState.INTERRUPTIBLE_SLEEP_S :
+                event.prev_state == threadState.INTERRUPTIBLE_SLEEP_S.value and \
+                len(self.tasks) >= 2:
             #wrap up current task
             self.tasks[-1].finished
             # add task node to graph
             #  graph.add_node(graph.getIndex(), date=self.tasks[-1].graph)
-            graph.add_node(self.tasks[-1].graph)
+            self.graph.add_node(self.tasks[-1].graph)
 
             #create new task
             self.tasks.append(taskNode(event, taskState.EXECUTING))

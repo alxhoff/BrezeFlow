@@ -10,13 +10,13 @@ def main():
     PIDt  = PIDtracer(adbBridge, "hillclimb")
 
                         #events=["binder_transaction","cpu_frequency","sched_wakeup","sched_switch","cpu_idle"],
-    combo_tracer = tracer(adbBridge,
-                        "combo",
-                        events=["binder_transaction","sched_switch"],
-                        PID_filter=PIDt,
-                        duration=2)
-    combo_tracer.runTracer()
-    tp.processTrace(combo_tracer, PIDt)
+    #combo_tracer = tracer(adbBridge,
+    #                    "combo",
+    #                    events=["binder_transaction","sched_switch"],
+    #                    PID_filter=PIDt,
+    #                    duration=2)
+    #combo_tracer.runTracer()
+    tp.processTraceFile("combo_tracer.trace", PIDt)
 
 if __name__ == '__main__':
     main()

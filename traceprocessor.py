@@ -4,6 +4,7 @@ from event import *
 import re
 import sys
 import xlsxwriter
+import math
 import os.path as op
 from grapher import *
 
@@ -32,21 +33,21 @@ class traceProcessor:
         f.close()
 
     def keepPIDLine(self, line, PIDt):
-        pids = PIDt.allPIDStrings
-        if any(re.search("-(" + str(pid) + ") +", line) for pid in pids):
+        pids = PIDt.allPIDStrings[1:]
+        if any(re.search("-(" + str(pid) + ") +| next_pid=(" + str(pid) + ") ", line) for pid in pids):
                 return True
         return False
 
     def _processSchedWakeup(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
-        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
 
         return event_wakeup(pid, time, cpu)
 
     def _processSchedSwitch(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
-        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
         prev_state = re.findall("prev_state=([RSDx]{1})", line)[0]
         next_pid = int(re.findall("next_pid=(\d+)", line)[0])
@@ -54,7 +55,7 @@ class traceProcessor:
         return event_sched_switch(pid, time, cpu, prev_state, next_pid)
 
     def _processSchedIdle(self, line):
-        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
         state = int(re.findall("state=(\d+)", line)[0])
 
@@ -62,7 +63,7 @@ class traceProcessor:
 
     def _processSchedFreq(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
-        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
         freq = int(re.findall("freq: (\d+) ", line)[0])
         load = int(re.findall(" load: (\d+)", line)[0])
@@ -71,7 +72,7 @@ class traceProcessor:
 
     def _processBinderTransaction(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
-        time = int(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000)
+        time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         trans_type = int(re.findall(" +reply=(\d) +", line)[0])
         to_proc = int(re.findall(" +dest_proc=(\d+) +", line)[0])
         trans_ID = int(re.findall(" +transaction=(\d+) +", line)[0])
@@ -208,8 +209,18 @@ class traceProcessor:
 
         output_workbook.close()
 
+    def processTraceFile(self, filename, PIDt):
+        try:
+            f = open(filename, "r")
+            self.logger.debug("Tracer " + filename + " opened for \
+                    processing ")
+        except IOError:
+            self.logger.error("Could not open trace file" + filename)
+            sys.exit("Tracer " + filename + " unable to be opened for processing")
 
-    def processTrace(self, tracer, PIDt):
+        self.processTrace(f, PIDt)
+
+    def processTracer(self, tracer, PIDt):
         #open trace
         try:
             f = open(tracer.filename, "r")
@@ -217,7 +228,11 @@ class traceProcessor:
                     processing ")
         except IOError:
             self.logger.error("Could not open trace file" + tracer.filename)
-            sys.exit("Tracer " + filename + " unable to be opened for processing")
+            sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
+
+        self.processTrace(f, PIDt)
+
+    def processTrace(self, f, PIDt):
 
         raw_lines = []
         raw_lines = f.readlines()
@@ -255,7 +270,7 @@ class traceProcessor:
             sys.exit("Processing trace failed")
 
         #export to XLSX
-        self.writeToXlsx(processed_events, tracer.name)
+        self.writeToXlsx(processed_events, op.basename(f.name))
 
         #generate pointers to most recent nodes for each PID (branch heads)
         process_tree = processTree(PIDt)
