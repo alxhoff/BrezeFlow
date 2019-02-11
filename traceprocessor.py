@@ -23,8 +23,7 @@ class traceProcessor:
         unfiltered = f.readlines()
         filtered = []
         for x, line in enumerate(unfiltered): #make sure that PID isn't in time stamp
-            if any((("=" + pid) or ("-" + pid)) in line \
-                    for pid in PIDt.allAppPIDStrings) or x < 11:
+            if self.keepPIDLine(line, PIDt) or x < 11:
                 filtered.append(line)
 
         f = open(output_filename, 'w')
@@ -35,7 +34,9 @@ class traceProcessor:
     def keepPIDLine(self, line, PIDt):
         pids = PIDt.allAppPIDStrings[1:]
         if any(re.search("-(" + str(pid) + ") +|=(" + str(pid) + ") ", line) for pid in pids):
+                print "True " + line
                 return True
+        print "False: " + line
         return False
 
     def _processSchedWakeup(self, line):

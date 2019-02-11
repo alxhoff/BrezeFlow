@@ -178,6 +178,7 @@ class processBranch:
 class pendingBinderTransaction:
 
     def __init__(self, event, PIDt):
+        self.parent_PID = event.to_proc
         self.child_PIDs = PIDt.findChildBinderThreads(event.to_proc)
         self.event = event
 
@@ -206,6 +207,8 @@ class processTree:
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs
+        if event.time == 538077908044:
+            print "wait here"
         if isinstance(event, event_wakeup):
             return
 
@@ -245,7 +248,6 @@ class processTree:
         # are identified by if they send or recv from a binder thread then
         # handled accordingly
         elif isinstance(event, event_binder_call):
-
             # Sending to binder thread
             if str(event.PID) in self.PIDt.allAppPIDStrings:
                 process_branch = \
@@ -264,7 +266,7 @@ class processTree:
                         " to " + str(event.to_proc)
 
             # From binder thread to target proc
-            elif str(event.PID) in self.PIDt.allBinderPIDStrings:
+            elif str(event.to_proc) in self.PIDt.allAppPIDStrings:
                 process_branch = \
                     self.process_branches[self.PIDt.getPIDStringIndex(event.to_proc)]
                 print "Binder transaction from binder thread " + str(event.PID)
@@ -275,7 +277,8 @@ class processTree:
                             enumerate(self.pending_binder_transactions):
                         # If the binder thread that is completing the transaction
                         # is a child of a previous transactions parent binder PID
-                        if any(pid == event.PID for pid in transaction.child_PIDs):
+                        if any(pid == event.PID for pid in transaction.child_PIDs) or \
+                                event.PID == transaction.parent_PID:
                             # merge
                             print "Updated to_proc " + \
                                     str(transaction.event.to_proc)\
