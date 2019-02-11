@@ -74,7 +74,9 @@ class traceProcessor:
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         trans_type = int(re.findall(" +reply=(\d) +", line)[0])
-        to_proc = int(re.findall(" +dest_proc=(\d+) +", line)[0])
+        to_proc = int(re.findall(" +dest_thread=(\d+) +", line)[0])
+        if to_proc == 0:
+            to_proc = int(re.findall(" +dest_proc=(\d+) +", line)[0])
         trans_ID = int(re.findall(" +transaction=(\d+) +", line)[0])
         flags = int(re.findall(" +flags=(0x[0-9a-f]+) +", line)[0], 16)
         code = int(re.findall(" +code=(0x[0-9a-f]+)", line)[0], 16)
@@ -145,7 +147,7 @@ class traceProcessor:
                 output_worksheet.write_number(start_row,
                         time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
-                        event_col, str(jobType.SCHED_SWITCH.value))
+                        event_col, str(jobType.SCHED_SWITCH_IN.value))
                 output_worksheet.write_number(start_row,
                         PID_col, event.PID)
                 output_worksheet.write_number(start_row,
