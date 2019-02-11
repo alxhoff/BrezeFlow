@@ -5,6 +5,7 @@ import re
 import sys
 import xlsxwriter
 import os.path as op
+from grapher import *
 
 class traceProcessor:
 
@@ -261,4 +262,7 @@ class traceProcessor:
 
         for x, event in enumerate(processed_events):
             process_tree.handle_event(event)
+
+        draw_graph = grapher(process_tree.graph)
+        draw_graph.drawGraph()
 
