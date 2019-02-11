@@ -220,8 +220,6 @@ class processTree:
         return self.index - 1
 
     def handle_event(self, event):
-        print event.PID
-        print event
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs
         if isinstance(event, event_wakeup):
