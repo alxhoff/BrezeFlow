@@ -33,8 +33,8 @@ class traceProcessor:
         f.close()
 
     def keepPIDLine(self, line, PIDt):
-        pids = PIDt.allPIDStrings[1:]
-        if any(re.search("-(" + str(pid) + ") +| next_pid=(" + str(pid) + ") ", line) for pid in pids):
+        pids = PIDt.allAppPIDStrings[1:]
+        if any(re.search("-(" + str(pid) + ") +|=(" + str(pid) + ") ", line) for pid in pids):
                 return True
         return False
 
