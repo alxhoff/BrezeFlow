@@ -108,30 +108,30 @@ As such task processing must have a lead of one job.
 
 class TaskNode:
 
-    def __init__(self, start_event):
-        self.jobs = []
+    def __init__(self):
+        self.events = []
         self.start_time = 0
         self.finish_time = 0
         self.exec_time = 0
         self.graph = nx.Graph()
         self.state = TaskState.EXECUTING
-        self.start_event = start_event
 
-    # At the task level a job changes the state of the task
-    # Switch event with prev state R puts the task into a blocked state.
-    # A switch event with a prev state of D puts the task into a running state.
     def add_job(self, event):
-        self.jobs.append(event)
-        # add event node
+
+        #save event to parent task
+        self.events.append(event)
+
+        # add event node to task subgraph
         self.graph.add_node(event)
+
         # create graph edge if not the first job
-        if len(self.jobs) > 1:
-            self.graph.add_edge(self.jobs[-2], self.jobs[-1])
+        if len(self.events) > 1:
+            self.graph.add_edge(self.events[-2], self.events[-1])
 
     def finished(self):
         self.state = TaskState.FINISHED
-        self.start_time = self.jobs[0].time
-        self.finish_time = self.jobs[-1].time
+        self.start_time = self.events[0].time
+        self.finish_time = self.events[-1].time
         self.exec_time = self.finish_time - self.start_time
 
 
@@ -156,37 +156,64 @@ class ProcessBranch:
     # can signify the end of the current task by being a sched switch event with
     # prev_state = S
     def add_job(self, event, event_type=JobType.UNKNOWN):
-        # first job/task
-        if self.tasks == []:
-            self.tasks.append(TaskNode(event))
+        # first job/task for PID branch
+        if not self.tasks:
+
+            self.tasks.append(TaskNode())
             self.tasks[-1].add_job(event)
-            self.active = True
+
+            # task could be finishing
+            if event_type == JobType.SCHED_SWITCH_OUT:
+
+                # task finishing
+                if event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
+                    self.active = False
+                # task running
+                elif event.prev_state == (ThreadState.RUNNING_R.value or \
+                                          ThreadState.UNINTERRUPTIBLE_SLEEP_D.value):
+                    self.active = True
+
+            # task is either starting or running
+            elif event_type == JobType.SCHED_SWITCH_IN:
+
+                self.active = True
+
             return
 
         # If a task is being switched into from sleeping
+        # New task STARTING
         if event_type == JobType.SCHED_SWITCH_IN and self.active == False:
-            # create new task
-            self.tasks.append(TaskNode(event))
 
+            # create new task
+            self.tasks.append(TaskNode())
+            # add current event
+            self.tasks[-1].add_job(event)
             # create entry node for task
-            self.graph.add_node(event)
+            self.graph.add_node(self.tasks[-1])
+
+            # set task to running
             self.active = True
 
+            # there should always be at least 2 tasks if this is called
+            # connect two sequential tasks with an edge
             if len(self.tasks) >= 2:
                 self.graph.add_edge(self.tasks[-2], self.tasks[-1])
 
             return
-        # if the state marks the last sched switch event as a sleep event
+
+        # If the state marks the last sched switch event as a sleep event
+        # Current task FINISHING
         elif event_type == JobType.SCHED_SWITCH_OUT and \
-                event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value and \
-                len(self.tasks) >= 1:
+                event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
+
             # wrap up current task
             self.tasks[-1].add_job(event)
             self.tasks[-1].finished()
             self.active = False
+
             # add task node to graph
-            #  graph.add_node(graph.getIndex(), date=self.tasks[-1].graph)
-            self.graph.add_node(event)
+            self.graph.add_node(self.tasks[-1])
+
             return
 
         # all other job types just need to get added to the task

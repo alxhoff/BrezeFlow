@@ -277,7 +277,9 @@ class traceProcessor:
         process_tree = ProcessTree(PIDt)
 
         for x, event in enumerate(processed_events):
-            process_tree.handle_event(event)
+            if isinstance(event, EventSchedSwitch):
+                if event.PID == 16674 or event.next_pid == 16674:
+                    process_tree.handle_event(event)
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()

@@ -12,5 +12,8 @@ class Grapher:
         A = nx.nx_agraph.to_agraph(self.pt.process_branches[28].graph)
         A.draw("/home/alxhoff/Downloads/test.png", format='png', prog='dot')
 
+        subgraph_count = len(self.pt.process_branches[28].tasks)
+
+
 
 
