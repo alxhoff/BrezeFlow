@@ -1,3 +1,5 @@
+from __builtin__ import type
+
 from aenum import Enum
 import logging
 import networkx as nx
@@ -113,7 +115,7 @@ class TaskNode:
         self.start_time = 0
         self.finish_time = 0
         self.exec_time = 0
-        self.graph = nx.Graph()
+        self.graph = nx.DiGraph()
         self.state = TaskState.EXECUTING
 
     def add_job(self, event):
@@ -150,7 +152,7 @@ class ProcessBranch:
         self.tasks = []
         self.start = start
         self.active = False
-        self.graph = nx.Graph()
+        self.graph = nx.DiGraph()
 
     # At the process branch level the only significant difference is that a job
     # can signify the end of the current task by being a sched switch event with
@@ -163,20 +165,15 @@ class ProcessBranch:
             self.tasks[-1].add_job(event)
 
             # task could be finishing
-            if event_type == JobType.SCHED_SWITCH_OUT:
-
-                # task finishing
-                if event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
+            if event_type == JobType.SCHED_SWITCH_OUT and \
+                    event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
                     self.active = False
-                # task running
-                elif event.prev_state == (ThreadState.RUNNING_R.value or \
-                                          ThreadState.UNINTERRUPTIBLE_SLEEP_D.value):
-                    self.active = True
+                    self.tasks[-1].finished()
+                    self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_OUT)
+                    return
 
-            # task is either starting or running
-            elif event_type == JobType.SCHED_SWITCH_IN:
-
-                self.active = True
+            self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_IN)
+            self.active = True
 
             return
 
@@ -189,7 +186,7 @@ class ProcessBranch:
             # add current event
             self.tasks[-1].add_job(event)
             # create entry node for task
-            self.graph.add_node(self.tasks[-1])
+            self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_IN)
 
             # set task to running
             self.active = True
@@ -212,7 +209,7 @@ class ProcessBranch:
             self.active = False
 
             # add task node to graph
-            self.graph.add_node(self.tasks[-1])
+            self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_OUT)
 
             return
 
@@ -246,7 +243,6 @@ class ProcessTree:
         self.pending_binder_transactions = []
         self.PIDt = PIDt
         self.index = 0
-        # self.graph = nx.Graph()
 
         for pid in self.PIDt.allPIDStrings:
             self.process_branches.append(ProcessBranch(int(pid), None))
