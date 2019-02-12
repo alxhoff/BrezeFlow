@@ -211,6 +211,14 @@ class ProcessBranch:
             # add task node to graph
             self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_OUT)
 
+            # link task node to beginning of sub-graph
+            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0])
+            # link the end of the subgraph to the task node
+            self.graph.add_edge(self.tasks[-1].events[-1], self.tasks[-1])
+            # add connecting nodes in task
+            self.graph.add_edges_from(self.tasks[-1].graph.edges)
+            #self.graph.edge_subgraph(self.tasks[-1].graph.edges)
+
             return
 
         # all other job types just need to get added to the task
