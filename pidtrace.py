@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 import re
 from pid import PID
@@ -63,10 +62,10 @@ class PIDtracer:
         for line in res:
             if line.isspace():
                 continue
-            #remove grep process
+            # remove grep process
             if not re.match("^((?!grep).)*$", line):
                 continue
-            #remove grep process
+            # remove grep process
             pid = int(re.findall("^ *(\d+)", line)[0])
             tname = re.findall("\{(.*)\}", line)[0]
             pname = re.findall(".* +(.*)$", line)[0]
@@ -91,7 +90,7 @@ class PIDtracer:
         for line in res:
             if line.isspace():
                 continue
-            #remove grep process
+            # remove grep process
             if not re.match("^((?!grep).)*$", line):
                 continue
             pid = int(re.findall("(\d+) +\d+ +\d+:\d+", line)[0])

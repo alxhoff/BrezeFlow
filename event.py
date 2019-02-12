@@ -2,13 +2,15 @@ from aenum import Enum
 import logging
 import networkx as nx
 
-class binderType(Enum):
+
+class BinderType(Enum):
     UNKNOWN = 0
     CALL = 1
     REPLY = 2
     ASYNC = 3
 
-class jobType(Enum):
+
+class JobType(Enum):
     UNKNOWN = 'U'
     SCHED_SWITCH_IN = 'S'
     SCHED_SWITCH_OUT = 'O'
@@ -18,7 +20,8 @@ class jobType(Enum):
     BINDER_SEND = 'B'
     BINDER_RECV = 'R'
 
-class threadState(Enum):
+
+class ThreadState(Enum):
     UNINTERRUPTIBLE_SLEEP_D = 'D'
     RUNNING_R = 'R'
     INTERRUPTIBLE_SLEEP_S = 'S'
@@ -26,62 +29,70 @@ class threadState(Enum):
     DEAD_X = 'X'
     ZOMBIE_Z = 'Z'
 
-class event:
+
+class Event:
 
     def __init__(self, PID, time, cpu):
         self.PID = PID
         self.time = time
         self.cpu = cpu
 
-class event_sched_switch(event):
+
+class EventSchedSwitch(Event):
 
     def __init__(self, PID, time, cpu, prev_state, next_pid):
-        event.__init__(self, PID, time, cpu)
+        Event.__init__(self, PID, time, cpu)
         self.prev_state = prev_state
         self.next_pid = next_pid
 
-class event_freq_change(event):
+
+class EventFreqChange(Event):
 
     def __init__(self, PID, time, cpu, freq, load):
-        event.__init__(self, PID, time, cpu)
+        Event.__init__(self, PID, time, cpu)
         self.freq = freq
         self.load = load
 
-class event_wakeup(event):
+
+class EventWakeup(Event):
 
     def __init__(self, PID, time, cpu):
-        event.__init__(self, PID, time, cpu)
+        Event.__init__(self, PID, time, cpu)
 
-class event_idle(event):
+
+class EventIdle(Event):
 
     def __init__(self, time, cpu, state):
-        event.__init__(self, 0, time, cpu)
+        Event.__init__(self, 0, time, cpu)
         self.state = state
 
-class event_binder_call(event):
+
+class EventBinderCall(Event):
 
     def __init__(self, PID, time, trans_type, to_proc, trans_ID, flags, code):
-        event.__init__(self, PID, time, 99)
+        Event.__init__(self, PID, time, 99)
         if trans_type == 0:
             if flags & 0b1:
-                self.trans_type = binderType.ASYNC
+                self.trans_type = BinderType.ASYNC
             else:
-                self.trans_type = binderType.CALL
+                self.trans_type = BinderType.CALL
         elif trans_type == 1:
-            self.trans_type = binderType.REPLY
+            self.trans_type = BinderType.REPLY
         else:
-            self.trans_type = binderType.UNKNOWN
+            self.trans_type = BinderType.UNKNOWN
         self.to_proc = to_proc
         self.trans_ID = trans_ID
         self.flags = flags
         self.code = code
         self.recv_time = 0
 
-class taskState(Enum):
+
+class TaskState(Enum):
     UNKNOWN = 0
     EXECUTING = 1
     BLOCKED = 2
     FINISHED = 3
+
 
 """
 A task represents a collection of jobs that have been executed between a
@@ -93,20 +104,18 @@ kept so that when another switch event giving prev_state=S is performed the last
 event is then known to be the sleep event and can then be processed accordingly.
 As such task processing must have a lead of one job.
 """
-class taskNode:
 
-    def __init__(self):
+
+class TaskNode:
+
+    def __init__(self, start_event):
         self.jobs = []
         self.start_time = 0
         self.finish_time = 0
         self.exec_time = 0
-        self.index = 0
         self.graph = nx.Graph()
-        self.state = taskState.EXECUTING
-
-    def getIndex(self):
-        self.index += 1
-        return self.index - 1
+        self.state = TaskState.EXECUTING
+        self.start_event = start_event
 
     # At the task level a job changes the state of the task
     # Switch event with prev state R puts the task into a blocked state.
@@ -114,18 +123,20 @@ class taskNode:
     def add_job(self, event):
         self.jobs.append(event)
         # add event node
-        self.graph.add_node(self.jobs[-1])
+        self.graph.add_node(event)
         # create graph edge if not the first job
         if len(self.jobs) > 1:
             self.graph.add_edge(self.jobs[-2], self.jobs[-1])
 
     def finished(self):
-        self.state = taskState.FINISHED
+        self.state = TaskState.FINISHED
         self.start_time = self.jobs[0].time
         self.finish_time = self.jobs[-1].time
         self.exec_time = self.finish_time - self.start_time
 
-class processBranch:
+
+class ProcessBranch:
+
     """
     Events must be added to the "branch" of their PID. The data is processed
     such that each PID runs down a single file branch that is then branched out
@@ -134,39 +145,51 @@ class processBranch:
     sleep event).
     """
 
-    def __init__(self, PID, head=None):
-        self.PID = PID
+    def __init__(self, pid, start):
+        self.PID = pid
         self.tasks = []
-        if not head == None:
-            self.tasks.append(head)
+        self.start = start
+        self.active = False
+        self.graph = nx.Graph()
 
     # At the process branch level the only significant difference is that a job
     # can signify the end of the current task by being a sched switch event with
     # prev_state = S
-    def add_job(self, event, graph, event_type=jobType.UNKNOWN):
+    def add_job(self, event, event_type=JobType.UNKNOWN):
         # first job/task
         if self.tasks == []:
-            self.tasks.append(taskNode())
+            self.tasks.append(TaskNode(event))
             self.tasks[-1].add_job(event)
+            self.active = True
             return
 
-        #if the state marks the last sched switch event as a sleep event
-        if event_type == jobType.SCHED_SWITCH_OUT and \
-                event.prev_state == threadState.INTERRUPTIBLE_SLEEP_S.value and \
+        # If a task is being switched into from sleeping
+        if event_type == JobType.SCHED_SWITCH_IN and self.active == False:
+            # create new task
+            self.tasks.append(TaskNode(event))
+
+            # create entry node for task
+            self.graph.add_node(event)
+            self.active = True
+
+            if len(self.tasks) >= 2:
+                self.graph.add_edge(self.tasks[-2], self.tasks[-1])
+
+            return
+        # if the state marks the last sched switch event as a sleep event
+        elif event_type == JobType.SCHED_SWITCH_OUT and \
+                event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value and \
                 len(self.tasks) >= 1:
-            #wrap up current task
+            # wrap up current task
             self.tasks[-1].add_job(event)
             self.tasks[-1].finished()
+            self.active = False
             # add task node to graph
             #  graph.add_node(graph.getIndex(), date=self.tasks[-1].graph)
-            graph.add_node(self.tasks[-1].graph)
-
-            #create new task
-            self.tasks.append(taskNode())
-            #return
+            self.graph.add_node(event)
             return
 
-        #all other job types
+        # all other job types just need to get added to the task
         self.tasks[-1].add_job(event)
 
 # Binder transactions are sometimes directed to the parent binder thread of a
@@ -175,30 +198,31 @@ class processBranch:
 # entry shows possible child thread PID that could appear in the corresponding
 # wake event. Allowing binder transactions to be matched to their corresponding
 # wake event.
-class pendingBinderTransaction:
+
+
+class PendingBinderTransaction:
 
     def __init__(self, event, PIDt):
         self.parent_PID = event.to_proc
         self.child_PIDs = PIDt.findChildBinderThreads(event.to_proc)
         self.event = event
 
-class processTree:
 
-    process_branches = []
-    pending_binder_transactions = []
+class ProcessTree:
 
     def __init__(self, PIDt):
         logging.basicConfig(filename="pytracer.log",
                 format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Process tree created")
-
+        self.process_branches = []
+        self.pending_binder_transactions = []
         self.PIDt = PIDt
         self.index = 0
-        self.graph = nx.Graph()
+        # self.graph = nx.Graph()
 
         for pid in self.PIDt.allPIDStrings:
-            self.process_branches.append(processBranch(int(pid), None))
+            self.process_branches.append(ProcessBranch(int(pid), None))
 
     def getIndex(self):
         self.index += 1
@@ -207,37 +231,35 @@ class processTree:
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs
-        if event.time == 538077908044:
-            print "wait here"
-        if isinstance(event, event_wakeup):
+        if isinstance(event, EventWakeup):
             return
 
         # Sched switch events are the key events to track task activity.
         # They show us which process was slept and which was woken. Showing the
         # previous task's state
-        elif isinstance(event, event_sched_switch):
+        elif isinstance(event, EventSchedSwitch):
             # task being switched out
             # if task of interest
             index = self.PIDt.getPIDStringIndex(event.PID)
             if index is not None and index != 0:
                 process_branch = self.process_branches[index]
-                process_branch.add_job(event, self.graph, event_type=jobType.SCHED_SWITCH_OUT)
+                process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT)
                 self.logger.debug("Sched switch in event added as job")
             # task being switched in
             index = self.PIDt.getPIDStringIndex(event.next_pid)
             if index is not None and index != 0:
                 process_branch = self.process_branches[index]
-                process_branch.add_job(event, self.graph, event_type=jobType.SCHED_SWITCH_IN)
+                process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
             return
 
         # Freq change events give the time at which a frequency change occured.
         # Can be later used to calculate workload/energy consumption of threads
         # in relation to the system configuration as they were executed.
-        elif isinstance(event, event_freq_change):
+        elif isinstance(event, EventFreqChange):
             return
 
         # Also used in the calculation of system load
-        elif isinstance(event, event_idle):
+        elif isinstance(event, EventIdle):
             return
 
         # Binder transactions show IPCs between tasks.
@@ -247,59 +269,59 @@ class processTree:
         # then the tread sends to the target task. As such binder transactions
         # are identified by if they send or recv from a binder thread then
         # handled accordingly
-        elif isinstance(event, event_binder_call):
-            # Sending to binder thread
-            if str(event.PID) in self.PIDt.allAppPIDStrings:
-                process_branch = \
-                    self.process_branches[self.PIDt.getPIDStringIndex(event.PID)]
-                # Push binder event on to pending list so that when the second
-                # half of the transaction is performed the events can be merged.
-                # The first half should give the event PID and time stamp
-                # The second half gives to_proc PID and recv_time timestamp
-                self.pending_binder_transactions.append(\
-                    pendingBinderTransaction(event,self.PIDt))
-                # create binder send job in client thread tree (current tree)
-                process_branch.add_job(event, self.graph, event_type=jobType.BINDER_SEND)
-                self.logger.debug("Binder event from: " + str(event.PID) + \
-                        " to " + str(event.to_proc))
-                print "Binder event from: " + str(event.PID) + \
-                        " to " + str(event.to_proc)
-
-            # From binder thread to target proc
-            elif str(event.to_proc) in self.PIDt.allAppPIDStrings:
-                process_branch = \
-                    self.process_branches[self.PIDt.getPIDStringIndex(event.to_proc)]
-                print "Binder transaction from binder thread " + str(event.PID)
-                # get event from binder transactions list and merge
-                if self.pending_binder_transactions != []:
-                    print "pending transactions"
-                    for x, transaction in \
-                            enumerate(self.pending_binder_transactions):
-                        # If the binder thread that is completing the transaction
-                        # is a child of a previous transactions parent binder PID
-                        if any(pid == event.PID for pid in transaction.child_PIDs) or \
-                                event.PID == transaction.parent_PID:
-                            # merge
-                            print "Updated to_proc " + \
-                                    str(transaction.event.to_proc)\
-                                    + " to " + str(event.to_proc)
-                            transaction.event.to_proc = event.to_proc
-                            transaction.event.recv_time = event.time
-                        # Add job to the branch of the child PID (this branch)
-                        process_branch.add_job(transaction.event, self.graph,
-                                event_type=jobType.BINDER_RECV)
-                        del self.pending_binder_transactions[x]
-                        # Binder edge transaction creation
-                        self.graph.add_edge(
-                            # original process branch from transaction PID
-                            self.process_branches[\
-                                self.PIDt.getPIDStringIndex(transaction.event.PID)].tasks[-1].graph,
-                            # target process branch from current event
-                            self.process_branches[\
-                                self.PIDt.getPIDStringIndex(transaction.event.to_proc)].tasks[-1].graph)
-                        break
-            else:
-                print "Unhandled binder"
+        elif isinstance(event, EventBinderCall):
+            # # Sending to binder thread
+            # if str(event.PID) in self.PIDt.allAppPIDStrings:
+            #     process_branch = \
+            #         self.process_branches[self.PIDt.getPIDStringIndex(event.PID)]
+            #     # Push binder event on to pending list so that when the second
+            #     # half of the transaction is performed the events can be merged.
+            #     # The first half should give the event PID and time stamp
+            #     # The second half gives to_proc PID and recv_time timestamp
+            #     self.pending_binder_transactions.append(\
+            #         pendingBinderTransaction(event,self.PIDt))
+            #     # create binder send job in client thread tree (current tree)
+            #     process_branch.add_job(event, self.graph, event_type=jobType.BINDER_SEND)
+            #     self.logger.debug("Binder event from: " + str(event.PID) + \
+            #             " to " + str(event.to_proc))
+            #     print "Binder event from: " + str(event.PID) + \
+            #             " to " + str(event.to_proc)
+            #
+            # # From binder thread to target proc
+            # elif str(event.to_proc) in self.PIDt.allAppPIDStrings:
+            #     process_branch = \
+            #         self.process_branches[self.PIDt.getPIDStringIndex(event.to_proc)]
+            #     print "Binder transaction from binder thread " + str(event.PID)
+            #     # get event from binder transactions list and merge
+            #     if self.pending_binder_transactions != []:
+            #         print "pending transactions"
+            #         for x, transaction in \
+            #                 enumerate(self.pending_binder_transactions):
+            #             # If the binder thread that is completing the transaction
+            #             # is a child of a previous transactions parent binder PID
+            #             if any(pid == event.PID for pid in transaction.child_PIDs) or \
+            #                     event.PID == transaction.parent_PID:
+            #                 # merge
+            #                 print "Updated to_proc " + \
+            #                         str(transaction.event.to_proc)\
+            #                         + " to " + str(event.to_proc)
+            #                 transaction.event.to_proc = event.to_proc
+            #                 transaction.event.recv_time = event.time
+            #             # Add job to the branch of the child PID (this branch)
+            #             process_branch.add_job(transaction.event, self.graph,
+            #                     event_type=jobType.BINDER_RECV)
+            #             del self.pending_binder_transactions[x]
+            #             # Binder edge transaction creation
+            #             self.graph.add_edge(
+            #                 # original process branch from transaction PID
+            #                 self.process_branches[\
+            #                     self.PIDt.getPIDStringIndex(transaction.event.PID)].tasks[-1].graph,
+            #                 # target process branch from current event
+            #                 self.process_branches[\
+            #                     self.PIDt.getPIDStringIndex(transaction.event.to_proc)].tasks[-1].graph)
+            #             break
+            # else:
+            #     print "Unhandled binder"
 
             return
 

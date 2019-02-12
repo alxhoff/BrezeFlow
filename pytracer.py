@@ -107,20 +107,19 @@ class tracer:
                     self.logger.debug("Event: " + events[f] + " is invalid")
         else:
             if events in avail_events:
-                self.adb_device.appendToFile(self.ftrace_path + "set_event",
-                    event)
+                self.adb_device.appendToFile(self.ftrace_path + "set_event", events)
                 self.logger.debug("Appended valid event: " + events)
             else:
                 self.logger.debug("Event: " + events + " is invalid")
 
-    def setEventFilter(self, event, filter_exoression):
+    def setEventFilter(self, event, filter_expression):
         event_dir = self.adb_device.runCommand(
                 "find " + self.ftrace_path + "/events -name " + event)
         if event_dir is None:
             return
 
         self.adb_device.appendToFile(self.ftrace_path + event_dir + "/filter",
-                filter_expressions)
+                filter_expression)
         self.logger.debug("Adding filter: '" + filter_expression
                 + "' to event '" + event)
 
