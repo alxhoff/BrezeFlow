@@ -204,6 +204,7 @@ class ProcessBranch:
             # set task to running
             self.active = True
 
+            # TODO should this ever be implemented?
             # there should always be at least 2 tasks if this is called
             # connect two sequential tasks with an edge
             # if len(self.tasks) >= 2:

@@ -278,6 +278,7 @@ class traceProcessor:
         process_tree = ProcessTree(PIDt)
 
         for x, event in enumerate(processed_events):
+            # for testing
             if event.time >= 3293589709 and event.time <= 3293590440:
                 process_tree.handle_event(event)
 
