@@ -71,7 +71,7 @@ class EventIdle(Event):
 
 class EventBinderCall(Event):
 
-    def __init__(self, PID, time, trans_type, to_proc, trans_ID, flags, code):
+    def __init__(self, PID, time, trans_type, dest_proc, trans_ID, flags, code):
         Event.__init__(self, PID, time, 99)
         if trans_type == 0:
             if flags & 0b1:
@@ -82,7 +82,7 @@ class EventBinderCall(Event):
             self.trans_type = BinderType.REPLY
         else:
             self.trans_type = BinderType.UNKNOWN
-        self.to_proc = to_proc
+        self.dest_proc = dest_proc
         self.trans_ID = trans_ID
         self.flags = flags
         self.code = code
@@ -217,7 +217,6 @@ class ProcessBranch:
             self.graph.add_edge(self.tasks[-1].events[-1], self.tasks[-1])
             # add connecting nodes in task
             self.graph.add_edges_from(self.tasks[-1].graph.edges)
-            #self.graph.edge_subgraph(self.tasks[-1].graph.edges)
 
             return
 
@@ -235,8 +234,8 @@ class ProcessBranch:
 class PendingBinderTransaction:
 
     def __init__(self, event, PIDt):
-        self.parent_PID = event.to_proc
-        self.child_PIDs = PIDt.findChildBinderThreads(event.to_proc)
+        self.parent_PID = event.dest_proc
+        self.child_PIDs = PIDt.findChildBinderThreads(event.dest_proc)
         self.event = event
 
 
@@ -301,58 +300,61 @@ class ProcessTree:
         # are identified by if they send or recv from a binder thread then
         # handled accordingly
         elif isinstance(event, EventBinderCall):
-            # # Sending to binder thread
-            # if str(event.PID) in self.PIDt.allAppPIDStrings:
-            #     process_branch = \
-            #         self.process_branches[self.PIDt.getPIDStringIndex(event.PID)]
-            #     # Push binder event on to pending list so that when the second
-            #     # half of the transaction is performed the events can be merged.
-            #     # The first half should give the event PID and time stamp
-            #     # The second half gives to_proc PID and recv_time timestamp
-            #     self.pending_binder_transactions.append(\
-            #         pendingBinderTransaction(event,self.PIDt))
-            #     # create binder send job in client thread tree (current tree)
-            #     process_branch.add_job(event, self.graph, event_type=jobType.BINDER_SEND)
-            #     self.logger.debug("Binder event from: " + str(event.PID) + \
-            #             " to " + str(event.to_proc))
-            #     print "Binder event from: " + str(event.PID) + \
-            #             " to " + str(event.to_proc)
-            #
-            # # From binder thread to target proc
-            # elif str(event.to_proc) in self.PIDt.allAppPIDStrings:
-            #     process_branch = \
-            #         self.process_branches[self.PIDt.getPIDStringIndex(event.to_proc)]
-            #     print "Binder transaction from binder thread " + str(event.PID)
-            #     # get event from binder transactions list and merge
-            #     if self.pending_binder_transactions != []:
-            #         print "pending transactions"
-            #         for x, transaction in \
-            #                 enumerate(self.pending_binder_transactions):
-            #             # If the binder thread that is completing the transaction
-            #             # is a child of a previous transactions parent binder PID
-            #             if any(pid == event.PID for pid in transaction.child_PIDs) or \
-            #                     event.PID == transaction.parent_PID:
-            #                 # merge
-            #                 print "Updated to_proc " + \
-            #                         str(transaction.event.to_proc)\
-            #                         + " to " + str(event.to_proc)
-            #                 transaction.event.to_proc = event.to_proc
-            #                 transaction.event.recv_time = event.time
-            #             # Add job to the branch of the child PID (this branch)
-            #             process_branch.add_job(transaction.event, self.graph,
-            #                     event_type=jobType.BINDER_RECV)
-            #             del self.pending_binder_transactions[x]
-            #             # Binder edge transaction creation
-            #             self.graph.add_edge(
-            #                 # original process branch from transaction PID
-            #                 self.process_branches[\
-            #                     self.PIDt.getPIDStringIndex(transaction.event.PID)].tasks[-1].graph,
-            #                 # target process branch from current event
-            #                 self.process_branches[\
-            #                     self.PIDt.getPIDStringIndex(transaction.event.to_proc)].tasks[-1].graph)
-            #             break
-            # else:
-            #     print "Unhandled binder"
+
+            # FROM CLIENT PROC TO BINDER THREAD
+            if str(event.PID) in self.PIDt.allAppPIDStrings:
+                process_branch = \
+                    self.process_branches[self.PIDt.getPIDStringIndex(event.PID)]
+
+                # Push binder event on to pending list so that when the second
+                # half of the transaction is performed the events can be merged.
+                # The first half should give the event PID and time stamp
+                # The second half gives to_proc PID and recv_time timestamp
+                self.pending_binder_transactions.append(\
+                    PendingBinderTransaction(event, self.PIDt))
+
+                # create binder send job in client thread tree (current tree)
+                #process_branch.add_job(event, event_type=JobType.BINDER_SEND)
+
+                self.logger.debug("Binder event from: " + str(event.PID) + \
+                        " to " + str(event.dest_proc))
+                print "Binder event from: " + str(event.PID) + \
+                        " to " + str(event.dest_proc)
+
+            # FROM BINDER THREAD TO SERVER PROC
+            elif str(event.dest_proc) in self.PIDt.allPIDStrings:
+                process_branch = \
+                    self.process_branches[self.PIDt.getPIDStringIndex(event.dest_proc)]
+
+                # get event from binder transactions list and merge
+                if not self.pending_binder_transactions:
+                    for x, transaction in \
+                            enumerate(self.pending_binder_transactions):
+
+                        # If the binder thread that is completing the transaction
+                        # is a child of a previous transactions parent binder PID
+                        if any(pid == event.PID for pid in transaction.child_PIDs) or \
+                                event.PID == transaction.parent_PID:
+
+                            # merge
+                            transaction.event.dest_proc = event.dest_proc
+                            transaction.event.recv_time = event.time
+
+                        # Add job to the branch of the child PID (this branch)
+                        process_branch.add_job(transaction.event, event_type=JobType.BINDER_RECV)
+                        del self.pending_binder_transactions[x]
+
+                        # Binder edge transaction creation
+                        self.graph.add_edge(
+                            # original process branch from transaction PID
+                            self.process_branches[\
+                                self.PIDt.getPIDStringIndex(transaction.event.PID)].tasks[-1],
+                            # target process branch from current event
+                            self.process_branches[\
+                                self.PIDt.getPIDStringIndex(transaction.event.dest_proc)].tasks[-1])
+                        break
+            else:
+                print "Unhandled binder"
 
             return
 

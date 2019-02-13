@@ -32,7 +32,7 @@ class traceProcessor:
         f.close()
 
     def keepPIDLine(self, line, PIDt):
-        pids = PIDt.allAppPIDStrings[1:]
+        pids = PIDt.allPIDStrings[1:]
         if any(re.search("-(" + str(pid) + ") +|=(" + str(pid) + ") ", line) for pid in pids):
                 return True
         return False
@@ -195,7 +195,7 @@ class traceProcessor:
                 output_worksheet.write_number(start_row,
                         PID_col, event.PID)
                 output_worksheet.write_number(start_row,
-                        next_pid_col, event.to_proc)
+                                              next_pid_col, event.dest_proc)
                 output_worksheet.write_number(start_row,
                         binder_type_col, event.trans_type.value)
                 output_worksheet.write_number(start_row,
@@ -242,7 +242,8 @@ class traceProcessor:
         #Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:300]:
+        #for line in raw_lines[11:300]:
+        for line in raw_lines[180:216]:
             if not self.keepPIDLine(line, PIDt):
                 continue
 
@@ -277,9 +278,12 @@ class traceProcessor:
         process_tree = ProcessTree(PIDt)
 
         for x, event in enumerate(processed_events):
-            if isinstance(event, EventSchedSwitch):
-                if event.PID == 16674 or event.next_pid == 16674:
+            if event.time > 604698845743 and event.time < 604698847157:
+                if isinstance(event, EventBinderCall):
                     process_tree.handle_event(event)
+                elif isinstance(event, EventSchedSwitch):
+                    if event.PID == 16674 or event.next_pid == 16674:
+                        process_tree.handle_event(event)
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()
