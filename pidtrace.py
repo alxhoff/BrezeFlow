@@ -23,8 +23,8 @@ class PIDtracer:
         self.allAppPIDStrings = self.getAppPIDStrings()
         self.allSystemPIDStrings = self.getSystemPIDStrings()
         self.allBinderPIDStrings = self.getBinderPIDStrings()
-        self.allPIDStrings = self.allAppPIDStrings + self.allSystemPIDStrings
-        self.allPID = self.allAppPID + self.allSystemPID
+        self.allPIDStrings = self.allAppPIDStrings + self.allSystemPIDStrings + self.allBinderPIDStrings
+        self.allPID = self.allAppPID + self.allSystemPID + self.allBinderPID
 
     def __del__(self):
         self.logger.debug("PID tracer closed")

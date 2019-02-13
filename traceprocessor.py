@@ -243,7 +243,7 @@ class traceProcessor:
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
         #for line in raw_lines[11:300]:
-        for line in raw_lines[180:216]:
+        for line in raw_lines[234:280]:
             if not self.keepPIDLine(line, PIDt):
                 continue
 
@@ -278,12 +278,8 @@ class traceProcessor:
         process_tree = ProcessTree(PIDt)
 
         for x, event in enumerate(processed_events):
-            if event.time > 604698845743 and event.time < 604698847157:
-                if isinstance(event, EventBinderCall):
-                    process_tree.handle_event(event)
-                elif isinstance(event, EventSchedSwitch):
-                    if event.PID == 16674 or event.next_pid == 16674:
-                        process_tree.handle_event(event)
+            if event.time >= 3293589709 and event.time <= 3293590440:
+                process_tree.handle_event(event)
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()

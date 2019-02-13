@@ -137,6 +137,18 @@ class TaskNode:
         self.exec_time = self.finish_time - self.start_time
 
 
+"""
+A binder node represents a transaction between two thread. They contain only one
+job, the job that the thread issues to the target process
+"""
+
+
+class BinderNode(TaskNode):
+
+    def __init__(self):
+        TaskNode.__init__(self)
+
+
 class ProcessBranch:
 
     """
@@ -167,9 +179,10 @@ class ProcessBranch:
             # task could be finishing
             if event_type == JobType.SCHED_SWITCH_OUT and \
                     event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
+
                     self.active = False
                     self.tasks[-1].finished()
-                    self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_OUT)
+                    self.graph.add_node(self.tasks[-1], event=event, type=event_type)
                     return
 
             self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_IN)
@@ -193,8 +206,8 @@ class ProcessBranch:
 
             # there should always be at least 2 tasks if this is called
             # connect two sequential tasks with an edge
-            if len(self.tasks) >= 2:
-                self.graph.add_edge(self.tasks[-2], self.tasks[-1])
+            # if len(self.tasks) >= 2:
+            #     self.graph.add_edge(self.tasks[-2], self.tasks[-1])
 
             return
 
@@ -220,6 +233,13 @@ class ProcessBranch:
 
             return
 
+        # binder events always single tasks, therefore adding them
+        # must create and finish a task
+        elif event_type == JobType.BINDER_RECV:
+            self.tasks[-1].add_job(event)
+            self.tasks.append(BinderNode())
+            return
+
         # all other job types just need to get added to the task
         self.tasks[-1].add_job(event)
 
@@ -236,7 +256,17 @@ class PendingBinderTransaction:
     def __init__(self, event, PIDt):
         self.parent_PID = event.dest_proc
         self.child_PIDs = PIDt.findChildBinderThreads(event.dest_proc)
-        self.event = event
+        self.send_event = event
+
+
+class PendingBinderTask:
+
+    def __init__(self, from_event, dest_event):
+        self.from_pid = from_event.PID
+        self.dest_pid = dest_event.dest_proc
+        self.binder_thread = dest_event.PID
+        self.time = from_event.time
+        self.duration = dest_event.time - from_event.time
 
 
 class ProcessTree:
@@ -248,6 +278,7 @@ class ProcessTree:
         self.logger.debug("Process tree created")
         self.process_branches = []
         self.pending_binder_transactions = []
+        self.pending_binder_tasks = []
         self.PIDt = PIDt
         self.index = 0
         self.graph = nx.DiGraph()
@@ -281,6 +312,35 @@ class ProcessTree:
             if index is not None and index != 0:
                 process_branch = self.process_branches[index]
                 process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
+
+                # if switched in because of binder
+                for x, task in \
+                        enumerate(self.pending_binder_tasks):
+                    if event.next_pid == task.dest_pid:
+                        # Binder edge transaction creation between
+                        # sending proc: transaction.event.PID
+                        # and target proc: event.dest_proc
+                        # problem is target task doesn't exist yet and the transaction
+                        # must be put off as pending until it is created
+
+                        # edge from prev task to binder thread
+                        self.graph.add_edge(
+                            # original process branch that started transaction
+                            self.process_branches[ \
+                                self.PIDt.getPIDStringIndex(task.from_pid)].tasks[-1],
+                            # this branch as it is being woken
+                            self.process_branches[ \
+                                self.PIDt.getPIDStringIndex(task.binder_thread)].tasks[-1])
+
+                        # edge from binder thread to next task
+                        self.graph.add_edge(
+                            # original process branch that started transaction
+                            self.process_branches[ \
+                                self.PIDt.getPIDStringIndex(task.binder_thread)].tasks[-1],
+                            # this branch as it is being woken
+                            self.process_branches[ \
+                                self.PIDt.getPIDStringIndex(task.dest_pid)].tasks[-1])
+
             return
 
         # Freq change events give the time at which a frequency change occured.
@@ -303,9 +363,10 @@ class ProcessTree:
         elif isinstance(event, EventBinderCall):
 
             # FROM CLIENT PROC TO BINDER THREAD
-            if str(event.PID) in self.PIDt.allPIDStrings:
+            if str(event.PID) in self.PIDt.allAppPIDStrings or\
+                    str(event.PID) in self.PIDt.allSystemPIDStrings:
                 process_branch = \
-                    self.process_branches[self.PIDt.getPIDStringIndex(event.PID)]
+                   self.process_branches[self.PIDt.getPIDStringIndex(event.PID)]
 
                 # Push binder event on to pending list so that when the second
                 # half of the transaction is performed the events can be merged.
@@ -315,18 +376,18 @@ class ProcessTree:
                     PendingBinderTransaction(event, self.PIDt))
 
                 # create binder send job in client thread tree (current tree)
-                #process_branch.add_job(event, event_type=JobType.BINDER_SEND)
+                process_branch.add_job(event, event_type=JobType.BINDER_SEND)
 
                 self.logger.debug("Binder event from: " + str(event.PID) + \
                         " to " + str(event.dest_proc))
 
             # FROM BINDER THREAD TO SERVER PROC
             elif str(event.PID) in self.PIDt.allBinderPIDStrings:
-                process_branch = \
-                    self.process_branches[self.PIDt.getPIDStringIndex(event.dest_proc)]
 
                 # get event from binder transactions list and merge
                 if self.pending_binder_transactions:
+                    process_branch = \
+                        self.process_branches[self.PIDt.getPIDStringIndex(event.PID)]
                     for x, transaction in \
                             enumerate(self.pending_binder_transactions):
 
@@ -335,25 +396,16 @@ class ProcessTree:
                         if any(pid == event.PID for pid in transaction.child_PIDs) or \
                                 event.PID == transaction.parent_PID:
 
-                            # merge
-                            transaction.event.dest_proc = event.dest_proc
-                            transaction.event.recv_time = event.time
+                            # Add job to the branch of the Binder thread
+                            process_branch.add_job(event, event_type=JobType.BINDER_RECV)
 
-                        # Add job to the branch of the child PID (this branch)
-                        # process_branch.add_job(transaction.event, event_type=JobType.BINDER_RECV)
+                            # add pending task
+                            self.pending_binder_tasks.append\
+                                (PendingBinderTask(transaction.send_event, event))
 
-                        # Binder edge transaction creation
-                        self.graph.add_edge(
-                            # original process branch from transaction PID
-                            self.process_branches[\
-                                self.PIDt.getPIDStringIndex(transaction.event.PID)].tasks[-1],
-                            # target process branch from current event
-                            self.process_branches[\
-                                self.PIDt.getPIDStringIndex(transaction.event.dest_proc)].tasks[-1])
-
-                        # remove completed transaction
-                        del self.pending_binder_transactions[x]
-                        return
+                            # remove completed transaction
+                            del self.pending_binder_transactions[x]
+                            return
             else:
                 print "Unhandled binder"
 
