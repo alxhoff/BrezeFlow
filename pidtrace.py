@@ -18,9 +18,11 @@ class PIDtracer:
         self.allAppPID = []
         self.allAppPID.append(PID(0,"idle_proc", "idle_thread"))#idle process
         self.allSystemPID = []
+        self.allBinderPID = []
         self.findAllPID()
         self.allAppPIDStrings = self.getAppPIDStrings()
         self.allSystemPIDStrings = self.getSystemPIDStrings()
+        self.allBinderPIDStrings = self.getBinderPIDStrings()
         self.allPIDStrings = self.allAppPIDStrings + self.allSystemPIDStrings
         self.allPID = self.allAppPID + self.allSystemPID
 
@@ -36,6 +38,12 @@ class PIDtracer:
     def getSystemPIDStrings(self):
         strings = []
         for x, pid in enumerate(self.allSystemPID):
+            strings.append(str(pid.pid))
+        return strings
+
+    def getBinderPIDStrings(self):
+        strings = []
+        for x, pid in enumerate(self.allBinderPID):
             strings.append(str(pid.pid))
         return strings
 
@@ -60,10 +68,13 @@ class PIDtracer:
         res = self.adb_device.runCommand("busybox ps -T | grep /system/bin")
         res = res.splitlines()
         for line in res:
+            #skip binder threads
+            if re.search(".*{(Binder):.+}", line):
+                continue
             if line.isspace():
                 continue
             # remove grep process
-            if not re.match("^((?!grep).)*$", line):
+            if not re.search("^((?!grep).)*$", line):
                 continue
             # remove grep process
             pid = int(re.findall("^ *(\d+)", line)[0])
@@ -72,6 +83,29 @@ class PIDtracer:
             if not tname:
                 tname = pname
             self.allSystemPID.append(PID(pid, pname, tname))
+            self.logger.debug("Found system thread " + tname[0] + " with PID: " \
+                    + str(pid))
+
+    def findBinderPIDs(self):
+        # Get all processes except the system_server itself
+        res = self.adb_device.runCommand("busybox ps -T | grep {Binder:")
+        res = res.splitlines()
+        for line in res:
+            #skip non binder threads
+            if not re.search(".*{(Binder):.+}", line):
+                continue
+            if line.isspace():
+                continue
+            # remove grep process
+            if not re.search("^((?!grep).)*$", line):
+                continue
+            # remove grep process
+            pid = int(re.findall("^ *(\d+)", line)[0])
+            pname = re.findall(".* +(.*)$", line)[0]
+            tname = re.findall("\{(.*)\}", line)
+            if not tname:
+                tname = pname
+            self.allBinderPID.append(PID(pid, pname, tname))
             self.logger.debug("Found system thread " + tname[0] + " with PID: " \
                     + str(pid))
 
@@ -108,3 +142,4 @@ class PIDtracer:
         self.findMainPID
         self.findAllAppPID()
         self.findSystemServerPIDs()
+        self.findBinderPIDs()
