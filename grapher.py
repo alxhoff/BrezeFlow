@@ -25,9 +25,7 @@ class Grapher:
             elif "BinderNode" in name:
                 node.attr['fillcolor'] = 'darkolivegreen3'
 
-
-
-        A.draw("/home/alxhoff/Downloads/test.png", format='png', prog='dot')
+        A.draw("/home/alxhoff/Downloads/test.xdot", format='xdot', prog='dot')
 
 
 
