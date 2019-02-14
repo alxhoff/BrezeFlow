@@ -166,12 +166,13 @@ class ProcessBranch:
     sleep event).
     """
 
-    def __init__(self, pid, start, graph):
+    def __init__(self, pid, start, graph, PIDt):
         self.PID = pid
         self.tasks = []
         self.start = start
         self.active = False
         self.graph = graph
+        self.PIDt = PIDt
 
     # At the process branch level the only significant difference is that a job
     # can signify the end of the current task by being a sched switch event with
@@ -230,7 +231,8 @@ class ProcessBranch:
         # If the state marks the last sched switch event as a sleep event
         # Current task FINISHING
         elif event_type == JobType.SCHED_SWITCH_OUT and \
-                event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
+                event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value and \
+                str(event.PID) not in self.PIDt.allBinderPIDStrings:
 
             # wrap up current task
             self.tasks[-1].add_job(event)
@@ -311,7 +313,7 @@ class ProcessTree:
         self.graph = nx.DiGraph()
 
         for pid in self.PIDt.allPIDStrings:
-            self.process_branches.append(ProcessBranch(int(pid), None, self.graph))
+            self.process_branches.append(ProcessBranch(int(pid), None, self.graph, self.PIDt))
 
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and
