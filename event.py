@@ -125,7 +125,7 @@ class TaskNode:
 
         # add event node to task subgraph
         self.graph.add_node(event, label= str(event.time) + " pid:" + str(event.PID) + \
-                                "\n" + str(event))
+                                "\n" + str(event), fillcolor='blue')
 
         # create graph edge if not the first job
         if len(self.events) > 1:
@@ -189,7 +189,7 @@ class ProcessBranch:
                     #             "\n" + str(self.tasks[-1]))
                     self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
                                         + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
-                                        str(event.PID) +  "\n" + str(self.tasks[-1]))
+                                        str(event.PID) +  "\n" + str(self.tasks[-1]), fillcolor='bisque1')
                     return
 
             # self.graph.add_node(self.tasks[-1], label= str(event.time)[:4] + "." + str(event.time)[4:] \
@@ -231,10 +231,11 @@ class ProcessBranch:
             self.tasks[-1].finished()
             self.active = False
 
+            #TODO this makes both tasks and nodes the same colour
             # add task node to graph as task is finished
             self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                                      + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
-                                      str(event.PID) + "\n" + str(self.tasks[-1]))
+                              + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
+                              str(event.PID) + "\n" + str(self.tasks[-1]), fillcolor='darkolivegreen3')
 
             # link task node to beginning of sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0])
@@ -251,6 +252,12 @@ class ProcessBranch:
         elif event_type == JobType.BINDER_RECV:
             self.tasks[-1].add_job(event)
             self.tasks.append(BinderNode())
+            # create binder task node TODO check this works
+            self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
+                                  + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
+                                  str(event.PID) + "\n" + "dest PID: " + str(event.dest_proc) + "\n" + \
+                                                  str(self.tasks[-1]), fillcolor='blue')
+
             return
 
         # all other job types just need to get added to the task

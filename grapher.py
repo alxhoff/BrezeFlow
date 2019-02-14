@@ -25,12 +25,12 @@ class Grapher:
             node.attr['style'] = 'filled'
             name = node.get_name()
 
-            if "TaskNode" in name:
-                node.attr['fillcolor'] = 'brown1'
-            elif "EventSchedSwitch" in name:
-                node.attr['fillcolor'] = 'bisque1'
-            elif "BinderNode" in name:
-                node.attr['fillcolor'] = 'darkolivegreen3'
+            # if "TaskNode" in name:
+            #     node.attr['fillcolor'] = 'brown1'
+            # if "EventSchedSwitch" in name:
+            #     node.attr['fillcolor'] = 'bisque1'
+            # elif "BinderNode" in name:
+            #     node.attr['fillcolor'] = 'darkolivegreen3'
 
         A.draw("/home/alxhoff/Downloads/test.xdot", format='xdot', prog='dot')
 
