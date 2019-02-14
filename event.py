@@ -125,7 +125,7 @@ class TaskNode:
 
         # add event node to task subgraph
         self.graph.add_node(event, label= str(event.time) + " pid:" + str(event.PID) + \
-                                " " + str(event))
+                                "\n" + str(event))
 
         # create graph edge if not the first job
         if len(self.events) > 1:
@@ -183,12 +183,17 @@ class ProcessBranch:
 
                     self.active = False
                     self.tasks[-1].finished()
-                    self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
-                                " " + str(self.tasks[-1]))
+
+                    # add task to graph as task was created and finished in one event
+                    # self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
+                    #             "\n" + str(self.tasks[-1]))
+                    self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
+                                        + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
+                                        str(event.PID) +  "\n" + str(self.tasks[-1]))
                     return
 
-            self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
-                                " " + str(self.tasks[-1]))
+            # self.graph.add_node(self.tasks[-1], label= str(event.time)[:4] + "." + str(event.time)[4:] \
+            #                              + " pid:" + str(event.PID) + "\n" + str(self.tasks[-1]))
             self.active = True
 
             return
@@ -202,8 +207,8 @@ class ProcessBranch:
             # add current event
             self.tasks[-1].add_job(event)
             # create entry node for task
-            self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
-                                " " + str(self.tasks[-1]))
+            # self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
+            #                     "\n" + str(self.tasks[-1]))
 
             # set task to running
             self.active = True
@@ -226,16 +231,18 @@ class ProcessBranch:
             self.tasks[-1].finished()
             self.active = False
 
-            # add task node to graph
-            self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
-                                " " + str(self.tasks[-1]))
+            # add task node to graph as task is finished
+            self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
+                                      + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
+                                      str(event.PID) + "\n" + str(self.tasks[-1]))
 
             # link task node to beginning of sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0])
             # link the end of the subgraph to the task node
             self.graph.add_edge(self.tasks[-1].events[-1], self.tasks[-1])
             # add connecting nodes in task
-            self.graph.add_edges_from(self.tasks[-1].graph.edges)
+            # self.graph.add_edges_from(self.tasks[-1].graph.edges)
+            self.graph.add_nodes_from(self.tasks[-1].graph, labels=True)
 
             return
 
