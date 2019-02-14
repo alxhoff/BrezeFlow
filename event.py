@@ -110,12 +110,12 @@ As such task processing must have a lead of one job.
 
 class TaskNode:
 
-    def __init__(self):
+    def __init__(self, graph):
         self.events = []
         self.start_time = 0
         self.finish_time = 0
         self.exec_time = 0
-        self.graph = nx.DiGraph()
+        self.graph = graph
         self.state = TaskState.EXECUTING
 
     def add_job(self, event):
@@ -124,8 +124,14 @@ class TaskNode:
         self.events.append(event)
 
         # add event node to task subgraph
-        self.graph.add_node(event, label= str(event.time) + " pid:" + str(event.PID) + \
-                                "\n" + str(event), fillcolor='blue')
+        if isinstance(event, EventSchedSwitch):
+            self.graph.add_node(event, label= str(event.time)[:4] + "." + str(event.time)[4:] + \
+                                          "\npid: " + str(event.PID) + " next pid: " + str(event.next_pid) +\
+                                              "\n" + str(event), fillcolor='bisque1')
+        elif isinstance(event, EventBinderCall):
+            self.graph.add_node(event, label= str(event.time)[:4] + "." + str(event.time)[4:] + \
+                                          "\npid: " + str(event.PID) + " dest pid: " + str(event.dest_proc) +\
+                                              "\n" + str(event), fillcolor='aquamarine1')
 
         # create graph edge if not the first job
         if len(self.events) > 1:
@@ -146,8 +152,8 @@ job, the job that the thread issues to the target process
 
 class BinderNode(TaskNode):
 
-    def __init__(self):
-        TaskNode.__init__(self)
+    def __init__(self, graph):
+        TaskNode.__init__(self, graph)
 
 
 class ProcessBranch:
@@ -174,7 +180,7 @@ class ProcessBranch:
         # first job/task for PID branch
         if not self.tasks:
 
-            self.tasks.append(TaskNode())
+            self.tasks.append(TaskNode(self.graph))
             self.tasks[-1].add_job(event)
 
             # task could be finishing
@@ -188,8 +194,8 @@ class ProcessBranch:
                     # self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
                     #             "\n" + str(self.tasks[-1]))
                     self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                                        + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
-                                        str(event.PID) +  "\n" + str(self.tasks[-1]), fillcolor='bisque1')
+                                        + "." + str(self.tasks[-1].start_time)[4:] + "\npid:" + \
+                                        str(event.next_pid) +  "\n" + str(self.tasks[-1]), fillcolor='bisque1')
                     return
 
             # self.graph.add_node(self.tasks[-1], label= str(event.time)[:4] + "." + str(event.time)[4:] \
@@ -203,7 +209,7 @@ class ProcessBranch:
         if event_type == JobType.SCHED_SWITCH_IN and self.active == False:
 
             # create new task
-            self.tasks.append(TaskNode())
+            self.tasks.append(TaskNode(self.graph))
             # add current event
             self.tasks[-1].add_job(event)
             # create entry node for task
@@ -234,7 +240,7 @@ class ProcessBranch:
             #TODO this makes both tasks and nodes the same colour
             # add task node to graph as task is finished
             self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                              + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
+                              + "." + str(self.tasks[-1].start_time)[4:] + "\npid: " + \
                               str(event.PID) + "\n" + str(self.tasks[-1]), fillcolor='darkolivegreen3')
 
             # link task node to beginning of sub-graph
@@ -243,20 +249,21 @@ class ProcessBranch:
             self.graph.add_edge(self.tasks[-1].events[-1], self.tasks[-1])
             # add connecting nodes in task
             # self.graph.add_edges_from(self.tasks[-1].graph.edges)
-            self.graph.add_nodes_from(self.tasks[-1].graph, labels=True)
+            # self.graph.add_nodes_from(self.tasks[-1].graph, labels=True)
 
             return
 
         # binder events always single tasks, therefore adding them
         # must create and finish a task
         elif event_type == JobType.BINDER_RECV:
+            self.tasks.append(BinderNode(self.graph))
             self.tasks[-1].add_job(event)
-            self.tasks.append(BinderNode())
+            self.tasks[-1].finished()
             # create binder task node TODO check this works
             self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                                  + "." + str(self.tasks[-1].start_time)[4:] + " pid:" + \
+                                  + "." + str(self.tasks[-1].start_time)[4:] + "\npid: " + \
                                   str(event.PID) + "\n" + "dest PID: " + str(event.dest_proc) + "\n" + \
-                                                  str(self.tasks[-1]), fillcolor='blue')
+                                                  str(self.tasks[-1]), fillcolor='coral')
 
             return
 
@@ -306,10 +313,6 @@ class ProcessTree:
         for pid in self.PIDt.allPIDStrings:
             self.process_branches.append(ProcessBranch(int(pid), None, self.graph))
 
-    def getIndex(self):
-        self.index += 1
-        return self.index - 1
-
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs
@@ -320,6 +323,7 @@ class ProcessTree:
         # They show us which process was slept and which was woken. Showing the
         # previous task's state
         elif isinstance(event, EventSchedSwitch):
+
             # task being switched out
             # if task of interest
             index = self.PIDt.getPIDStringIndex(event.PID)
@@ -327,11 +331,11 @@ class ProcessTree:
                 process_branch = self.process_branches[index]
                 process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT)
                 self.logger.debug("Sched switch in event added as job")
+
             # task being switched in
             index = self.PIDt.getPIDStringIndex(event.next_pid)
             if index is not None and index != 0:
                 process_branch = self.process_branches[index]
-                process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
 
                 # if switched in because of binder
                 for x, task in \
@@ -343,6 +347,10 @@ class ProcessTree:
                         # problem is target task doesn't exist yet and the transaction
                         # must be put off as pending until it is created
 
+                        # TODO here add binder event to binder branch
+                        binder_branch = self.process_branches[ \
+                                self.PIDt.getPIDStringIndex(task.binder_thread)]
+
                         # edge from prev task to binder thread
                         self.graph.add_edge(
                             # original process branch that started transaction
@@ -352,6 +360,9 @@ class ProcessTree:
                             self.process_branches[ \
                                 self.PIDt.getPIDStringIndex(task.binder_thread)].tasks[-1])
 
+                        #
+                        process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
+
                         # edge from binder thread to next task
                         self.graph.add_edge(
                             # original process branch that started transaction
@@ -360,6 +371,13 @@ class ProcessTree:
                             # this branch as it is being woken
                             self.process_branches[ \
                                 self.PIDt.getPIDStringIndex(task.dest_pid)].tasks[-1])
+
+                        #remove binder task that is now complete
+                        del self.pending_binder_tasks[x]
+                        return
+
+                #TODO check this
+                process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
 
             return
 

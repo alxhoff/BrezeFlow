@@ -279,8 +279,11 @@ class traceProcessor:
 
         for x, event in enumerate(processed_events):
             # for testing
-            # if event.time >= 3293589709 and event.time <= 3293590440:
-            process_tree.handle_event(event)
+            if event.time >= 3293569606 and event.time <= 3293577453:
+                if event.time == 3293575859:
+                    print "stop here"
+                process_tree.handle_event(event)
+
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()
