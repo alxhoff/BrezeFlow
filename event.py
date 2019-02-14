@@ -124,7 +124,8 @@ class TaskNode:
         self.events.append(event)
 
         # add event node to task subgraph
-        self.graph.add_node(event)
+        self.graph.add_node(event, label= str(event.time) + " pid:" + str(event.PID) + \
+                                " " + str(event))
 
         # create graph edge if not the first job
         if len(self.events) > 1:
@@ -182,10 +183,12 @@ class ProcessBranch:
 
                     self.active = False
                     self.tasks[-1].finished()
-                    self.graph.add_node(self.tasks[-1], event=event, type=event_type)
+                    self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
+                                " " + str(self.tasks[-1]))
                     return
 
-            self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_IN)
+            self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
+                                " " + str(self.tasks[-1]))
             self.active = True
 
             return
@@ -199,7 +202,8 @@ class ProcessBranch:
             # add current event
             self.tasks[-1].add_job(event)
             # create entry node for task
-            self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_IN)
+            self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
+                                " " + str(self.tasks[-1]))
 
             # set task to running
             self.active = True
@@ -223,7 +227,8 @@ class ProcessBranch:
             self.active = False
 
             # add task node to graph
-            self.graph.add_node(self.tasks[-1], event=event, type=JobType.SCHED_SWITCH_OUT)
+            self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
+                                " " + str(self.tasks[-1]))
 
             # link task node to beginning of sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0])

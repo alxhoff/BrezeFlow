@@ -1,4 +1,5 @@
 import networkx as nx
+import ctypes
 import matplotlib.pyplot as plt
 from graphviz import Digraph
 
@@ -10,10 +11,16 @@ class Grapher:
 
     def drawGraph(self):
         A = nx.nx_agraph.to_agraph(self.pt.graph)
-
+        A.graph_attr['splines']='line'
+        A.graph_attr['margin']=2
         all_nodes = A.nodes_iter()
 
         for node in all_nodes:
+
+            # event = node.get_handle()
+            # # event = ctypes.POINTER()
+            # print event
+            # print event.time
 
             node.attr['style'] = 'filled'
             name = node.get_name()
