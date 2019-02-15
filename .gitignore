@@ -13,6 +13,7 @@ __pycache__/
 .idea
 #graph outputs
 *.png
+check/
 
 # C extensions
 *.so

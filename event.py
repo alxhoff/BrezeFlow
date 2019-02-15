@@ -126,12 +126,12 @@ class TaskNode:
         # add event node to task subgraph
         if isinstance(event, EventSchedSwitch):
             self.graph.add_node(event, label= str(event.time)[:4] + "." + str(event.time)[4:] + \
-                                          "\npid: " + str(event.PID) + " next pid: " + str(event.next_pid) +\
-                                              "\n" + str(event), fillcolor='bisque1')
+                                  "\nout pid: " + str(event.PID) + " in pid: " + str(event.next_pid) +\
+                                      "\n" + str(event), fillcolor='dodgerblue')
         elif isinstance(event, EventBinderCall):
             self.graph.add_node(event, label= str(event.time)[:4] + "." + str(event.time)[4:] + \
-                                          "\npid: " + str(event.PID) + " dest pid: " + str(event.dest_proc) +\
-                                              "\n" + str(event), fillcolor='aquamarine1')
+                                  "\nfrom pid: " + str(event.PID) + " dest pid: " + str(event.dest_proc) +\
+                                      "\n" + str(event), fillcolor='aquamarine1')
 
         # create graph edge if not the first job
         if len(self.events) > 1:
@@ -195,8 +195,8 @@ class ProcessBranch:
                     # self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
                     #             "\n" + str(self.tasks[-1]))
                     self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                                        + "." + str(self.tasks[-1].start_time)[4:] + "\npid:" + \
-                                        str(event.next_pid) +  "\n" + str(self.tasks[-1]), fillcolor='bisque1')
+                                    + "." + str(self.tasks[-1].start_time)[4:] + "\npid:" + \
+                                    str(event.next_pid) +  "\n" + str(self.tasks[-1]), fillcolor='bisque1')
                     return
 
             # self.graph.add_node(self.tasks[-1], label= str(event.time)[:4] + "." + str(event.time)[4:] \

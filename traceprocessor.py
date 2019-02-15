@@ -243,7 +243,7 @@ class traceProcessor:
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
         #for line in raw_lines[11:300]:
-        for line in raw_lines[11:280]:
+        for line in raw_lines[11:2000]:
             if not self.keepPIDLine(line, PIDt):
                 continue
 
@@ -279,10 +279,10 @@ class traceProcessor:
 
         for x, event in enumerate(processed_events):
             # for testing
-            if event.time >= 3293569606 and event.time <= 3293577453:
-                if event.time == 3293575859:
-                    print "stop here"
-                process_tree.handle_event(event)
+            # if event.time >= 3293569606 and event.time <= 3293577453:
+            #     if event.time == 3293575859:
+            #         print "stop here"
+            process_tree.handle_event(event)
 
 
         draw_graph = Grapher(process_tree)
