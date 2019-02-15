@@ -11,7 +11,7 @@ class Grapher:
 
     def drawGraph(self):
         A = nx.nx_agraph.to_agraph(self.pt.graph)
-        A.graph_attr['splines']='line'
+        A.graph_attr['splines']='curved'
         A.graph_attr['margin']=2
         all_nodes = A.nodes_iter()
 

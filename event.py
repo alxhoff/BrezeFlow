@@ -34,45 +34,46 @@ class ThreadState(Enum):
 
 class Event:
 
-    def __init__(self, PID, time, cpu):
+    def __init__(self, PID, time, cpu, name):
         self.PID = PID
         self.time = time
         self.cpu = cpu
+        self.name = name
 
 
 class EventSchedSwitch(Event):
 
-    def __init__(self, PID, time, cpu, prev_state, next_pid):
-        Event.__init__(self, PID, time, cpu)
+    def __init__(self, PID, time, cpu, name, prev_state, next_pid):
+        Event.__init__(self, PID, time, cpu, name)
         self.prev_state = prev_state
         self.next_pid = next_pid
 
 
 class EventFreqChange(Event):
 
-    def __init__(self, PID, time, cpu, freq, load):
-        Event.__init__(self, PID, time, cpu)
+    def __init__(self, PID, time, cpu, name, freq, load):
+        Event.__init__(self, PID, time, cpu, name)
         self.freq = freq
         self.load = load
 
 
 class EventWakeup(Event):
 
-    def __init__(self, PID, time, cpu):
-        Event.__init__(self, PID, time, cpu)
+    def __init__(self, PID, time, cpu, name):
+        Event.__init__(self, PID, time, cpu, name)
 
 
 class EventIdle(Event):
 
-    def __init__(self, time, cpu, state):
-        Event.__init__(self, 0, time, cpu)
+    def __init__(self, time, cpu, name, state):
+        Event.__init__(self, 0, time, cpu, name)
         self.state = state
 
 
 class EventBinderCall(Event):
 
-    def __init__(self, PID, time, trans_type, dest_proc, trans_ID, flags, code):
-        Event.__init__(self, PID, time, 99)
+    def __init__(self, PID, time, cpu, name, trans_type, dest_proc, trans_ID, flags, code):
+        Event.__init__(self, PID, time, cpu, name)
         if trans_type == 0:
             if flags & 0b1:
                 self.trans_type = BinderType.ASYNC
@@ -125,13 +126,13 @@ class TaskNode:
 
         # add event node to task subgraph
         if isinstance(event, EventSchedSwitch):
-            self.graph.add_node(event, label= str(event.time)[:4] + "." + str(event.time)[4:] + \
-                                  "\nout pid: " + str(event.PID) + " in pid: " + str(event.next_pid) +\
-                                      "\n" + str(event), fillcolor='dodgerblue')
+            self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] + \
+                                "\n" + str(event.PID) + " ==> " + str(event.next_pid) +\
+                                "\n" + str(event.name) + "\n" + str(event), fillcolor='bisque1')
         elif isinstance(event, EventBinderCall):
-            self.graph.add_node(event, label= str(event.time)[:4] + "." + str(event.time)[4:] + \
-                                  "\nfrom pid: " + str(event.PID) + " dest pid: " + str(event.dest_proc) +\
-                                      "\n" + str(event), fillcolor='aquamarine1')
+            self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] + \
+                                "\n" + str(event.PID) + " ==> " + str(event.dest_proc) + \
+                                "\n" + str(event.name) + "\n" + str(event), fillcolor='aquamarine1')
 
         # create graph edge if not the first job
         if len(self.events) > 1:
@@ -194,9 +195,10 @@ class ProcessBranch:
                     # add task to graph as task was created and finished in one event
                     # self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
                     #             "\n" + str(self.tasks[-1]))
-                    self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                                    + "." + str(self.tasks[-1].start_time)[4:] + "\npid:" + \
-                                    str(event.next_pid) +  "\n" + str(self.tasks[-1]), fillcolor='bisque1')
+                    # self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
+                    #                 + "." + str(self.tasks[-1].start_time)[4:] + "\npid:" + \
+                    #                 str(event.next_pid) + "\n"  + event.name + "\n" + str(self.tasks[-1]),\
+                    #                     fillcolor='bisque1')
                     return
 
             # self.graph.add_node(self.tasks[-1], label= str(event.time)[:4] + "." + str(event.time)[4:] \
@@ -241,9 +243,12 @@ class ProcessBranch:
 
             #TODO this makes both tasks and nodes the same colour
             # add task node to graph as task is finished
-            self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                              + "." + str(self.tasks[-1].start_time)[4:] + "\npid: " + \
-                              str(event.PID) + "\n" + str(self.tasks[-1]), fillcolor='darkolivegreen3')
+            self.graph.add_node(self.tasks[-1],
+                    label=str(self.tasks[-1].start_time)[:-6] + "." + str(self.tasks[-1].start_time)[-6:]
+                            + " ==> "
+                            + str(self.tasks[-1].finish_time)[:-6] + "." + str(self.tasks[-1].finish_time)[-6:]
+                            + "\npid: " + str(event.PID) + "\n" + str(event.name) + "\n"
+                            + str(self.tasks[-1]), fillcolor='darkolivegreen3')
 
             # link task node to beginning of sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0])
@@ -262,10 +267,11 @@ class ProcessBranch:
             self.tasks[-1].add_job(event)
             self.tasks[-1].finished()
             # create binder task node TODO check this works
-            self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                                  + "." + str(self.tasks[-1].start_time)[4:] + "\npid: " + \
-                                  str(event.PID) + "\n" + "dest PID: " + str(event.dest_proc) + "\n" + \
-                                                  str(self.tasks[-1]), fillcolor='coral')
+            self.graph.add_node(self.tasks[-1],
+                    label=str(self.tasks[-1].start_time)[:-6]
+                            + "." + str(self.tasks[-1].start_time)[-6:] + "\npid: " + str(event.PID)
+                            + "  dest PID: " + str(event.dest_proc)
+                            + "\n" + str(event.name) + "\n" + str(self.tasks[-1]), fillcolor='coral')
 
             return
 

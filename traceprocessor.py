@@ -41,37 +41,43 @@ class traceProcessor:
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
+        name = re.findall("^ *(.+)-\d+ +", line)[0]
 
-        return EventWakeup(pid, time, cpu)
+        return EventWakeup(pid, time, cpu, name)
 
     def _processSchedSwitch(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
+        name = re.findall("^ *(.+)-\d+ +", line)[0]
         prev_state = re.findall("prev_state=([RSDx]{1})", line)[0]
         next_pid = int(re.findall("next_pid=(\d+)", line)[0])
 
-        return EventSchedSwitch(pid, time, cpu, prev_state, next_pid)
+        return EventSchedSwitch(pid, time, cpu, name, prev_state, next_pid)
 
     def _processSchedIdle(self, line):
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
+        name = re.findall("^ *(.+)-\d+ +", line)[0]
         state = int(re.findall("state=(\d+)", line)[0])
 
-        return EventIdle(time, cpu, state)
+        return EventIdle(time, cpu, state, name)
 
     def _processSchedFreq(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
+        name = re.findall("^ *(.+)-\d+ +", line)[0]
         freq = int(re.findall("freq: (\d+) ", line)[0])
         load = int(re.findall(" load: (\d+)", line)[0])
 
-        return EventFreqChange(pid, time, freq, load, cpu)
+        return EventFreqChange(pid, time, freq, load, cpu, name)
 
     def _processBinderTransaction(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
+        cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
+        name = re.findall("^ *(.+)-\d+ +", line)[0]
         trans_type = int(re.findall(" +reply=(\d) +", line)[0])
         to_proc = int(re.findall(" +dest_thread=(\d+) +", line)[0])
         if to_proc == 0:
@@ -80,7 +86,7 @@ class traceProcessor:
         flags = int(re.findall(" +flags=(0x[0-9a-f]+) +", line)[0], 16)
         code = int(re.findall(" +code=(0x[0-9a-f]+)", line)[0], 16)
 
-        return EventBinderCall(pid, time, trans_type, to_proc, trans_ID, flags, code)
+        return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, trans_ID, flags, code)
 
     def writeToXlsx(self, processed_events, filename):
         #write events into excel file
