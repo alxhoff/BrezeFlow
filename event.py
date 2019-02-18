@@ -215,11 +215,9 @@ class ProcessBranch:
             # set task to running
             self.active = True
 
-            # TODO should this ever be implemented?
-            # there should always be at least 2 tasks if this is called
-            # connect two sequential tasks with an edge
-            # if len(self.tasks) >= 2:
-            #     self.graph.add_edge(self.tasks[-2], self.tasks[-1])
+            # These edges simply follow a PID, do not show any IPCs or IPDs
+            if len(self.tasks) >= 2:
+                self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen', style='bold')
 
             return
 
@@ -234,8 +232,6 @@ class ProcessBranch:
             self.tasks[-1].finished()
             self.active = False
 
-            #TODO this makes both tasks and nodes the same colour
-            # add task node to graph as task is finished
             self.graph.add_node(self.tasks[-1],
                     label=str(self.tasks[-1].start_time)[:-6] + "." + str(self.tasks[-1].start_time)[-6:]
                             + " ==> "
@@ -246,7 +242,7 @@ class ProcessBranch:
             # link task node to beginning of sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue', dir='forward')
             # link the end of the subgraph to the task node
-            self.graph.add_edge(self.tasks[-1].events[-1], self.tasks[-1], color='red'
+            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red'
                                 , dir='back')
 
             if self.tasks[-1].events[-1].time == 580230316 or self.tasks[-1].events[0] == 580230316:
