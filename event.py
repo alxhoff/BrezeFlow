@@ -128,8 +128,9 @@ class TaskNode:
         if isinstance(event, EventSchedSwitch):
             self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] + \
                                 "\n" + str(event.PID) + " ==> " + str(event.next_pid) +\
-                                "\n" + str(event.name) + "\n" + str(event), fillcolor='bisque1',
-                                style='filled')
+                                "\n" + str(event.name) + "\n" + str(event) + "\n" +
+                                "Prev state: " + str(event.prev_state)
+                                , fillcolor='bisque1', style='filled')
         elif isinstance(event, EventBinderCall):
             self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] + \
                                 "\n" + str(event.PID) + " ==> " + str(event.dest_proc) + \
@@ -137,8 +138,11 @@ class TaskNode:
                                 style='filled')
 
         # create graph edge if not the first job
-        if len(self.events) > 1:
-            self.graph.add_edge(self.events[-2], self.events[-1])
+        if len(self.events) >= 2:
+            self.graph.add_edge(self.events[-2], self.events[-1], color='violet', dir='forward')
+            if self.events[-2].time == 580230316 or self.events[-1] == 580230316:
+                print "wait here"
+
 
     def finished(self):
         self.state = TaskState.FINISHED
@@ -193,18 +197,8 @@ class ProcessBranch:
 
                     self.active = False
                     self.tasks[-1].finished()
-
-                    # add task to graph as task was created and finished in one event
-                    # self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
-                    #             "\n" + str(self.tasks[-1]))
-                    # self.graph.add_node(self.tasks[-1], label=str(self.tasks[-1].start_time)[:4] \
-                    #                 + "." + str(self.tasks[-1].start_time)[4:] + "\npid:" + \
-                    #                 str(event.next_pid) + "\n"  + event.name + "\n" + str(self.tasks[-1]),\
-                    #                     fillcolor='bisque1')
                     return
 
-            # self.graph.add_node(self.tasks[-1], label= str(event.time)[:4] + "." + str(event.time)[4:] \
-            #                              + " pid:" + str(event.PID) + "\n" + str(self.tasks[-1]))
             self.active = True
 
             return
@@ -217,9 +211,6 @@ class ProcessBranch:
             self.tasks.append(TaskNode(self.graph))
             # add current event
             self.tasks[-1].add_job(event)
-            # create entry node for task
-            # self.graph.add_node(self.tasks[-1], label= str(event.time) + " pid:" + str(event.PID) + \
-            #                     "\n" + str(self.tasks[-1]))
 
             # set task to running
             self.active = True
@@ -253,12 +244,13 @@ class ProcessBranch:
                             + str(self.tasks[-1]), fillcolor='darkolivegreen3', style='filled')
 
             # link task node to beginning of sub-graph
-            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0])
+            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue', dir='forward')
             # link the end of the subgraph to the task node
-            self.graph.add_edge(self.tasks[-1].events[-1], self.tasks[-1])
-            # add connecting nodes in task
-            # self.graph.add_edges_from(self.tasks[-1].graph.edges)
-            # self.graph.add_nodes_from(self.tasks[-1].graph, labels=True)
+            self.graph.add_edge(self.tasks[-1].events[-1], self.tasks[-1], color='red'
+                                , dir='back')
+
+            if self.tasks[-1].events[-1].time == 580230316 or self.tasks[-1].events[0] == 580230316:
+                print "wait here"
 
             return
 
@@ -369,7 +361,8 @@ class ProcessTree:
                                 self.PIDt.getPIDStringIndex(task.from_pid)].tasks[-1],
                             # this branch as it is being woken
                             self.process_branches[ \
-                                self.PIDt.getPIDStringIndex(task.binder_thread)].tasks[-1])
+                                self.PIDt.getPIDStringIndex(task.binder_thread)].tasks[-1],
+                        color='palevioletred3', dir='forward')
 
                         #
                         process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
@@ -381,7 +374,8 @@ class ProcessTree:
                                 self.PIDt.getPIDStringIndex(task.binder_thread)].tasks[-1],
                             # this branch as it is being woken
                             self.process_branches[ \
-                                self.PIDt.getPIDStringIndex(task.dest_pid)].tasks[-1])
+                                self.PIDt.getPIDStringIndex(task.dest_pid)].tasks[-1],
+                        color='yellow3', dir='forward')
 
                         #remove binder task that is now complete
                         del self.pending_binder_tasks[x]

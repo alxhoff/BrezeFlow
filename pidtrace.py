@@ -112,7 +112,6 @@ class PIDtracer:
 
             # Check that parent threads are in system server threads. This catches threads
             # such as the media codec which is commonly used but is not a system service
-            print line
             parent_pid = int(re.findall("{Binder:(\d+)_.+}", line)[0])
             # process will be first line as it's PID will be lower than child threads and as
             # such will be higher is list
