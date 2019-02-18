@@ -86,6 +86,7 @@ class PIDtracer:
             self.logger.debug("Found system thread " + tname[0] + " with PID: " \
                     + str(pid))
 
+
     def findBinderPIDs(self):
         # Get all processes except the system_server itself
         res = self.adb_device.runCommand("busybox ps -T | grep {Binder:")
@@ -97,7 +98,7 @@ class PIDtracer:
             if line.isspace():
                 continue
             # remove grep process
-            if not re.search("^((?!grep).)*$", line):
+            if "grep" in line:
                 continue
             # remove grep process
             pid = int(re.findall("^ *(\d+)", line)[0])
@@ -106,8 +107,30 @@ class PIDtracer:
             if not tname:
                 tname = pname
             self.allBinderPID.append(PID(pid, pname, tname))
-            self.logger.debug("Found system thread " + tname[0] + " with PID: " \
+            self.logger.debug("Found binder thread " + tname[0] + " with PID: " \
                     + str(pid))
+
+            # Check that parent threads are in system server threads. This catches threads
+            # such as the media codec which is commonly used but is not a system service
+            print line
+            parent_pid = int(re.findall("{Binder:(\d+)_.+}", line)[0])
+            # process will be first line as it's PID will be lower than child threads and as
+            # such will be higher is list
+            if not any(proc.pid == parent_pid for proc in self.allSystemPID):
+                parent_thread = self.adb_device.runCommand("busybox ps -T | grep " + str(parent_pid))
+                parent_thread = parent_thread.splitlines()
+                for line in parent_thread:
+                    if "grep" not in line:
+                        pname = re.findall(".* +(.*)$", line)[0]
+                        tname = tname = re.findall("\{(.*)\}", line)
+                        if not tname:
+                            tname = pname
+                        self.allSystemPID.append(PID(pid, pname, tname))
+                        self.logger.debug("Found system thread " + tname[0] + " with PID: " \
+                                          + str(pid))
+                        break
+                break
+
 
     def findChildBinderThreads(self, PID):
         res = self.adb_device.runCommand("busybox ps -T | grep Binder | grep " + \

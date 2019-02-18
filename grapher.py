@@ -13,24 +13,6 @@ class Grapher:
         A = nx.nx_agraph.to_agraph(self.pt.graph)
         A.graph_attr['splines']='curved'
         A.graph_attr['margin']=2
-        all_nodes = A.nodes_iter()
-
-        for node in all_nodes:
-
-            # event = node.get_handle()
-            # # event = ctypes.POINTER()
-            # print event
-            # print event.time
-
-            node.attr['style'] = 'filled'
-            name = node.get_name()
-
-            # if "TaskNode" in name:
-            #     node.attr['fillcolor'] = 'brown1'
-            # if "EventSchedSwitch" in name:
-            #     node.attr['fillcolor'] = 'bisque1'
-            # elif "BinderNode" in name:
-            #     node.attr['fillcolor'] = 'darkolivegreen3'
 
         A.draw("/home/alxhoff/Downloads/test.xdot", format='xdot', prog='dot')
 

@@ -128,11 +128,13 @@ class TaskNode:
         if isinstance(event, EventSchedSwitch):
             self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] + \
                                 "\n" + str(event.PID) + " ==> " + str(event.next_pid) +\
-                                "\n" + str(event.name) + "\n" + str(event), fillcolor='bisque1')
+                                "\n" + str(event.name) + "\n" + str(event), fillcolor='bisque1',
+                                style='filled')
         elif isinstance(event, EventBinderCall):
             self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] + \
                                 "\n" + str(event.PID) + " ==> " + str(event.dest_proc) + \
-                                "\n" + str(event.name) + "\n" + str(event), fillcolor='aquamarine1')
+                                "\n" + str(event.name) + "\n" + str(event), fillcolor='aquamarine1',
+                                style='filled')
 
         # create graph edge if not the first job
         if len(self.events) > 1:
@@ -248,7 +250,7 @@ class ProcessBranch:
                             + " ==> "
                             + str(self.tasks[-1].finish_time)[:-6] + "." + str(self.tasks[-1].finish_time)[-6:]
                             + "\npid: " + str(event.PID) + "\n" + str(event.name) + "\n"
-                            + str(self.tasks[-1]), fillcolor='darkolivegreen3')
+                            + str(self.tasks[-1]), fillcolor='darkolivegreen3', style='filled')
 
             # link task node to beginning of sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0])
@@ -271,7 +273,8 @@ class ProcessBranch:
                     label=str(self.tasks[-1].start_time)[:-6]
                             + "." + str(self.tasks[-1].start_time)[-6:] + "\npid: " + str(event.PID)
                             + "  dest PID: " + str(event.dest_proc)
-                            + "\n" + str(event.name) + "\n" + str(self.tasks[-1]), fillcolor='coral')
+                            + "\n" + str(event.name) + "\n" + str(self.tasks[-1]), fillcolor='coral',
+                                style='filled')
 
             return
 
