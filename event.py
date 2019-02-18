@@ -30,6 +30,7 @@ class ThreadState(Enum):
     STOPPED_T = 'T'
     DEAD_X = 'X'
     ZOMBIE_Z = 'Z'
+    ZOMBIE_Z = 'Z'
 
 
 class Event:
@@ -126,22 +127,19 @@ class TaskNode:
 
         # add event node to task subgraph
         if isinstance(event, EventSchedSwitch):
-            self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] + \
-                                "\n" + str(event.PID) + " ==> " + str(event.next_pid) +\
-                                "\n" + str(event.name) + "\n" + str(event) + "\n" +
-                                "Prev state: " + str(event.prev_state)
-                                , fillcolor='bisque1', style='filled')
+            self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] +
+                " CPU: " + str(event.cpu) + "\n" + str(event.PID) + " ==> " + str(event.next_pid) +
+                "\nPrev state: " + str(event.prev_state) + "\n" + str(event.name) + "\n" + str(event)
+                , fillcolor='bisque1', style='filled')
         elif isinstance(event, EventBinderCall):
-            self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] + \
-                                "\n" + str(event.PID) + " ==> " + str(event.dest_proc) + \
-                                "\n" + str(event.name) + "\n" + str(event), fillcolor='aquamarine1',
-                                style='filled')
+            self.graph.add_node(event, label= str(event.time)[:-6] + "." + str(event.time)[-6:] +
+                " CPU: " + str(event.cpu) + "\n" + str(event.PID) + " ==> " + str(event.dest_proc) +
+                "\n" + str(event.name) + "\n" + str(event), fillcolor='aquamarine1',
+                style='filled')
 
         # create graph edge if not the first job
         if len(self.events) >= 2:
             self.graph.add_edge(self.events[-2], self.events[-1], color='violet', dir='forward')
-            if self.events[-2].time == 580230316 or self.events[-1] == 580230316:
-                print "wait here"
 
 
     def finished(self):
@@ -217,7 +215,7 @@ class ProcessBranch:
 
             # These edges simply follow a PID, do not show any IPCs or IPDs
             if len(self.tasks) >= 2:
-                self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen', style='bold')
+                self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen', style='dashed')
 
             return
 
@@ -233,21 +231,19 @@ class ProcessBranch:
             self.active = False
 
             self.graph.add_node(self.tasks[-1],
-                    label=str(self.tasks[-1].start_time)[:-6] + "." + str(self.tasks[-1].start_time)[-6:]
-                            + " ==> "
-                            + str(self.tasks[-1].finish_time)[:-6] + "." + str(self.tasks[-1].finish_time)[-6:]
-                            + "\npid: " + str(event.PID) + "\n" + str(event.name) + "\n"
-                            + str(self.tasks[-1]), fillcolor='darkolivegreen3', style='filled')
+                label=str(self.tasks[-1].start_time)[:-6] + "." + str(self.tasks[-1].start_time)[-6:]
+                    + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
+                    + str(self.tasks[-1].finish_time)[-6:]
+                    + " CPU: " + str(event.cpu) + "\npid: " + str(event.PID) + "\n" + str(event.name)
+                    + "\nDuration: " + str(self.tasks[-1].exec_time)
+                    + "\n" + str(self.tasks[-1]), fillcolor='darkolivegreen3', style='filled,bold,rounded')
 
             # link task node to beginning of sub-graph
-            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue', dir='forward')
+            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
+                                dir='forward', style='bold')
             # link the end of the subgraph to the task node
-            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red'
-                                , dir='back')
-
-            if self.tasks[-1].events[-1].time == 580230316 or self.tasks[-1].events[0] == 580230316:
-                print "wait here"
-
+            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red',
+                                dir='back', style='bold')
             return
 
         # binder events always single tasks, therefore adding them
@@ -256,14 +252,13 @@ class ProcessBranch:
             self.tasks.append(BinderNode(self.graph))
             self.tasks[-1].add_job(event)
             self.tasks[-1].finished()
-            # create binder task node TODO check this works
+            # create binder task node
             self.graph.add_node(self.tasks[-1],
-                    label=str(self.tasks[-1].start_time)[:-6]
-                            + "." + str(self.tasks[-1].start_time)[-6:] + "\npid: " + str(event.PID)
-                            + "  dest PID: " + str(event.dest_proc)
-                            + "\n" + str(event.name) + "\n" + str(self.tasks[-1]), fillcolor='coral',
-                                style='filled')
-
+                label=str(self.tasks[-1].start_time)[:-6]
+                    + "." + str(self.tasks[-1].start_time)[-6:] + "\npid: " + str(event.PID)
+                    + "  dest PID: " + str(event.dest_proc)
+                    + "\n" + str(event.name) + "\n" + str(self.tasks[-1]),
+                    fillcolor='coral', style='filled,bold')
             return
 
         # all other job types just need to get added to the task
@@ -386,6 +381,7 @@ class ProcessTree:
         # Can be later used to calculate workload/energy consumption of threads
         # in relation to the system configuration as they were executed.
         elif isinstance(event, EventFreqChange):
+            print "wait here"
             return
 
         # Also used in the calculation of system load

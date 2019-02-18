@@ -237,9 +237,9 @@ class traceProcessor:
             self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
 
-        self.processTrace(f, PIDt)
+        self.processTrace(f, PIDt, tracer.metrics)
 
-    def processTrace(self, f, PIDt):
+    def processTrace(self, f, PIDt, metrics):
 
         raw_lines = []
         raw_lines = f.readlines()
@@ -284,12 +284,7 @@ class traceProcessor:
         process_tree = ProcessTree(PIDt)
 
         for x, event in enumerate(processed_events):
-            # for testing
-            # if event.time >= 3293569606 and event.time <= 3293577453:
-            #     if event.time == 3293575859:
-            #         print "stop here"
             process_tree.handle_event(event)
-
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()

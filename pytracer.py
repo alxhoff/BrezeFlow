@@ -3,6 +3,7 @@ import time
 import os.path as op
 import grapher
 
+from metrics import *
 from adb import adb_commands
 from adb import sign_m2crypto
 
@@ -17,7 +18,7 @@ class tracer:
         logging.basicConfig(filename="pytracer.log",
                 format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
-
+        self.metrics = None
         self.adb_device = adb_device
         self.name = name
         self.filename = op.dirname(op.realpath(__file__)) + '/' \
@@ -197,6 +198,9 @@ class tracer:
         #PID
         if self.PID_filter is not None:
             self.setFilterPID(self.PID_filter)
+
+        #metrics
+        self.metrics = SystemMetrics(self.adb_device)
 
         #run
         self.traceForTime(self.duration)
