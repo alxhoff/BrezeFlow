@@ -69,11 +69,12 @@ class traceProcessor:
     def _processSchedFreq(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
-        cpu = int(re.findall("cpu: (\d+)", line)[0])
+        cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
+        target_cpu = int(re.findall("cpu: (\d+)", line)[0])
         freq = int(re.findall("freq: (\d+) ", line)[0])
         load = int(re.findall("load: (\d+)", line)[0])
 
-        return EventFreqChange(pid, time, cpu, freq, load)
+        return EventFreqChange(pid, time, cpu, freq, load, target_cpu)
 
     def _processBinderTransaction(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
@@ -88,7 +89,7 @@ class traceProcessor:
         flags = int(re.findall(" +flags=(0x[0-9a-f]+) +", line)[0], 16)
         code = int(re.findall(" +code=(0x[0-9a-f]+)", line)[0], 16)
 
-        return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, trans_ID, flags, code)
+        return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
 
     def writeToXlsx(self, processed_events, filename):
         #write events into excel file
@@ -247,7 +248,7 @@ class traceProcessor:
         processed_events = []
 
         if metrics is None:
-            metrics = SystemMetrics(adbInterface())
+            metrics = SystemMetrics(adbInterface.current_interface)
 
         #Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")

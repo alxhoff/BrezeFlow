@@ -52,10 +52,11 @@ class EventSchedSwitch(Event):
 
 class EventFreqChange(Event):
 
-    def __init__(self, PID, time, cpu, freq, load):
+    def __init__(self, PID, time, cpu, freq, load, target_cpu):
         Event.__init__(self, PID, time, cpu, "freq change")
         self.freq = freq
         self.load = load
+        self.target_cpu = target_cpu
 
 
 class EventWakeup(Event):
@@ -73,7 +74,7 @@ class EventIdle(Event):
 
 class EventBinderCall(Event):
 
-    def __init__(self, PID, time, cpu, name, trans_type, dest_proc, trans_ID, flags, code):
+    def __init__(self, PID, time, cpu, name, trans_type, dest_proc, flags, code):
         Event.__init__(self, PID, time, cpu, name)
         if trans_type == 0:
             if flags & 0b1:
@@ -85,7 +86,6 @@ class EventBinderCall(Event):
         else:
             self.trans_type = BinderType.UNKNOWN
         self.dest_proc = dest_proc
-        self.trans_ID = trans_ID
         self.flags = flags
         self.code = code
         self.recv_time = 0

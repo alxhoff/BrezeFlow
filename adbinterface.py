@@ -6,6 +6,8 @@ from adb import sign_m2crypto
 
 class adbInterface:
 
+    current_interface = None
+
     def __init__(self):
         #logger
         logging.basicConfig(filename="pytracer.log",
@@ -17,6 +19,7 @@ class adbInterface:
         self.device = adb_commands.AdbCommands()
         self.device.ConnectDevice(rsa_keys=[signer])
         self.logger.debug("ADB interface created")
+        adbInterface.current_interface = self
 
         #traces
         self.tracers = []
