@@ -2,6 +2,7 @@ import logging
 
 import networkx as nx
 from aenum import Enum
+from pydispatch import dispatcher
 
 
 class BinderType(Enum):
@@ -127,17 +128,17 @@ class TaskNode:
         # add event node to task subgraph
         if isinstance(event, EventSchedSwitch):
             self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
-                                             " CPU: " + str(event.cpu) + "\n" + str(event.PID) + " ==> " + str(
-                event.next_pid) +
-                                             "\nPrev state: " + str(event.prev_state) + "\n" + str(
-                event.name) + "\n" + str(event)
+                                             " CPU: " + str(event.cpu) + "\n" + str(event.PID)
+                                             + " ==> " + str(event.next_pid)
+                                             + "\nPrev state: " + str(event.prev_state)
+                                             + "\n" + str(event.name) + "\n" + str(event)
                                 , fillcolor='bisque1', style='filled')
         elif isinstance(event, EventBinderCall):
             self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
-                                             " CPU: " + str(event.cpu) + "\n" + str(event.PID) + " ==> " + str(
-                event.dest_proc) +
-                                             "\n" + str(event.name) + "\n" + str(event), fillcolor='aquamarine1',
-                                style='filled')
+                                             " CPU: " + str(event.cpu) + "\n" + str(event.PID)
+                                             + " ==> " + str(event.dest_proc)
+                                             + "\n" + str(event.name) + "\n" + str(event)
+                                , fillcolor='aquamarine1', style='filled')
 
         # create graph edge if not the first job
         if len(self.events) >= 2:
@@ -169,10 +170,22 @@ class CPUBranch:
         self.freq = initial_freq
         self.events = []
         self.graph = graph
+        self.associated_branches = None
+        self.signal = "freq_change" + str(self.cpu_num)
+
+    def send_change_event(self):
+        dispatcher.send(signal=self.signal, sender=dispatcher.Any)
 
     def add_job(self, event):
         # create new event
         self.events.append(event)
+
+        # Update current frequency
+        if event.freq != self.freq:
+            print "Freq changed from " +  str(self.freq) + " to " + str(event.freq)
+            self.freq = event.freq
+            # Inform PID branches that are running on this CPU that a freq change event occurred
+            self.send_change_event()
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
@@ -194,18 +207,35 @@ class ProcessBranch:
     sleep event).
     """
 
-    def __init__(self, pid, start, graph, PIDt):
+    def __init__(self, pid, start, graph, PIDt, cpus):
         self.PID = pid
         self.tasks = []
         self.start = start
         self.active = False
         self.graph = graph
         self.PIDt = PIDt
+        self.cpu = None
+        self.cpus = cpus
+
+    def connect_to_cpu_event(self, cpu):
+        dispatcher.connect(self.handle_cpu_frq_change, signal=self.cpus[cpu].signal, sender=dispatcher.Any)
+
+    def disconnect_from_cpu_event(self, cpu):
+        dispatcher.disconnect(self.handle_cpu_frq_change, signal=self.cpus[cpu].signal, sender=dispatcher.Any)
+
+    def handle_cpu_frq_change(self):
+        print "Event received"
 
     # At the process branch level the only significant difference is that a job
     # can signify the end of the current task by being a sched switch event with
     # prev_state = S
     def add_job(self, event, event_type=JobType.UNKNOWN):
+
+        # CPU association
+        if self.cpu is None:
+            self.cpu = event.cpu
+            self.connect_to_cpu_event(self.cpu)
+
         # first job/task for PID branch
         if not self.tasks:
 
@@ -222,6 +252,14 @@ class ProcessBranch:
             self.active = True
 
             return
+
+        if event_type == JobType.SCHED_SWITCH_IN:
+            # If the CPU has changed
+            if event.cpu != self.cpu:
+                print "Changed CPU from :" + str(self.cpu) + " to " + str(event.cpu)
+                self.disconnect_from_cpu_event(self.cpu)
+                self.cpu = event.cpu
+                self.connect_to_cpu_event(self.cpu)
 
         # If a task is being switched into from sleeping
         # New task STARTING
@@ -253,20 +291,22 @@ class ProcessBranch:
             self.active = False
 
             self.graph.add_node(self.tasks[-1],
-                                label=str(self.tasks[-1].start_time)[:-6] + "." + str(self.tasks[-1].start_time)[-6:]
+                                label=str(self.tasks[-1].start_time)[:-6] + "."
+                                      + str(self.tasks[-1].start_time)[-6:]
                                       + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
                                       + str(self.tasks[-1].finish_time)[-6:]
-                                      + " CPU: " + str(event.cpu) + "\npid: " + str(event.PID) + "\n" + str(event.name)
+                                      + " CPU: " + str(event.cpu) + "\npid: " + str(event.PID)
+                                      + "\n" + str(event.name)
                                       + "\nDuration: " + str(self.tasks[-1].exec_time)
                                       + "\n" + str(self.tasks[-1]), fillcolor='darkolivegreen3',
                                 style='filled,bold,rounded')
 
             # link task node to beginning of sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
-                                dir='forward', style='bold')
+                                dir='forward')
             # link the end of the subgraph to the task node
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red',
-                                dir='back', style='bold')
+                                dir='back')
             return
 
         # binder events always single tasks, therefore adding them
@@ -278,7 +318,8 @@ class ProcessBranch:
             # create binder task node
             self.graph.add_node(self.tasks[-1],
                                 label=str(self.tasks[-1].start_time)[:-6]
-                                      + "." + str(self.tasks[-1].start_time)[-6:] + "\npid: " + str(event.PID)
+                                      + "." + str(self.tasks[-1].start_time)[-6:] + "\npid: "
+                                      + str(event.PID)
                                       + "  dest PID: " + str(event.dest_proc)
                                       + "\n" + str(event.name) + "\n" + str(self.tasks[-1]),
                                 fillcolor='coral', style='filled,bold')
@@ -331,7 +372,7 @@ class ProcessTree:
         self.metrics = metrics
 
         for pid in self.PIDt.allPIDStrings:
-            self.process_branches.append(ProcessBranch(int(pid), None, self.graph, self.PIDt))
+            self.process_branches.append(ProcessBranch(int(pid), None, self.graph, self.PIDt, self.cpus))
 
         for x in range(0, self.metrics.core_count):
             self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x], self.graph))
@@ -382,7 +423,7 @@ class ProcessTree:
                             # this branch as it is being woken
                             self.process_branches[ \
                                 self.PIDt.getPIDStringIndex(task.binder_thread)].tasks[-1],
-                            color='palevioletred3', dir='forward')
+                            color='palevioletred3', dir='forward', style='bold')
 
                         #
                         process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)

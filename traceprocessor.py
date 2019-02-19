@@ -6,7 +6,7 @@ import xlsxwriter
 from adbinterface import *
 from event import *
 from grapher import *
-
+from metrics import *
 
 class traceProcessor:
 
