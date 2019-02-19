@@ -174,6 +174,12 @@ class CPUBranch:
         # create new event
         self.events.append(event)
 
+        self.graph.add_node(self.events[-1],
+                label = str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
+                    + "\n CPU: " + str(event.cpu) + " Load: " + str(event.load)
+                    + "\n Freq: " + str(event.freq)
+                    + "\n" + str(event.__class__.__name__), style = 'filled')
+
         # These edges simply follow a PID, do not show any IPCs or IPDs
         if len(self.events) >= 2:
             self.graph.add_edge(self.events[-2], self.events[-1], style='bold')
