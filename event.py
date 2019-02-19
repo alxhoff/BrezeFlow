@@ -144,14 +144,16 @@ class TaskNode:
                                              " CPU: " + str(event.cpu) + "\n" + str(event.PID)
                                              + " ==> " + str(event.next_pid)
                                              + "\nPrev state: " + str(event.prev_state)
-                                             + "\n" + str(event.name) + "\n" + str(event)
-                                , fillcolor='bisque1', style='filled')
+                                             + "\n" + str(event.name) + "\n"
+                                             + str(event.__class__.__name__)
+                                , fillcolor='bisque1', style='filled', shape='box')
         elif isinstance(event, EventBinderCall):
             self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
                                              " CPU: " + str(event.cpu) + "\n" + str(event.PID)
                                              + " ==> " + str(event.dest_proc)
-                                             + "\n" + str(event.name) + "\n" + str(event)
-                                , fillcolor='aquamarine1', style='filled')
+                                             + "\n" + str(event.name)
+                                             + "\n" + str(event.__class__.__name__)
+                                , fillcolor='aquamarine1', style='filled', shape='box')
 
         # create graph edge if not the first job
         if len(self.events) >= 2:
@@ -200,7 +202,6 @@ class CPUBranch:
 
         # Update current frequency
         if event.freq != self.freq:
-            print "Freq changed from " + str(self.freq) + " to " + str(event.freq)
             self.prev_freq = self.freq
             self.freq = event.freq
             # Inform PID branches that are running on this CPU that a freq change event occurred
@@ -210,7 +211,7 @@ class CPUBranch:
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
                                   + "\n CPU: " + str(event.cpu) + " Load: " + str(event.load)
                                   + "\n Freq: " + str(event.freq)
-                                  + "\n" + str(event.__class__.__name__), style='filled')
+                                  + "\n" + str(event.__class__.__name__), style='filled', shape='box')
 
         # These edges simply follow a PID, do not show any IPCs or IPDs
         if len(self.events) >= 2:
@@ -255,7 +256,6 @@ class ProcessBranch:
             return None
 
     def handle_cpu_frq_change(self):
-        print "Event received"
         if self.tasks:
             self.tasks[-1].update_cycles(self.get_cur_cpu_prev_freq(), self.get_cur_cpu_last_freq_switch())
 
@@ -341,9 +341,9 @@ class ProcessBranch:
                                     + " CPU: " + str(event.cpu) + "\npid: " + str(event.PID)
                                     + "\n" + str(event.name)
                                     + "\nDuration: " + str(self.tasks[-1].exec_time)
-                                    + "\n" + str(self.tasks[-1].cycles)
-                                    + "\n" + str(self.tasks[-1]), fillcolor='darkolivegreen3',
-                                style='filled,bold,rounded')
+                                    + "\nCycles: " + str(self.tasks[-1].cycles)
+                                    + "\n" + str(self.tasks[-1].__class__.__name__), fillcolor='darkolivegreen3',
+                                style='filled,bold,rounded', shape='box')
 
             # link task node to beginning of sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
@@ -365,8 +365,9 @@ class ProcessBranch:
                                       + "." + str(self.tasks[-1].start_time)[-6:] + "\npid: "
                                       + str(event.PID)
                                       + "  dest PID: " + str(event.dest_proc)
-                                      + "\n" + str(event.name) + "\n" + str(self.tasks[-1]),
-                                fillcolor='coral', style='filled,bold')
+                                      + "\n" + str(event.name)
+                                      + "\n" + str(self.tasks[-1].__class__.__name__),
+                                fillcolor='coral', style='filled,bold', shape='box')
             return
 
         # all other job types just need to get added to the task
@@ -496,7 +497,6 @@ class ProcessTree:
         # in relation to the system configuration as they were executed.
         elif isinstance(event, EventFreqChange):
             # update cpu freq
-            print event.cpu
             self.metrics.core_freqs[event.cpu] = event.freq
             # add event to cpu branch
             self.cpus[event.cpu].add_job(event)
