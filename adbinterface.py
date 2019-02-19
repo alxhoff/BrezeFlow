@@ -4,24 +4,24 @@ import os.path as op
 from adb import adb_commands
 from adb import sign_m2crypto
 
-class adbInterface:
 
+class adbInterface:
     current_interface = None
 
     def __init__(self):
-        #logger
+        # logger
         logging.basicConfig(filename="pytracer.log",
-            format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
+                            format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
 
-        #ADB connection
+        # ADB connection
         signer = sign_m2crypto.M2CryptoSigner(op.expanduser('~/.android/adbkey'))
         self.device = adb_commands.AdbCommands()
         self.device.ConnectDevice(rsa_keys=[signer])
         self.logger.debug("ADB interface created")
         adbInterface.current_interface = self
 
-        #traces
+        # traces
         self.tracers = []
 
     def __del__(self):

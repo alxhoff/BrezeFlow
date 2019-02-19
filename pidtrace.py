@@ -1,6 +1,7 @@
 import logging
-import sys
 import re
+import sys
+
 from pid import PID
 
 
@@ -8,7 +9,7 @@ class PIDtracer:
 
     def __init__(self, adb_device, name):
         logging.basicConfig(filename="pytracer.log",
-                format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
+                            format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("PID tracer created")
 
@@ -16,7 +17,7 @@ class PIDtracer:
         self.name = name
         self.mainPID = self.findMainPID()
         self.allAppPID = []
-        self.allAppPID.append(PID(0,"idle_proc", "idle_thread"))#idle process
+        self.allAppPID.append(PID(0, "idle_proc", "idle_thread"))  # idle process
         self.allSystemPID = []
         self.allBinderPID = []
         self.findAllPID()
@@ -60,15 +61,15 @@ class PIDtracer:
         pid = int(re.findall(" +(\d+) +\d+ +\d+", res)[0])
         pname = re.findall("([^ ]+)$", res)[-1]
         self.logger.debug("Found main PID of " + str(pid) + " for process "
-                + pname )
-        return PID( pid, pname, "main")
+                          + pname)
+        return PID(pid, pname, "main")
 
     def findSystemServerPIDs(self):
         # Get all processes except the system_server itself
         res = self.adb_device.runCommand("busybox ps -T | grep /system/bin")
         res = res.splitlines()
         for line in res:
-            #skip binder threads
+            # skip binder threads
             if re.search(".*{(Binder):.+}", line):
                 continue
             if line.isspace():
@@ -84,15 +85,14 @@ class PIDtracer:
                 tname = pname
             self.allSystemPID.append(PID(pid, pname, tname))
             self.logger.debug("Found system thread " + tname[0] + " with PID: " \
-                    + str(pid))
-
+                              + str(pid))
 
     def findBinderPIDs(self):
         # Get all processes except the system_server itself
         res = self.adb_device.runCommand("busybox ps -T | grep {Binder:")
         res = res.splitlines()
         for line in res:
-            #skip non binder threads
+            # skip non binder threads
             if not re.search(".*{(Binder):.+}", line):
                 continue
             if line.isspace():
@@ -108,7 +108,7 @@ class PIDtracer:
                 tname = pname
             self.allBinderPID.append(PID(pid, pname, tname))
             self.logger.debug("Found binder thread " + tname[0] + " with PID: " \
-                    + str(pid))
+                              + str(pid))
 
             # Check that parent threads are in system server threads. This catches threads
             # such as the media codec which is commonly used but is not a system service
@@ -130,10 +130,9 @@ class PIDtracer:
                         break
                 break
 
-
     def findChildBinderThreads(self, PID):
         res = self.adb_device.runCommand("busybox ps -T | grep Binder | grep " + \
-                str(PID))
+                                         str(PID))
         res = res.splitlines()
         child_PIDs = []
         for line in res:
@@ -153,9 +152,9 @@ class PIDtracer:
                 continue
             pid = int(re.findall("(\d+) +\d+ +\d+:\d+", line)[0])
             tname = re.findall("\d+ *\d+ *\d*:\d* ?({?.*?})[^g][^r][^e][^p].*",
-                    line)[0]
-            pname= re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)",
-                    line)[0]
+                               line)[0]
+            pname = re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)",
+                               line)[0]
 
             self.allAppPID.append(PID(pid, pname, tname))
             self.logger.debug("Found thread " + tname + " with PID: " + str(pid))

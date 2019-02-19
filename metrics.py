@@ -1,4 +1,3 @@
-
 class SystemMetrics:
 
     def __init__(self, adb):
@@ -14,7 +13,7 @@ class SystemMetrics:
         for core in range(self.core_count):
             frequencies.append(
                 int(self.adb.runCommand("cat /sys/devices/system/cpu/cpu"
-                                        + str(core) +"/cpufreq/scaling_cur_freq")))
+                                        + str(core) + "/cpufreq/scaling_cur_freq")))
         return frequencies
 
     def writeCoreFreqsToFile(self, filename):

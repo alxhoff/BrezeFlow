@@ -1,19 +1,18 @@
-import logging
-from aenum import Enum
-from event import *
 import re
 import sys
+
 import xlsxwriter
-import math
-import os.path as op
-from grapher import *
+
 from adbinterface import *
+from event import *
+from grapher import *
+
 
 class traceProcessor:
 
     def __init__(self):
         logging.basicConfig(filename="pytracer.log",
-                format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
+                            format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Trace processor created")
 
@@ -23,7 +22,7 @@ class traceProcessor:
         f = open(tracer.filename)
         unfiltered = f.readlines()
         filtered = []
-        for x, line in enumerate(unfiltered): #make sure that PID isn't in time stamp
+        for x, line in enumerate(unfiltered):  # make sure that PID isn't in time stamp
             if self.keepPIDLine(line, PIDt) or x < 11:
                 filtered.append(line)
 
@@ -41,7 +40,7 @@ class traceProcessor:
         return False
 
     def _processSchedWakeup(self, line):
-        pid =  int(re.findall("-(\d+) *\[", line)[0])
+        pid = int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
         name = re.findall("^ *(.+)-\d+ +", line)[0]
@@ -105,9 +104,8 @@ class traceProcessor:
 
         return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
 
-
     def writeToXlsx(self, processed_events, filename):
-        #write events into excel file
+        # write events into excel file
         start_time = processed_events[0].time
 
         output_workbook = xlsxwriter.Workbook(filename + "_events.xlsx")
@@ -153,81 +151,81 @@ class traceProcessor:
         for event in processed_events:
             if isinstance(event, EventWakeup):
                 output_worksheet.write_number(start_row,
-                        time_col, event.time - start_time + 1)
+                                              time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
                                               event_col, str(JobType.WAKEUP.value))
                 output_worksheet.write_number(start_row,
-                        PID_col, event.PID)
+                                              PID_col, event.PID)
                 output_worksheet.write_number(start_row,
-                        cpu_col, event.cpu)
+                                              cpu_col, event.cpu)
                 output_worksheet.write_string(start_row,
-                        wake_event_col, "X")
+                                              wake_event_col, "X")
                 self.logger.debug("Wakeup event added to row: " +
-                        str(event.time - start_time + 1))
+                                  str(event.time - start_time + 1))
                 start_row += 1
 
             elif isinstance(event, EventSchedSwitch):
                 output_worksheet.write_number(start_row,
-                        time_col, event.time - start_time + 1)
+                                              time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
                                               event_col, str(JobType.SCHED_SWITCH_IN.value))
                 output_worksheet.write_number(start_row,
-                        PID_col, event.PID)
+                                              PID_col, event.PID)
                 output_worksheet.write_number(start_row,
-                        cpu_col, event.cpu)
+                                              cpu_col, event.cpu)
                 output_worksheet.write_string(start_row,
-                        prev_state_col, event.prev_state)
+                                              prev_state_col, event.prev_state)
                 output_worksheet.write_number(start_row,
-                        next_pid_col, event.next_pid)
+                                              next_pid_col, event.next_pid)
 
                 self.logger.debug("Switch event added to row: " +
-                        str(event.time - start_time + 1))
+                                  str(event.time - start_time + 1))
                 start_row += 1
 
             elif isinstance(event, EventFreqChange):
                 output_worksheet.write_number(start_row,
-                        time_col, event.time - start_time + 1)
+                                              time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
                                               event_col, str(JobType.FREQ_CHANGE.value))
                 output_worksheet.write_number(start_row,
-                        freq_freq_col, event.freq)
+                                              freq_freq_col, event.freq)
                 output_worksheet.write_number(start_row,
-                        freq_load_col, event.load)
+                                              freq_load_col, event.load)
                 output_worksheet.write_number(start_row,
-                        cpu_col, event.cpu)
+                                              cpu_col, event.cpu)
                 self.logger.debug("Freq event added to row: " +
-                        str(event.time - start_time + 1))
+                                  str(event.time - start_time + 1))
                 start_row += 1
 
             elif isinstance(event, EventIdle):
                 output_worksheet.write_number(start_row,
-                        time_col, event.time - start_time + 1)
+                                              time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
                                               event_col, str(JobType.IDLE.value))
                 output_worksheet.write_number(start_row,
-                        cpu_col, event.cpu)
+                                              cpu_col, event.cpu)
                 output_worksheet.write_number(start_row,
-                        idle_state_col, event.state)
+                                              idle_state_col, event.state)
                 self.logger.debug("Idle event added to row: " +
-                        str(event.time - start_time + 1))
+                                  str(event.time - start_time + 1))
                 start_row += 1
             elif isinstance(event, EventBinderCall):
                 output_worksheet.write_number(start_row,
-                        time_col, event.time - start_time + 1)
+                                              time_col, event.time - start_time + 1)
                 output_worksheet.write_string(start_row,
                                               event_col, str(JobType.BINDER_SEND.value))
                 output_worksheet.write_number(start_row,
-                        PID_col, event.PID)
+                                              PID_col, event.PID)
                 output_worksheet.write_number(start_row,
                                               next_pid_col, event.dest_proc)
                 output_worksheet.write_number(start_row,
-                        binder_type_col, event.trans_type.value)
+                                              binder_type_col, event.trans_type.value)
                 output_worksheet.write_number(start_row,
-                        binder_ID_col, event.trans_ID)
+                                              binder_ID_col, event.trans_ID)
                 output_worksheet.write_number(start_row,
-                        binder_flags_col, event.flags)
+                                              binder_flags_col, event.flags)
                 output_worksheet.write_number(start_row,
-                        binder_code_col, event.code)
+                                              binder_code_col, event.code)
                 start_row += 1
             else:
                 self.logger.debug("Unknown event: " + str(event))
@@ -246,7 +244,7 @@ class traceProcessor:
         self.processTrace(f, PIDt, None)
 
     def processTracer(self, tracer, PIDt):
-        #open trace
+        # open trace
         try:
             f = open(tracer.filename, "r")
             self.logger.debug("Tracer " + tracer.filename + " opened for \
@@ -265,11 +263,10 @@ class traceProcessor:
         if metrics is None:
             metrics = SystemMetrics(adbInterface.current_interface)
 
-        #Filter and sort events
+        # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        #for line in raw_lines[11:300]:
-        for line in raw_lines[11:2000]:
+        for line in raw_lines[11:4000]:
             if not self.keepPIDLine(line, PIDt):
                 continue
 
@@ -297,10 +294,10 @@ class traceProcessor:
             self.logger.debug("Processing trace failed")
             sys.exit("Processing trace failed")
 
-        #export to XLSX
+        # export to XLSX
         # self.writeToXlsx(processed_events, op.basename(f.name))
 
-        #generate pointers to most recent nodes for each PID (branch heads)
+        # generate pointers to most recent nodes for each PID (branch heads)
         process_tree = ProcessTree(PIDt, metrics)
 
         for x, event in enumerate(processed_events):
@@ -308,4 +305,3 @@ class traceProcessor:
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()
-
