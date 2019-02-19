@@ -54,8 +54,6 @@ class traceProcessor:
         state_next = re.findall("prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)", line)
         prev_state = state_next[0][0]
         next_pid = int(state_next[0][1])
-        # prev_state = re.findall("prev_state=([RSDx]{1})", line)[0]
-        # next_pid = int(re.findall("next_pid=(\d+)", line)[0])
 
         pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} (\d+.\d+)", line)
         pid = int(pid_cpu_time[0][0])
@@ -73,12 +71,6 @@ class traceProcessor:
         return EventIdle(time, cpu, state, name)
 
     def _processSchedFreq(self, line):
-        # pid =  int(re.findall("-(\d+) *\[", line)[0])
-        # time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
-        # cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
-        # target_cpu = int(re.findall("cpu: (\d+)", line)[0])
-        # freq = int(re.findall("freq: (\d+) ", line)[0])
-        # load = int(re.findall("load: (\d+)", line)[0])
         pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} (\d+.\d+)", line)
 
         pid = int(pid_cpu_time[0][0])
@@ -94,19 +86,25 @@ class traceProcessor:
         return EventFreqChange(pid, time, cpu, freq, load, target_cpu)
 
     def _processBinderTransaction(self, line):
-        pid =  int(re.findall("-(\d+) *\[", line)[0])
-        time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
-        cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
-        name = re.findall("^ *(.+)-\d+ +", line)[0]
-        trans_type = int(re.findall(" +reply=(\d) +", line)[0])
-        to_proc = int(re.findall(" +dest_thread=(\d+) +", line)[0])
+        pid_cpu_time = re.findall("^ *(.*)-(\d+) +\[(\d{3})\] .{4} (\d+.\d+)", line)
+
+        name = pid_cpu_time[0][0]
+        pid = int(pid_cpu_time[0][1])
+        cpu = int(pid_cpu_time[0][2])
+        time = int(round(float(pid_cpu_time[0][3]) * 1000000))
+
+        the_rest = re.findall(
+            "dest_proc=(\d+) dest_thread=(\d+) reply=(\d) flags=(0x[0-9a-f]+) code=(0x[0-9a-f]+)", line)
+
+        to_proc = int(the_rest[0][1])
         if to_proc == 0:
-            to_proc = int(re.findall(" +dest_proc=(\d+) +", line)[0])
-        trans_ID = int(re.findall(" +transaction=(\d+) +", line)[0])
-        flags = int(re.findall(" +flags=(0x[0-9a-f]+) +", line)[0], 16)
-        code = int(re.findall(" +code=(0x[0-9a-f]+)", line)[0], 16)
+            to_proc = int(the_rest[0][0])
+        trans_type = int(the_rest[0][2])
+        flags = int(the_rest[0][3], 16)
+        code = int(the_rest[0][4], 16)
 
         return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
+
 
     def writeToXlsx(self, processed_events, filename):
         #write events into excel file
