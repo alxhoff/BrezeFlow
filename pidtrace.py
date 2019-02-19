@@ -121,7 +121,7 @@ class PIDtracer:
                 for line in parent_thread:
                     if "grep" not in line:
                         pname = re.findall(".* +(.*)$", line)[0]
-                        tname = tname = re.findall("\{(.*)\}", line)
+                        tname = re.findall("\{(.*)\}", line)
                         if not tname:
                             tname = pname
                         self.allSystemPID.append(PID(pid, pname, tname))
