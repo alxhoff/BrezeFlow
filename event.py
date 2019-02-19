@@ -112,9 +112,17 @@ As such task processing must have a lead of one job.
 
 class TaskNode:
 
+    """ Calculating task cycles works on incremental summing. If the CPU on which the process is
+    running changes or the frequency changes then the cycles variable is updated and the calc time
+    shifted to the point of the event. As such the calc time stores the time since the exec time
+    was last changed, and given that the CPU and frequency have been fixed during that time,
+    the cycles is easily updated using a += and the current values (before updating them)
+    """
     def __init__(self, graph):
         self.events = []
+        self.cycles = 0
         self.start_time = 0
+        self.calc_time = 0
         self.finish_time = 0
         self.exec_time = 0
         self.graph = graph
@@ -122,10 +130,15 @@ class TaskNode:
 
     def add_job(self, event):
 
+        # If first job
+        if not self.events:
+            self.start_time = event.time
+            self.calc_time = event.time
+
         # save event to parent task
         self.events.append(event)
 
-        # add event node to task subgraph
+        # add event node to task sub-graph
         if isinstance(event, EventSchedSwitch):
             self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
                                              " CPU: " + str(event.cpu) + "\n" + str(event.PID)
@@ -144,11 +157,15 @@ class TaskNode:
         if len(self.events) >= 2:
             self.graph.add_edge(self.events[-2], self.events[-1], color='violet', dir='forward')
 
-    def finished(self):
+    def update_cycles(self, prev_freq, time):
+        self.cycles += (time - self.calc_time) * prev_freq / 3
+        self.calc_time = time
+
+    def finished(self, cur_freq):
         self.state = TaskState.FINISHED
-        self.start_time = self.events[0].time
         self.finish_time = self.events[-1].time
         self.exec_time = self.finish_time - self.start_time
+        self.cycles += (self.finish_time - self.calc_time) * cur_freq / 3
 
 
 """
@@ -168,6 +185,7 @@ class CPUBranch:
     def __init__(self, cpu_number, initial_freq, graph):
         self.cpu_num = cpu_number
         self.freq = initial_freq
+        self.prev_freq = initial_freq
         self.events = []
         self.graph = graph
         self.associated_branches = None
@@ -182,7 +200,8 @@ class CPUBranch:
 
         # Update current frequency
         if event.freq != self.freq:
-            print "Freq changed from " +  str(self.freq) + " to " + str(event.freq)
+            print "Freq changed from " + str(self.freq) + " to " + str(event.freq)
+            self.prev_freq = self.freq
             self.freq = event.freq
             # Inform PID branches that are running on this CPU that a freq change event occurred
             self.send_change_event()
@@ -223,8 +242,26 @@ class ProcessBranch:
     def disconnect_from_cpu_event(self, cpu):
         dispatcher.disconnect(self.handle_cpu_frq_change, signal=self.cpus[cpu].signal, sender=dispatcher.Any)
 
+    def get_cur_cpu_freq(self):
+        return self.cpus[self.cpu].freq
+
+    def get_cur_cpu_prev_freq(self):
+        return self.cpus[self.cpu].prev_freq
+
+    def get_cur_cpu_last_freq_switch(self):
+        if self.cpus[self.cpu].events:
+            return self.cpus[self.cpu].events[-1].time
+        else:
+            return None
+
     def handle_cpu_frq_change(self):
         print "Event received"
+        if self.tasks:
+            self.tasks[-1].update_cycles(self.get_cur_cpu_prev_freq(), self.get_cur_cpu_last_freq_switch())
+
+    def handle_cpu_num_change(self, time):
+        if self.tasks:
+            self.tasks[-1].update_cycles(self.get_cur_cpu_freq(), time)
 
     # At the process branch level the only significant difference is that a job
     # can signify the end of the current task by being a sched switch event with
@@ -246,7 +283,9 @@ class ProcessBranch:
             if event_type == JobType.SCHED_SWITCH_OUT and \
                     event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
                 self.active = False
-                self.tasks[-1].finished()
+                self.tasks[-1].finished(self.get_cur_cpu_freq())
+
+                #TODO ADD NODE HERE
                 return
 
             self.active = True
@@ -256,10 +295,14 @@ class ProcessBranch:
         if event_type == JobType.SCHED_SWITCH_IN:
             # If the CPU has changed
             if event.cpu != self.cpu:
-                print "Changed CPU from :" + str(self.cpu) + " to " + str(event.cpu)
+                # Update current task's cycle count in case new CPU has different speed
+                self.handle_cpu_num_change(event.time)
+
+                # Change event signal for freq change
                 self.disconnect_from_cpu_event(self.cpu)
                 self.cpu = event.cpu
                 self.connect_to_cpu_event(self.cpu)
+
 
         # If a task is being switched into from sleeping
         # New task STARTING
@@ -287,18 +330,19 @@ class ProcessBranch:
 
             # wrap up current task
             self.tasks[-1].add_job(event)
-            self.tasks[-1].finished()
+            self.tasks[-1].finished(self.get_cur_cpu_freq())
             self.active = False
 
             self.graph.add_node(self.tasks[-1],
                                 label=str(self.tasks[-1].start_time)[:-6] + "."
-                                      + str(self.tasks[-1].start_time)[-6:]
-                                      + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
-                                      + str(self.tasks[-1].finish_time)[-6:]
-                                      + " CPU: " + str(event.cpu) + "\npid: " + str(event.PID)
-                                      + "\n" + str(event.name)
-                                      + "\nDuration: " + str(self.tasks[-1].exec_time)
-                                      + "\n" + str(self.tasks[-1]), fillcolor='darkolivegreen3',
+                                    + str(self.tasks[-1].start_time)[-6:]
+                                    + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
+                                    + str(self.tasks[-1].finish_time)[-6:]
+                                    + " CPU: " + str(event.cpu) + "\npid: " + str(event.PID)
+                                    + "\n" + str(event.name)
+                                    + "\nDuration: " + str(self.tasks[-1].exec_time)
+                                    + "\n" + str(self.tasks[-1].cycles)
+                                    + "\n" + str(self.tasks[-1]), fillcolor='darkolivegreen3',
                                 style='filled,bold,rounded')
 
             # link task node to beginning of sub-graph
@@ -314,7 +358,7 @@ class ProcessBranch:
         elif event_type == JobType.BINDER_RECV:
             self.tasks.append(BinderNode(self.graph))
             self.tasks[-1].add_job(event)
-            self.tasks[-1].finished()
+            self.tasks[-1].finished(self.get_cur_cpu_freq())
             # create binder task node
             self.graph.add_node(self.tasks[-1],
                                 label=str(self.tasks[-1].start_time)[:-6]
@@ -456,7 +500,6 @@ class ProcessTree:
             self.metrics.core_freqs[event.cpu] = event.freq
             # add event to cpu branch
             self.cpus[event.cpu].add_job(event)
-
             return
 
         # Also used in the calculation of system load
