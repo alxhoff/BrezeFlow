@@ -7,6 +7,7 @@ import xlsxwriter
 import math
 import os.path as op
 from grapher import *
+from adbinterface import *
 
 class traceProcessor:
 
@@ -34,7 +35,9 @@ class traceProcessor:
     def keepPIDLine(self, line, PIDt):
         pids = PIDt.allPIDStrings[1:]
         if any(re.search("-(" + str(pid) + ") +|=(" + str(pid) + ") ", line) for pid in pids):
-                return True
+            return True
+        elif "update_cpu_metric" in line:
+            return True
         return False
 
     def _processSchedWakeup(self, line):
@@ -66,12 +69,11 @@ class traceProcessor:
     def _processSchedFreq(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
-        cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
-        name = re.findall("^ *(.+)-\d+ +", line)[0]
+        cpu = int(re.findall("cpu: (\d+)", line)[0])
         freq = int(re.findall("freq: (\d+) ", line)[0])
-        load = int(re.findall(" load: (\d+)", line)[0])
+        load = int(re.findall("load: (\d+)", line)[0])
 
-        return EventFreqChange(pid, time, freq, load, cpu, name)
+        return EventFreqChange(pid, time, cpu, freq, load)
 
     def _processBinderTransaction(self, line):
         pid =  int(re.findall("-(\d+) *\[", line)[0])
@@ -225,7 +227,7 @@ class traceProcessor:
             self.logger.error("Could not open trace file" + filename)
             sys.exit("Tracer " + filename + " unable to be opened for processing")
 
-        self.processTrace(f, PIDt)
+        self.processTrace(f, PIDt, None)
 
     def processTracer(self, tracer, PIDt):
         #open trace
@@ -239,11 +241,13 @@ class traceProcessor:
 
         self.processTrace(f, PIDt, tracer.metrics)
 
-    def processTrace(self, f, PIDt, metrics):
+    def processTrace(self, f, PIDt, metrics=None):
 
-        raw_lines = []
         raw_lines = f.readlines()
         processed_events = []
+
+        if metrics is None:
+            metrics = SystemMetrics(adbInterface())
 
         #Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
@@ -278,10 +282,10 @@ class traceProcessor:
             sys.exit("Processing trace failed")
 
         #export to XLSX
-        self.writeToXlsx(processed_events, op.basename(f.name))
+        # self.writeToXlsx(processed_events, op.basename(f.name))
 
         #generate pointers to most recent nodes for each PID (branch heads)
-        process_tree = ProcessTree(PIDt)
+        process_tree = ProcessTree(PIDt, metrics)
 
         for x, event in enumerate(processed_events):
             process_tree.handle_event(event)

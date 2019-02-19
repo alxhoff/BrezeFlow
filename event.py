@@ -3,7 +3,7 @@ from __builtin__ import type
 from aenum import Enum
 import logging
 import networkx as nx
-
+from metrics import *
 
 class BinderType(Enum):
     UNKNOWN = 0
@@ -52,8 +52,8 @@ class EventSchedSwitch(Event):
 
 class EventFreqChange(Event):
 
-    def __init__(self, PID, time, cpu, name, freq, load):
-        Event.__init__(self, PID, time, cpu, name)
+    def __init__(self, PID, time, cpu, freq, load):
+        Event.__init__(self, PID, time, cpu, "freq change")
         self.freq = freq
         self.load = load
 
@@ -160,6 +160,23 @@ class BinderNode(TaskNode):
     def __init__(self, graph):
         TaskNode.__init__(self, graph)
 
+
+class CPUBranch:
+
+    def __init__(self, cpu_number, initial_freq, graph):
+        self.cpu_num = cpu_number
+        self.freq = initial_freq
+        self.events = []
+        self.graph = graph
+
+    def add_job(self, event):
+
+        # create new event
+        self.events.append(event)
+
+        # These edges simply follow a PID, do not show any IPCs or IPDs
+        if len(self.events) >= 2:
+            self.graph.add_edge(self.events[-2], self.events[-1], style='bold')
 
 class ProcessBranch:
 
@@ -292,20 +309,25 @@ class PendingBinderTask:
 
 class ProcessTree:
 
-    def __init__(self, PIDt):
+    def __init__(self, PIDt, metrics=None):
         logging.basicConfig(filename="pytracer.log",
                 format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Process tree created")
+        self.cpus = []
         self.process_branches = []
         self.pending_binder_transactions = []
         self.pending_binder_tasks = []
         self.PIDt = PIDt
         self.index = 0
         self.graph = nx.DiGraph()
+        self.metrics = metrics
 
         for pid in self.PIDt.allPIDStrings:
             self.process_branches.append(ProcessBranch(int(pid), None, self.graph, self.PIDt))
+
+        for x in range(0, self.metrics.core_count):
+            self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x], self.graph))
 
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and
@@ -381,7 +403,12 @@ class ProcessTree:
         # Can be later used to calculate workload/energy consumption of threads
         # in relation to the system configuration as they were executed.
         elif isinstance(event, EventFreqChange):
-            print "wait here"
+            # update cpu freq
+            print event.cpu
+            self.metrics.core_freqs[event.cpu] = event.freq
+            # add event to cpu branch
+            self.cpus[event.cpu].add_job(event)
+
             return
 
         # Also used in the calculation of system load
