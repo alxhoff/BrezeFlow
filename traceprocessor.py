@@ -51,9 +51,7 @@ class traceProcessor:
     def _processSchedSwitch(self, line):
         name = re.findall("^ *(.+)-\d+ +", line)[0]
 
-        print line
         state_next = re.findall("prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)", line)
-        print state_next
         prev_state = state_next[0][0]
         next_pid = int(state_next[0][1])
         # prev_state = re.findall("prev_state=([RSDx]{1})", line)[0]
@@ -75,12 +73,23 @@ class traceProcessor:
         return EventIdle(time, cpu, state, name)
 
     def _processSchedFreq(self, line):
-        pid =  int(re.findall("-(\d+) *\[", line)[0])
-        time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
-        cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
-        target_cpu = int(re.findall("cpu: (\d+)", line)[0])
-        freq = int(re.findall("freq: (\d+) ", line)[0])
-        load = int(re.findall("load: (\d+)", line)[0])
+        # pid =  int(re.findall("-(\d+) *\[", line)[0])
+        # time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
+        # cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
+        # target_cpu = int(re.findall("cpu: (\d+)", line)[0])
+        # freq = int(re.findall("freq: (\d+) ", line)[0])
+        # load = int(re.findall("load: (\d+)", line)[0])
+        pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} (\d+.\d+)", line)
+
+        pid = int(pid_cpu_time[0][0])
+        cpu = int(pid_cpu_time[0][1])
+        time = int(round(float(pid_cpu_time[0][2]) * 1000000))
+
+        cpu_freq_load = re.findall("cpu: (\d+) freq: (\d+) load: (\d+)", line)
+
+        target_cpu = int(cpu_freq_load[0][0])
+        freq = int(cpu_freq_load[0][1])
+        load = int(cpu_freq_load[0][2])
 
         return EventFreqChange(pid, time, cpu, freq, load, target_cpu)
 
