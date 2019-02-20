@@ -101,18 +101,25 @@ class PIDtracer:
             if "grep" in line:
                 continue
             # remove grep process
-            pid = int(re.findall("^ *(\d+)", line)[0])
-            pname = re.findall(".* +(.*)$", line)[0]
-            tname = re.findall("\{(.*)\}", line)
+            regex_find = re.findall("(\d+) \d+ +\d+:\d+ {(Binder:(\d+)_.+)} (.+)$", line)
+            # pid = int(re.findall("^ *(\d+)", line)[0])
+            # pname = re.findall(".* +(.*)$", line)[0]
+            # tname = re.findall("\{(.*)\}", line)
+            pid = int(regex_find[0][0])
+            pname = regex_find[0][3]
+            tname = regex_find[0][1]
+
             if not tname:
                 tname = pname
+
             self.allBinderPID.append(PID(pid, pname, tname))
             self.logger.debug("Found binder thread " + tname[0] + " with PID: " \
                               + str(pid))
 
             # Check that parent threads are in system server threads. This catches threads
             # such as the media codec which is commonly used but is not a system service
-            parent_pid = int(re.findall("{Binder:(\d+)_.+}", line)[0])
+            # parent_pid = int(re.findall("{Binder:(\d+)_.+}", line)[0])
+            parent_pid = int(regex_find[0][2])
             # process will be first line as it's PID will be lower than child threads and as
             # such will be higher is list
             if not any(proc.pid == parent_pid for proc in self.allSystemPID):
@@ -127,8 +134,7 @@ class PIDtracer:
                         self.allSystemPID.append(PID(pid, pname, tname))
                         self.logger.debug("Found system thread " + tname[0] + " with PID: " \
                                           + str(pid))
-                        break
-                break
+
 
     def findChildBinderThreads(self, PID):
         res = self.adb_device.runCommand("busybox ps -T | grep Binder | grep " + \
