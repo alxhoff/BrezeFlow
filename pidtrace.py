@@ -100,11 +100,8 @@ class PIDtracer:
             # remove grep process
             if "grep" in line:
                 continue
-            # remove grep process
+
             regex_find = re.findall("(\d+) \d+ +\d+:\d+ {(Binder:(\d+)_.+)} (.+)$", line)
-            # pid = int(re.findall("^ *(\d+)", line)[0])
-            # pname = re.findall(".* +(.*)$", line)[0]
-            # tname = re.findall("\{(.*)\}", line)
             pid = int(regex_find[0][0])
             pname = regex_find[0][3]
             tname = regex_find[0][1]
@@ -127,10 +124,14 @@ class PIDtracer:
                 parent_thread = parent_thread.splitlines()
                 for line in parent_thread:
                     if "grep" not in line:
-                        pname = re.findall(".* +(.*)$", line)[0]
-                        tname = re.findall("\{(.*)\}", line)
-                        if not tname:
+                        regex_find = re.findall("(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", line)
+                        pid = int(regex_find[0][0])
+                        pname = regex_find[0][3]
+                        if not regex_find[0][2]:
                             tname = pname
+                        else:
+                            tname = regex_find[0][2]
+
                         self.allSystemPID.append(PID(pid, pname, tname))
                         self.logger.debug("Found system thread " + tname[0] + " with PID: " \
                                           + str(pid))

@@ -3,7 +3,9 @@ import logging
 import networkx as nx
 from aenum import Enum
 from pydispatch import dispatcher
-
+from pid import PID
+from adbinterface import *
+import re
 
 class BinderType(Enum):
     UNKNOWN = 0
@@ -559,7 +561,28 @@ class ProcessTree:
                             del self.pending_binder_transactions[x]
                             return
             else:
+                #TODO test this
                 print "Unhandled binder"
+                # Find the unknown PID and add it to the system
+                child_threads = adbInterface.current_interface.runCommand("busybox ps -T | grep " + event.PID)
+                child_threads = child_threads.splitlines()
+                for line in child_threads:
+                    if "grep" not in line:
+                        regex_find = re.findall("(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", line)
+                        pid = int(regex_find[0][0])
+                        pname = regex_find[0][3]
+                        if not regex_find[0][2]:
+                            tname = pname
+                        else:
+                            tname = regex_find[0][2]
+
+                        # if the thread is new then save it
+                        if not any(proc.pid == pid for proc in self.allSystemPID):
+                            new_pid = PID(pid, pname, tname)
+                            self.allSystemPID.append(new_pid)
+                            self.allPid.append(new_pid)
+                            self.allSystemPIDStrings.append(str(pid))
+                            self.allPIDStrings.append(str(pid))
 
             return
 
