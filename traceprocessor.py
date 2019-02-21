@@ -54,7 +54,7 @@ class traceProcessor:
         prev_state = state_next[0][0]
         next_pid = int(state_next[0][1])
 
-        pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} (\d+.\d+)", line)
+        pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
         pid = int(pid_cpu_time[0][0])
         cpu = int(pid_cpu_time[0][1])
         time = int(round(float(pid_cpu_time[0][2]) * 1000000))
@@ -70,7 +70,7 @@ class traceProcessor:
         return EventIdle(time, cpu, state, name)
 
     def _processSchedFreq(self, line):
-        pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} (\d+.\d+)", line)
+        pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
 
         pid = int(pid_cpu_time[0][0])
         cpu = int(pid_cpu_time[0][1])
@@ -85,7 +85,7 @@ class traceProcessor:
         return EventFreqChange(pid, time, cpu, freq, load, target_cpu)
 
     def _processBinderTransaction(self, line):
-        pid_cpu_time = re.findall("^ *(.*)-(\d+) +\[(\d{3})\] .{4} (\d+.\d+)", line)
+        pid_cpu_time = re.findall("^ *(.*)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
 
         name = pid_cpu_time[0][0]
         pid = int(pid_cpu_time[0][1])
@@ -266,7 +266,7 @@ class traceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:4000]:
+        for line in raw_lines[11:20000]:
             if not self.keepPIDLine(line, PIDt):
                 continue
 
