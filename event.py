@@ -92,6 +92,13 @@ class EventBinderCall(Event):
         self.code = code
         self.recv_time = 0
 
+class EventMaliUtil(Event):
+
+    def __init__(self, PID, time, cpu, util, freq):
+        Event.__init__(self, PID, time, cpu, "mali util")
+        self.util = util
+        self.freq = freq
+
 
 class TaskState(Enum):
     UNKNOWN = 0
@@ -192,7 +199,6 @@ class CPUBranch:
         self.prev_freq = initial_freq
         self.events = []
         self.graph = graph
-        self.associated_branches = None
         self.signal = "freq_change" + str(self.cpu_num)
 
     def send_change_event(self):
@@ -211,14 +217,44 @@ class CPUBranch:
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
-                                  + "\n CPU: " + str(event.cpu) + " Load: " + str(event.load)
-                                  + "\n Freq: " + str(event.freq)
+                                  + "\nCPU: " + str(event.cpu) + " Load: " + str(event.load)
+                                  + "\nFreq: " + str(event.freq)
                                   + "\n" + str(event.__class__.__name__), style='filled', shape='box')
 
         # These edges simply follow a PID, do not show any IPCs or IPDs
         if len(self.events) >= 2:
             self.graph.add_edge(self.events[-2], self.events[-1], style='bold')
 
+
+class GPUBranch:
+
+    def __init__(self, initial_freq, initial_util, graph):
+        self.freq = initial_freq
+        self.prev_freq = initial_freq
+        self.util = initial_util
+        self.prev_util = initial_util
+        self.graph = graph
+        self.events = []
+        self.signal = "gpu_freq_change"
+
+    def add_job(self, event):
+
+        self.events.append(event)
+
+        if event.util != self.util:
+            self.prev_util = self.util
+            self.util = event.util
+
+        if event.freq != self.freq:
+            self.prev_freq = self.freq
+            self.freq = event.freq
+
+        self.graph.add_node(self.events[-1],
+                            label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
+                                    + "\nUtil: " + str(self.events[-1].util)
+                                    + "\nFreq: " + str(self.events[-1].freq)
+                                    + "\n" + str(self.events[-1].__class__.__name__), style='filled',
+                                    shape='box', fillcolor='magenta')
 
 class ProcessBranch:
     """
@@ -404,19 +440,22 @@ class PendingBinderTask:
 
 class ProcessTree:
 
-    def __init__(self, PIDt, metrics=None):
+    def __init__(self, PIDt, metrics):
         logging.basicConfig(filename="pytracer.log",
                             format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Process tree created")
+
+        self.metrics = metrics
+        self.graph = nx.DiGraph()
+        self.PIDt = PIDt
+
         self.cpus = []
         self.process_branches = []
         self.pending_binder_transactions = []
         self.pending_binder_tasks = []
-        self.PIDt = PIDt
-        self.index = 0
-        self.graph = nx.DiGraph()
-        self.metrics = metrics
+
+        self.gpu = GPUBranch(self.metrics.gpu_freq, self.metrics.gpu_util, self.graph)
 
         for pid in self.PIDt.allPIDStrings:
             self.process_branches.append(ProcessBranch(int(pid), None, self.graph, self.PIDt, self.cpus))
@@ -504,6 +543,13 @@ class ProcessTree:
             self.cpus[event.cpu].add_job(event)
             return
 
+        elif isinstance(event, EventMaliUtil):
+
+            self.metrics.gpu_freq = event.freq
+            self.metrics.gpu_util = event.util
+
+            self.gpu.add_job(event)
+
         # Also used in the calculation of system load
         elif isinstance(event, EventIdle):
             return
@@ -561,10 +607,9 @@ class ProcessTree:
                             del self.pending_binder_transactions[x]
                             return
             else:
-                #TODO test this
                 print "Unhandled binder"
                 # Find the unknown PID and add it to the system
-                child_threads = adbInterface.current_interface.runCommand("busybox ps -T | grep " + event.PID)
+                child_threads = adbInterface.current_interface.runCommand("busybox ps -T | grep " + str(event.PID))
                 child_threads = child_threads.splitlines()
                 for line in child_threads:
                     if "grep" not in line:
@@ -585,6 +630,7 @@ class ProcessTree:
                             self.allPIDStrings.append(str(pid))
 
             return
+
 
         else:
             self.logger.debug("Unknown event")

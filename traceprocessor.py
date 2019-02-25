@@ -37,6 +37,8 @@ class traceProcessor:
             return True
         elif "update_cpu_metric" in line:
             return True
+        elif "mali_utilization_stats" in line:
+            return True
         return False
 
     def _processSchedWakeup(self, line):
@@ -70,39 +72,51 @@ class traceProcessor:
         return EventIdle(time, cpu, state, name)
 
     def _processSchedFreq(self, line):
-        pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
+        regex_line = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
 
-        pid = int(pid_cpu_time[0][0])
-        cpu = int(pid_cpu_time[0][1])
-        time = int(round(float(pid_cpu_time[0][2]) * 1000000))
+        pid = int(regex_line[0][0])
+        cpu = int(regex_line[0][1])
+        time = int(round(float(regex_line[0][2]) * 1000000))
 
-        cpu_freq_load = re.findall("cpu: (\d+) freq: (\d+) load: (\d+)", line)
+        regex_line = re.findall("cpu: (\d+) freq: (\d+) load: (\d+)", line)
 
-        target_cpu = int(cpu_freq_load[0][0])
-        freq = int(cpu_freq_load[0][1])
-        load = int(cpu_freq_load[0][2])
+        target_cpu = int(regex_line[0][0])
+        freq = int(regex_line[0][1])
+        load = int(regex_line[0][2])
 
         return EventFreqChange(pid, time, cpu, freq, load, target_cpu)
 
     def _processBinderTransaction(self, line):
-        pid_cpu_time = re.findall("^ *(.*)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
+        regex_line = re.findall("^ *(.*)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
 
-        name = pid_cpu_time[0][0]
-        pid = int(pid_cpu_time[0][1])
-        cpu = int(pid_cpu_time[0][2])
-        time = int(round(float(pid_cpu_time[0][3]) * 1000000))
+        name = regex_line[0][0]
+        pid = int(regex_line[0][1])
+        cpu = int(regex_line[0][2])
+        time = int(round(float(regex_line[0][3]) * 1000000))
 
-        the_rest = re.findall(
+        regex_line = re.findall(
             "dest_proc=(\d+) dest_thread=(\d+) reply=(\d) flags=(0x[0-9a-f]+) code=(0x[0-9a-f]+)", line)
 
-        to_proc = int(the_rest[0][1])
+        to_proc = int(regex_line[0][1])
         if to_proc == 0:
-            to_proc = int(the_rest[0][0])
-        trans_type = int(the_rest[0][2])
-        flags = int(the_rest[0][3], 16)
-        code = int(the_rest[0][4], 16)
+            to_proc = int(regex_line[0][0])
+        trans_type = int(regex_line[0][2])
+        flags = int(regex_line[0][3], 16)
+        code = int(regex_line[0][4], 16)
 
         return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
+
+    def _processMaliUtil(self, line):
+        regex_line = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): mali_utilization_stats: util=(\d{2}) norm_util=\d{2} norm_freq=(\d+)",
+                                line)
+
+        pid = int(regex_line[0][0])
+        cpu = int(regex_line[0][1])
+        time = int(round(float(regex_line[0][2]) * 1000000))
+        util = int(regex_line[0][3])
+        freq = int(regex_line[0][4])
+
+        return EventMaliUtil(pid, time, cpu, util, freq)
 
     def writeToXlsx(self, processed_events, filename):
         # write events into excel file
@@ -266,7 +280,9 @@ class traceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:2000]:
+        # for line in raw_lines[11:2000]:
+        for line in raw_lines[1039:2000]:
+
             if not self.keepPIDLine(line, PIDt):
                 continue
 
@@ -289,6 +305,10 @@ class traceProcessor:
             elif "binder" in line:
                 processed_events.append(self._processBinderTransaction(line))
                 self.logger.debug("Binder event line: " + line)
+
+            elif "mali_utilization_stats" in line:
+                processed_events.append(self._processMaliUtil(line))
+                self.logger.debug("Mali util line: " + line)
 
         if processed_events == []:
             self.logger.debug("Processing trace failed")
