@@ -6,6 +6,7 @@ from pydispatch import dispatcher
 from pid import PID
 from adbinterface import *
 import re
+from metrics import SystemMetrics
 
 class BinderType(Enum):
     UNKNOWN = 0
@@ -297,16 +298,22 @@ class ProcessBranch:
         self.gpu = gpu
 
     def connect_to_cpu_event(self, cpu):
-        dispatcher.connect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq, sender=dispatcher.Any)
-        dispatcher.connect(self.handle_cpu_util_change, signal=self.CPUs[cpu].signal_util, sender=dispatcher.Any)
+        dispatcher.connect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
+                            sender=dispatcher.Any)
+        dispatcher.connect(self.handle_cpu_util_change, signal=self.CPUs[cpu].signal_util,
+                            sender=dispatcher.Any)
 
     def disconnect_from_cpu_event(self, cpu):
-        dispatcher.disconnect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq, sender=dispatcher.Any)
-        dispatcher.disconnect(self.handle_cpu_util_change, signal=self.CPUs[cpu].signal_util, sender=dispatcher.Any)
+        dispatcher.disconnect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
+                            sender=dispatcher.Any)
+        dispatcher.disconnect(self.handle_cpu_util_change, signal=self.CPUs[cpu].signal_util,
+                            sender=dispatcher.Any)
 
     def connect_to_gpu_events(self):
-        dispatcher.connect(self.handle_gpu_freq_change, signal=self.gpu.signal_freq, sender=dispatcher.Any)
-        dispatcher.connect(self.handle_gpu_util_change, signal=self.gpu.signal_util, sender=dispatcher.Any)
+        dispatcher.connect(self.handle_gpu_freq_change, signal=self.gpu.signal_freq,
+                            sender=dispatcher.Any)
+        dispatcher.connect(self.handle_gpu_util_change, signal=self.gpu.signal_util,
+                            sender=dispatcher.Any)
 
     def get_cur_cpu_freq(self):
         return self.CPUs[self.CPU].freq
@@ -322,7 +329,8 @@ class ProcessBranch:
 
     def handle_cpu_freq_change(self):
         if self.tasks:
-            self.tasks[-1].update_cycles(self.get_cur_cpu_prev_freq(), self.get_cur_cpu_last_freq_switch())
+            self.tasks[-1].update_cycles(self.get_cur_cpu_prev_freq(),
+                                         self.get_cur_cpu_last_freq_switch())
 
     def handle_cpu_util_change(self):
         #TODO
@@ -383,7 +391,7 @@ class ProcessBranch:
 
         # If a task is being switched into from sleeping
         # New task STARTING
-        if event_type == JobType.SCHED_SWITCH_IN and self.active == False:
+        if event_type == JobType.SCHED_SWITCH_IN and self.active is False:
 
             # create new task
             self.tasks.append(TaskNode(self.graph))
@@ -416,6 +424,8 @@ class ProcessBranch:
                                     + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
                                     + str(self.tasks[-1].finish_time)[-6:]
                                     + " CPU: " + str(event.cpu) + "\npid: " + str(event.PID)
+                                    + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + " "
+                                    + str(SystemMetrics.current_metrics.gpu_util)
                                     + "\n" + str(event.name)
                                     + "\nDuration: " + str(self.tasks[-1].exec_time)
                                     + "\nCycles: " + str(self.tasks[-1].cycles)

@@ -1,5 +1,7 @@
 class SystemMetrics:
 
+    current_metrics = None
+
     def __init__(self, adb):
         self.adb = adb
         self.core_count = self.getCoreCount()
@@ -7,6 +9,8 @@ class SystemMetrics:
         self.core_loads = self.getCoreLoads()
         self.gpu_freq = self.getGPUFreq()
         self.gpu_util = self.getGPUUtil()
+
+        SystemMetrics.current_metrics = self
 
     def getCoreCount(self):
         return int(self.adb.runCommand("nproc"))
