@@ -193,16 +193,22 @@ class BinderNode(TaskNode):
 
 class CPUBranch:
 
-    def __init__(self, cpu_number, initial_freq, graph):
+    def __init__(self, cpu_number, initial_freq, initial_load, graph):
         self.cpu_num = cpu_number
         self.freq = initial_freq
         self.prev_freq = initial_freq
+        self.load = initial_load
+        self.prev_load = initial_load
         self.events = []
         self.graph = graph
-        self.signal = "freq_change" + str(self.cpu_num)
+        self.signal_util = "util_change" + str(self.cpu_num)
+        self.signal_freq = "freq_change" + str(self.cpu_num)
 
-    def send_change_event(self):
-        dispatcher.send(signal=self.signal, sender=dispatcher.Any)
+    def send_freq_change_event(self):
+        dispatcher.send(signal=self.signal_freq, sender=dispatcher.Any)
+
+    def send_load_change_event(self):
+        dispatcher.send(signal=self.signal_util, sender=dispatcher.Any)
 
     def add_job(self, event):
         # create new event
@@ -213,7 +219,12 @@ class CPUBranch:
             self.prev_freq = self.freq
             self.freq = event.freq
             # Inform PID branches that are running on this CPU that a freq change event occurred
-            self.send_change_event()
+            self.send_freq_change_event()
+
+        if event.load != self.load:
+            self.prev_load = self.load
+            self.load = event.load
+            self.send_load_change_event()
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
@@ -235,7 +246,14 @@ class GPUBranch:
         self.prev_util = initial_util
         self.graph = graph
         self.events = []
-        self.signal = "gpu_freq_change"
+        self.signal_util = "gpu_util_change"
+        self.signal_freq = "gpu_freq_change"
+
+    def send_util_change_event(self):
+        dispatcher.send(signal=self.signal_util, sender=dispatcher.Any)
+
+    def send_freq_change_event(self):
+        dispatcher.send(signal=self.signal_freq, sender=dispatcher.Any)
 
     def add_job(self, event):
 
@@ -244,10 +262,12 @@ class GPUBranch:
         if event.util != self.util:
             self.prev_util = self.util
             self.util = event.util
+            self.send_util_change_event()
 
         if event.freq != self.freq:
             self.prev_freq = self.freq
             self.freq = event.freq
+            self.send_freq_change_event()
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
@@ -265,41 +285,60 @@ class ProcessBranch:
     sleep event).
     """
 
-    def __init__(self, pid, start, graph, PIDt, cpus):
+    def __init__(self, pid, start, graph, PIDt, cpus, gpu):
         self.PID = pid
         self.tasks = []
         self.start = start
         self.active = False
         self.graph = graph
         self.PIDt = PIDt
-        self.cpu = None
-        self.cpus = cpus
+        self.CPU = None
+        self.CPUs = cpus
+        self.gpu = gpu
 
     def connect_to_cpu_event(self, cpu):
-        dispatcher.connect(self.handle_cpu_frq_change, signal=self.cpus[cpu].signal, sender=dispatcher.Any)
+        dispatcher.connect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq, sender=dispatcher.Any)
+        dispatcher.connect(self.handle_cpu_util_change, signal=self.CPUs[cpu].signal_util, sender=dispatcher.Any)
 
     def disconnect_from_cpu_event(self, cpu):
-        dispatcher.disconnect(self.handle_cpu_frq_change, signal=self.cpus[cpu].signal, sender=dispatcher.Any)
+        dispatcher.disconnect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq, sender=dispatcher.Any)
+        dispatcher.disconnect(self.handle_cpu_util_change, signal=self.CPUs[cpu].signal_util, sender=dispatcher.Any)
+
+    def connect_to_gpu_events(self):
+        dispatcher.connect(self.handle_gpu_freq_change, signal=self.gpu.signal_freq, sender=dispatcher.Any)
+        dispatcher.connect(self.handle_gpu_util_change, signal=self.gpu.signal_util, sender=dispatcher.Any)
 
     def get_cur_cpu_freq(self):
-        return self.cpus[self.cpu].freq
+        return self.CPUs[self.CPU].freq
 
     def get_cur_cpu_prev_freq(self):
-        return self.cpus[self.cpu].prev_freq
+        return self.CPUs[self.CPU].prev_freq
 
     def get_cur_cpu_last_freq_switch(self):
-        if self.cpus[self.cpu].events:
-            return self.cpus[self.cpu].events[-1].time
+        if self.CPUs[self.CPU].events:
+            return self.CPUs[self.CPU].events[-1].time
         else:
             return None
 
-    def handle_cpu_frq_change(self):
+    def handle_cpu_freq_change(self):
         if self.tasks:
             self.tasks[-1].update_cycles(self.get_cur_cpu_prev_freq(), self.get_cur_cpu_last_freq_switch())
+
+    def handle_cpu_util_change(self):
+        #TODO
+        return
 
     def handle_cpu_num_change(self, time):
         if self.tasks:
             self.tasks[-1].update_cycles(self.get_cur_cpu_freq(), time)
+
+    def handle_gpu_freq_change(self):
+        #TODO
+        return
+
+    def handle_gru_util_change(self):
+        #TODO
+        return
 
     # At the process branch level the only significant difference is that a job
     # can signify the end of the current task by being a sched switch event with
@@ -307,9 +346,9 @@ class ProcessBranch:
     def add_job(self, event, event_type=JobType.UNKNOWN):
 
         # CPU association
-        if self.cpu is None:
-            self.cpu = event.cpu
-            self.connect_to_cpu_event(self.cpu)
+        if self.CPU is None:
+            self.CPU = event.cpu
+            self.connect_to_cpu_event(self.CPU)
 
         # first job/task for PID branch
         if not self.tasks:
@@ -332,14 +371,14 @@ class ProcessBranch:
 
         if event_type == JobType.SCHED_SWITCH_IN:
             # If the CPU has changed
-            if event.cpu != self.cpu:
+            if event.cpu != self.CPU:
                 # Update current task's cycle count in case new CPU has different speed
                 self.handle_cpu_num_change(event.time)
 
                 # Change event signal for freq change
-                self.disconnect_from_cpu_event(self.cpu)
-                self.cpu = event.cpu
-                self.connect_to_cpu_event(self.cpu)
+                self.disconnect_from_cpu_event(self.CPU)
+                self.CPU = event.cpu
+                self.connect_to_cpu_event(self.CPU)
 
 
         # If a task is being switched into from sleeping
@@ -458,10 +497,12 @@ class ProcessTree:
         self.gpu = GPUBranch(self.metrics.gpu_freq, self.metrics.gpu_util, self.graph)
 
         for pid in self.PIDt.allPIDStrings:
-            self.process_branches.append(ProcessBranch(int(pid), None, self.graph, self.PIDt, self.cpus))
+            self.process_branches.append(ProcessBranch(int(pid), None, self.graph,
+                                                       self.PIDt, self.cpus, self.gpu))
 
         for x in range(0, self.metrics.core_count):
-            self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x], self.graph))
+            self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x],
+                                       self.metrics.core_loads[x], self.graph))
 
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and

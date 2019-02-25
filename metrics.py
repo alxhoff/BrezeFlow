@@ -4,6 +4,7 @@ class SystemMetrics:
         self.adb = adb
         self.core_count = self.getCoreCount()
         self.core_freqs = self.getCoreFrequencies()
+        self.core_loads = self.getCoreLoads()
         self.gpu_freq = self.getGPUFreq()
         self.gpu_util = self.getGPUUtil()
 
@@ -17,6 +18,11 @@ class SystemMetrics:
                 int(self.adb.runCommand("cat /sys/devices/system/cpu/cpu"
                                         + str(core) + "/cpufreq/scaling_cur_freq")))
         return frequencies
+
+    def getCoreLoads(self):
+        #TODO
+        loads = [0] * self.core_count
+        return loads
 
     def getGPUFreq(self):
         return int(self.adb.runCommand("cat /sys/class/misc/mali0/device/clock"))
