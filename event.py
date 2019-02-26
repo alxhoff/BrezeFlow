@@ -164,14 +164,15 @@ class TaskNode:
                     for x, pe in enumerate(self.power_events):
                         if pe.time < self.events[-1].time:
                             # TODO might cause indexing errors
-                            del self.power_events[x]
+                            continue
                         # calc time is the point until which the cycles were last counted
-                        self.cycles += (pe.time - self.calc_time) * pe.frequency
+                        self.cycles += int((pe.time - self.calc_time) * 0.000001 * pe.frequency * 1000)
                         self.calc_time = pe.time
+                    del self.power_events[:]
                 # remaining cycles
                 if event.time != self.calc_time:
-                    self.cycles += (event.time - self.calc_time) * \
-                                   SystemMetrics.current_metrics.get_CPU_core_freq(event.cpu)
+                    cpu_speed = SystemMetrics.current_metrics.get_CPU_core_freq(event.cpu)
+                    self.cycles += int((event.time - self.calc_time) * 0.000001 * cpu_speed * 1000)
 
             # Switching in
             if event.next_pid == self.PID:
@@ -207,11 +208,6 @@ class TaskNode:
 
     def finished(self):
         self.finish_time = self.events[-1].time
-        if self.start_time is 0:
-            self.start_time = self.events[1].time
-        self.exec_time = self.finish_time - self.start_time
-        self.cycles += (self.finish_time - self.calc_time) * \
-                       SystemMetrics.current_metrics.get_CPU_core_freq(self.events[-1].cpu) / 3 #TODO what is this 3?
 
     def add_power_event(self, time, freq, util=None):
         self.power_events.append(PowerChunk(time, freq, util))
@@ -233,24 +229,22 @@ class CPUBranch:
         self.prev_util = initial_util
         self.events = []
         self.graph = graph
-        self.signal_util = "util_change" + str(self.cpu_num)
         self.signal_freq = "freq_change" + str(self.cpu_num)
 
-    def send_freq_change_event(self):
+    def send_change_event(self):
         dispatcher.send(signal=self.signal_freq, sender=dispatcher.Any)
-
-    def send_util_change_event(self):
-        dispatcher.send(signal=self.signal_util, sender=dispatcher.Any)
 
     def add_job(self, event):
         # create new event
         self.events.append(event)
 
+        event_happened = 0
+
         # Update current frequency
         if event.freq != self.freq:
             self.prev_freq = self.freq
             self.freq = event.freq
-            self.send_freq_change_event()
+            event_happened = 1
 
         # Update current util
         if event.util != self.util:
@@ -259,7 +253,11 @@ class CPUBranch:
             else:
                 self.prev_util = self.util
             self.util = event.util
-            self.send_util_change_event()
+            event_happened = 1
+
+        if event_happened:
+            self.send_change_event()
+
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
@@ -281,23 +279,21 @@ class GPUBranch:
         self.prev_util = initial_util
         self.graph = graph
         self.events = []
-        self.signal_util = "gpu_util_change"
         self.signal_freq = "gpu_freq_change"
 
-    def send_freq_change_event(self):
+    def send_change_event(self):
         dispatcher.send(signal=self.signal_freq, sender=dispatcher.Any)
-
-    def send_util_change_event(self):
-        dispatcher.send(signal=self.signal_util, sender=dispatcher.Any)
 
     def add_job(self, event):
 
         self.events.append(event)
 
+        event_happened = 0;
+
         if event.util != self.util:
             self.prev_util = self.util
             self.util = event.util
-            self.send_util_change_event()
+            event_happened = 1
 
         if event.freq != self.freq:
             if self.util is 0:
@@ -305,7 +301,10 @@ class GPUBranch:
             else:
                 self.prev_freq = self.freq
             self.freq = event.freq
-            self.send_freq_change_event()
+            event_happened = 1
+
+        if event_happened:
+            self.send_event()
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
@@ -338,19 +337,16 @@ class ProcessBranch:
     def connect_to_cpu_event(self, cpu):
         dispatcher.connect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
                             sender=dispatcher.Any)
-        dispatcher.connect(self.handle_cpu_util_change, signal=self.CPUs[cpu].signal_util,
-                            sender=dispatcher.Any)
 
     def disconnect_from_cpu_event(self, cpu):
-        dispatcher.disconnect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
-                            sender=dispatcher.Any)
-        dispatcher.disconnect(self.handle_cpu_util_change, signal=self.CPUs[cpu].signal_util,
-                            sender=dispatcher.Any)
+        try:
+            dispatcher.disconnect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
+                                sender=dispatcher.Any)
+        except Exception:
+            return
 
     def connect_to_gpu_events(self):
         dispatcher.connect(self.handle_gpu_freq_change, signal=self.gpu.signal_freq,
-                            sender=dispatcher.Any)
-        dispatcher.connect(self.handle_gpu_util_change, signal=self.gpu.signal_util,
                             sender=dispatcher.Any)
 
     def get_cur_cpu_freq(self):
@@ -368,12 +364,7 @@ class ProcessBranch:
     def handle_cpu_freq_change(self):
         if self.tasks:
             self.tasks[-1].add_power_event(self.CPUs[self.CPU].events[-1].time,
-                                           self.CPUs[self.CPU].prev_freq)
-
-    def handle_cpu_util_change(self):
-        if self.tasks:
-            self.tasks[-1].add_power_event(self.CPUs[self.CPU].events[-1].time,
-                                           util=self.CPUs[self.CPU].util)
+                                           self.CPUs[self.CPU].prev_freq, self.CPUs[self.CPU].prev_util)
 
     def handle_cpu_num_change(self, event):
         # If the new CPU freq is different create change event for later calculations
@@ -613,9 +604,9 @@ class ProcessTree:
 
         elif isinstance(event, EventFreqChange):
             # update cpu freq
-            self.metrics.core_freqs[event.cpu] = event.freq
+            self.metrics.core_freqs[event.target_cpu] = event.freq
             # add event to cpu branch
-            self.cpus[event.cpu].add_job(event)
+            self.cpus[event.target_cpu].add_job(event)
             return
 
         elif isinstance(event, EventMaliUtil):
