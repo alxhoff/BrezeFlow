@@ -15,8 +15,8 @@ def main():
     #                      PID_filter=PIDt,
     #                      duration=1)
     #combo_tracer.runTracer()
-    #tp.processTracer(combo_tracer, PIDt)
-    tp.processTraceFile("combo_tracer.trace", PIDt)
+    #tp.process_tracer(combo_tracer, PIDt)
+    tp.process_trace_file("combo_tracer.trace", PIDt)
     # tp.filterTracePID(combo_tracer, PIDt, combo_tracer.filename)
 
 
