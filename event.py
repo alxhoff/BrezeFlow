@@ -363,8 +363,11 @@ class ProcessBranch:
 
     def handle_cpu_freq_change(self):
         if self.tasks:
-            self.tasks[-1].add_power_event(self.CPUs[self.CPU].events[-1].time,
+            try:
+                self.tasks[-1].add_power_event(self.CPUs[self.CPU].events[-1].time,
                                            self.CPUs[self.CPU].prev_freq, self.CPUs[self.CPU].prev_util)
+            except Exception:
+                pass
 
     def handle_cpu_num_change(self, event):
         # If the new CPU freq is different create change event for later calculations
