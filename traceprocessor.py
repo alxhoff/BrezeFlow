@@ -107,7 +107,7 @@ class traceProcessor:
         return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
 
     def _process_mali_util(self, line):
-        regex_line = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): mali_utilization_stats: util=(\d{2}) norm_util=\d{2} norm_freq=(\d+)",
+        regex_line = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): mali_utilization_stats: util=(\d+) norm_util=\d+ norm_freq=(\d+)",
                                 line)
 
         pid = int(regex_line[0][0])
@@ -280,7 +280,7 @@ class traceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:1000]:
+        for line in raw_lines[11:500]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue

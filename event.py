@@ -144,8 +144,8 @@ class TaskNode:
         self.cycles = 0
         self.start_time = 0
         self.calc_time = 0
+        self.duration = 0
         self.finish_time = 0
-        self.exec_time = 0
         self.graph = graph
         self.PID = PID
 
@@ -167,12 +167,16 @@ class TaskNode:
                             continue
                         # calc time is the point until which the cycles were last counted
                         self.cycles += int((pe.time - self.calc_time) * 0.000001 * pe.frequency * 1000)
+                        self.duration += pe.time - self.calc_time
                         self.calc_time = pe.time
                     del self.power_events[:]
                 # remaining cycles
                 if event.time != self.calc_time:
                     cpu_speed = SystemMetrics.current_metrics.get_CPU_core_freq(event.cpu)
                     self.cycles += int((event.time - self.calc_time) * 0.000001 * cpu_speed * 1000)
+                    self.duration += event.time - self.calc_time
+                    self.calc_time = event.time
+
 
             # Switching in
             if event.next_pid == self.PID:
@@ -304,7 +308,7 @@ class GPUBranch:
             event_happened = 1
 
         if event_happened:
-            self.send_event()
+            self.send_change_event()
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
@@ -460,7 +464,7 @@ class ProcessBranch:
                                     + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + " "
                                     + str(SystemMetrics.current_metrics.gpu_util)
                                     + "\n" + str(event.name)
-                                    + "\nDuration: " + str(self.tasks[-1].exec_time)
+                                    + "\nDuration: " + str(self.tasks[-1].duration)
                                     + "\nCycles: " + str(self.tasks[-1].cycles)
                                     + "\n" + str(self.tasks[-1].__class__.__name__),
                                 fillcolor='darkolivegreen3',
@@ -565,6 +569,7 @@ class ProcessTree:
                 process_branch = self.process_branches[index]
                 process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT)
                 self.logger.debug("Sched switch in event added as job")
+                return
 
             # task being switched in
             index = self.PIDt.get_PID_string_index(event.next_pid)
@@ -678,25 +683,25 @@ class ProcessTree:
             else:
                 print "Unhandled binder"
                 # Find the unknown PID and add it to the system if possible
-                child_threads = adbInterface.current_interface.run_command("busybox ps -T | grep " + str(event.PID))
-                child_threads = child_threads.splitlines()
-                for line in child_threads:
-                    if "grep" not in line:
-                        regex_find = re.findall("(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", line)
-                        pid = int(regex_find[0][0])
-                        pname = regex_find[0][3]
-                        if not regex_find[0][2]:
-                            tname = pname
-                        else:
-                            tname = regex_find[0][2]
-
-                        # if the thread is new then save it
-                        if not any(proc.pid == pid for proc in self.allSystemPID):
-                            new_pid = PID(pid, pname, tname)
-                            self.allSystemPID.append(new_pid)
-                            self.allPid.append(new_pid)
-                            self.allSystemPIDStrings.append(str(pid))
-                            self.allPIDStrings.append(str(pid))
+                # child_threads = adbInterface.current_interface.run_command("busybox ps -T | grep " + str(event.PID))
+                # child_threads = child_threads.splitlines()
+                # for line in child_threads:
+                #     if "grep" not in line:
+                #         regex_find = re.findall("(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", line)
+                #         pid = int(regex_find[0][0])
+                #         pname = regex_find[0][3]
+                #         if not regex_find[0][2]:
+                #             tname = pname
+                #         else:
+                #             tname = regex_find[0][2]
+                #
+                #         # if the thread is new then save it
+                #         if not any(proc.pid == pid for proc in self.allSystemPID):
+                #             new_pid = PID(pid, pname, tname)
+                #             self.allSystemPID.append(new_pid)
+                #             self.allPid.append(new_pid)
+                #             self.allSystemPIDStrings.append(str(pid))
+                #             self.allPIDStrings.append(str(pid))
 
             return
 
