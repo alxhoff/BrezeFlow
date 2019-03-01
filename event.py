@@ -460,12 +460,12 @@ class ProcessBranch:
                                     + str(self.tasks[-1].start_time)[-6:]
                                     + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
                                     + str(self.tasks[-1].finish_time)[-6:]
-                                    + " CPU: " + str(event.cpu) + "\npid: " + str(event.PID)
-                                    + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + " "
-                                    + str(SystemMetrics.current_metrics.gpu_util)
-                                    + "\n" + str(event.name)
+                                    + "\nCPU: " + str(event.cpu) + "   PID: " + str(event.PID)
+                                    + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "MHz   "
+                                    + str(SystemMetrics.current_metrics.gpu_util) + "% Util"
                                     + "\nDuration: " + str(self.tasks[-1].duration)
                                     + "\nCycles: " + str(self.tasks[-1].cycles)
+                                    + "\n" + str(event.name)
                                     + "\n" + str(self.tasks[-1].__class__.__name__),
                                 fillcolor='darkolivegreen3',
                                 style='filled,bold,rounded', shape='box')
