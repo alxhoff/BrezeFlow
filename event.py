@@ -484,8 +484,8 @@ class ProcessBranch:
             self.tasks[-1].finished()
 
             self.graph.add_node(self.tasks[-1],
-                                label=str(self.tasks[-1].start_time)[:-6]
-                                      + "." + str(self.tasks[-1].start_time)[-6:] + "\npid: "
+                                label=str(self.tasks[0].start_time)[:-6]
+                                      + "." + str(self.tasks[0].start_time)[-6:] + "\npid: "
                                       + str(event.PID)
                                       + "  dest PID: " + str(event.dest_proc)
                                       + "\n" + str(event.name)
