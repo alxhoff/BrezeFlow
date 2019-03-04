@@ -25,6 +25,8 @@ class adbInterface:
         self.tracers = []
 
     def __del__(self):
+        self.current_interface = None
+        self.device.Close()
         self.logger.debug("ADB interface closed")
 
     def run_command(self, command):
