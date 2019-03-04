@@ -1,9 +1,10 @@
+#Alex Hoffman 2019
+
 import logging
 import os.path as op
 
 from adb import adb_commands
 from adb import sign_m2crypto
-
 
 class adbInterface:
     current_interface = None

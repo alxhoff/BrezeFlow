@@ -1,5 +1,4 @@
 #Alex Hoffman 2019
-
 from adbinterface import adbInterface
 from enum import Enum
 
@@ -69,7 +68,9 @@ class GovStatus:
         del self.adbIface
 
     def ConnectADB(self):
-        if self.adbIface is not None:
+        try:
+            self.adbIface
+        except AttributeError:
             self.adbIface = adbInterface()
 
     def __init__(self):
