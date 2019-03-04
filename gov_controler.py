@@ -10,11 +10,22 @@ class Core:
     def __init__(self, name, freq, online=1, bigLITTLE=core_type.little.value):
         self.name = name
         self.core_type = bigLITTLE
-        if bigLITTLE is 0:
+        if bigLITTLE is core_type.big:
             self.online = online
         else:
             self.online = 1
         self.freq = freq
+        self.freq_table = self.GetCoreFreq()
+
+    #TODO remove hardcoded stuff here
+    def GetCoreFreqs(self):
+        if self.core_type is core_type.big:
+            return GovStatus.adbIface.run_command(
+                "cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/cpu_freq_table").splitlines()
+        else:
+            return GovStatus.adbIface.run_command(
+                "cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/kfc_freq_table").splitlines()
+
 
 class GovStatus:
 
@@ -39,23 +50,26 @@ class GovStatus:
         #TODO check freq validity
 
         for x,f in enumerate(freqs):
-            command = "echo " + str(f) + " > /sys/devices/system/cpu/" \
-                + self.cores[x].name + "/cpufreq/scaling_min_freq"
-            GovStatus.adbIface.run_command(command)
-            command = "echo " + str(f) + " > /sys/devices/system/cpu/" \
-                + self.cores[x].name + "/cpufreq/scaling_max_freq"
-            GovStatus.adbIface.run_command(command)
+            if f is 0:
+                self.SetCoreOff(self.cores[x].name)
+            else:
+                self.SetCoreOn(self.cores[x].name)
+                command = "echo " + str(f) + " > /sys/devices/system/cpu/" \
+                    + self.cores[x].name + "/cpufreq/scaling_min_freq"
+                GovStatus.adbIface.run_command(command)
+                command = "echo " + str(f) + " > /sys/devices/system/cpu/" \
+                    + self.cores[x].name + "/cpufreq/scaling_max_freq"
+                GovStatus.adbIface.run_command(command)
 
-    def SetBigOn(self):
+    def SetCoreOn(self, core):
         GovStatus.adbIface.run_command(
-                "echo 1 > /sys/devices/system/cpu/cpu5/online")
+                "echo 1 > /sys/devices/system/cpu/" + core + "/online")
 
-    def SetBigOff(self):
+    def SetCoreOff(self, core):
         GovStatus.adbIface.run_command(
-                "echo 0 > /sys/devices/system/cpu/cpu5/online")
+                "echo 0 > /sys/devices/system/cpu/" + core + "/online")
 
     def __init__(self):
-        self.SetBigOn()
         GovStatus.adbIface.run_command(
                 "echo interactive > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
         GovStatus.adbIface.run_command(
@@ -65,7 +79,3 @@ class GovStatus:
         for x,core in enumerate(self.cores):
             print core.name
             print core.freq
-
-g_stats = GovStatus()
-g_stats.SetCoreFreqs([1100000,1100000,1100000])
-
