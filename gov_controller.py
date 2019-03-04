@@ -1,3 +1,5 @@
+#Alex Hoffman 2019
+
 from adbinterface import adbInterface
 from enum import Enum
 
@@ -10,21 +12,22 @@ class Core:
     def __init__(self, name, freq, online=1, bigLITTLE=core_type.little.value):
         self.name = name
         self.core_type = bigLITTLE
-        if bigLITTLE is core_type.big:
+        if bigLITTLE is 0:
             self.online = online
         else:
             self.online = 1
         self.freq = freq
-        self.freq_table = self.GetCoreFreq()
+        self.freq_table = self.GetCoreFreqs()
+        print (self.freq_table)
 
     #TODO remove hardcoded stuff here
     def GetCoreFreqs(self):
-        if self.core_type is core_type.big:
+        if self.core_type is 0:
             return GovStatus.adbIface.run_command(
-                "cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/cpu_freq_table").splitlines()
+                "cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/cpu_freq_table").splitlines()[0].split()
         else:
             return GovStatus.adbIface.run_command(
-                "cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/kfc_freq_table").splitlines()
+                "cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/kfc_freq_table").splitlines()[0].split()
 
 
 class GovStatus:
@@ -37,12 +40,12 @@ class GovStatus:
         cpus = cpus.splitlines()
         self.core_count = len(cpus)
         for x in cpus:
+            self.SetCoreOn(x)
             core_freq = int(GovStatus.adbIface.run_command(
                     "cat /sys/devices/system/cpu/" + x + "/cpufreq/cpuinfo_cur_freq"))
-            core_type = GovStatus.adbIface.run_command(
-                    "cat /sys/devices/system/cpu/" + x + "/topology/physical_package_id")
-            if core_type:
-                self.cores.append(Core(x, core_freq, core_type))
+            core_type = int(GovStatus.adbIface.run_command(
+                    "cat /sys/devices/system/cpu/" + x + "/topology/physical_package_id"))
+            self.cores.append(Core(x, core_freq, 1, core_type))
 
     def SetCoreFreqs(self, freqs=[]):
         if not freqs:
@@ -77,5 +80,5 @@ class GovStatus:
         self.cores = []
         self.GetCores()
         for x,core in enumerate(self.cores):
-            print core.name
-            print core.freq
+            print (core.name)
+            print (core.freq)
