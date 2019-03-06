@@ -2,8 +2,11 @@ class SystemMetrics:
 
     current_metrics = None
 
-    def __init__(self, adb):
+    def __init__(self, adb, little_energy, big_energy, gpu_energy):
         self.adb = adb
+        self.little_energy = little_energy
+        self.big_energy = big_energy
+        self.gpu_energy = gpu_energy
         self.core_count = self.get_core_count()
         self.core_freqs = self.get_core_freqs()
         self.core_loads = self.get_core_loads()

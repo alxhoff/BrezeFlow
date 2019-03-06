@@ -275,7 +275,7 @@ class traceProcessor:
         processed_events = []
 
         if metrics is None:
-            metrics = SystemMetrics(adbInterface.current_interface)
+            metrics = SystemMetrics(adbInterface.current_interface, None, None, None)
 
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
