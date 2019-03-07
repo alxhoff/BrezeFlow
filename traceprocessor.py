@@ -8,7 +8,7 @@ from event import *
 from grapher import *
 from metrics import *
 
-class traceProcessor:
+class TraceProcessor:
 
     def __init__(self):
         logging.basicConfig(filename="pytracer.log",
@@ -246,7 +246,7 @@ class traceProcessor:
 
         output_workbook.close()
 
-    def process_trace_file(self, filename, PIDt):
+    def process_trace_file(self, filename, PIDt, metrics=None):
         try:
             f = open(filename, "r")
             self.logger.debug("Tracer " + filename + " opened for \
@@ -255,7 +255,7 @@ class traceProcessor:
             self.logger.error("Could not open trace file" + filename)
             sys.exit("Tracer " + filename + " unable to be opened for processing")
 
-        self.process_trace(f, PIDt, None)
+        self.process_trace(f, PIDt, metrics)
 
     def process_tracer(self, tracer, PIDt):
         # open trace
@@ -267,7 +267,10 @@ class traceProcessor:
             self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
 
-        self.process_trace(f, PIDt, tracer.metrics)
+        if tracer.metrics:
+            self.process_trace(f, PIDt, tracer.metrics)
+        else:
+            self.process_trace(f, PIDt, None)
 
     def process_trace(self, f, PIDt, metrics=None):
 
@@ -275,7 +278,8 @@ class traceProcessor:
         processed_events = []
 
         if metrics is None:
-            metrics = SystemMetrics(adbInterface.current_interface, None, None, None)
+            metrics = SystemMetrics(adbInterface.current_interface,
+                                    None, None, None, None, None, None)
 
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")

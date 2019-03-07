@@ -2,14 +2,17 @@ class SystemMetrics:
 
     current_metrics = None
 
-    def __init__(self, adb, little_energy, big_energy, gpu_energy):
+    def __init__(self, adb, little_freqs, little_energy, big_freqs, big_energy, gpu_freqs, gpu_energy):
         self.adb = adb
+        self.little_freqs = little_freqs
         self.little_energy = little_energy
+        self.big_freqs = big_freqs
         self.big_energy = big_energy
+        self.gpu_freqs = gpu_freqs
         self.gpu_energy = gpu_energy
         self.core_count = self.get_core_count()
         self.core_freqs = self.get_core_freqs()
-        self.core_loads = self.get_core_loads()
+        self.core_utils = self.get_core_utils()
         self.gpu_freq = self.get_GPU_freq()
         self.gpu_util = self.get_GPU_util()
 
@@ -26,7 +29,7 @@ class SystemMetrics:
                                          + str(core) + "/cpufreq/scaling_cur_freq")))
         return frequencies
 
-    def get_core_loads(self):
+    def get_core_utils(self):
         #TODO
         loads = [0] * self.core_count
         return loads
@@ -39,6 +42,9 @@ class SystemMetrics:
 
     def get_CPU_core_freq(self, core):
         return self.core_freqs[core]
+
+    def get_GPU_core_freq(self):
+        return self.gpu_freq
 
     def write_core_freqs_to_file(self, filename):
         with open(filename, "w+") as f:

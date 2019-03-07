@@ -7,15 +7,15 @@ from metrics import *
 
 # def adb_write_to_file(dev, filename, contents):
 
-class tracer:
+class Tracer:
     ftrace_path = '/d/tracing/'
 
     def __init__(self, adb_device, name, functions=[], events=[],
-                 trace_type="nop", duration=1, PID_filter=None, binder_loger=False):
+                 trace_type="nop", duration=1, PID_filter=None, metrics=None):
         logging.basicConfig(filename="pytracer.log",
                             format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
-        self.metrics = None
+        self.metrics = metrics
         self.adb_device = adb_device
         self.name = name
         self.filename = op.dirname(op.realpath(__file__)) + '/' \
@@ -193,9 +193,6 @@ class tracer:
         # PID
         if self.PID_filter is not None:
             self.setFilterPID(self.PID_filter)
-
-        # metrics
-        self.metrics = SystemMetrics(self.adb_device)
 
         # run
         self.traceForTime(self.duration)
