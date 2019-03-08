@@ -26,22 +26,23 @@ def main():
     adbBridge = adbInterface()
     tp = TraceProcessor()
     PIDt = PIDtracer(adbBridge, "hillclimb")
+    #PIDt = PIDtracer(adbBridge, "miami")
 
     sys_metrics = SystemMetrics(adbBridge, args.little, args.little_energy,
                                 args.big, args.big_energy,
                                 args.gpu, args.gpu_energy)
 
-    combo_tracer = Tracer(adbBridge,
-                         "combo",
-                          events=["binder_transaction",
-                         "sched_switch", "cpu_frequency",
-                         "mali_utilization_stats"],
-                          PID_filter=PIDt,
-                          duration=1,
-                          metrics=sys_metrics)
-    combo_tracer.runTracer()
-    tp.process_tracer(combo_tracer, PIDt)
-    # tp.process_trace_file("combo_tracer.trace", PIDt, sys_metrics)
+    # combo_tracer = Tracer(adbBridge,
+    #                      "combo",
+    #                       events=["binder_transaction",
+    #                      "sched_switch", "cpu_frequency",
+    #                      "mali_utilization_stats"],
+    #                       PID_filter=PIDt,
+    #                       duration=1,
+    #                       metrics=sys_metrics)
+    # combo_tracer.runTracer()
+    # tp.process_tracer(combo_tracer, PIDt)
+    tp.process_trace_file("combo_tracer.trace", PIDt, sys_metrics)
     # tp.filterTracePID(combo_tracer, PIDt, combo_tracer.filename)
 
 

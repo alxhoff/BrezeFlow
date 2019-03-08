@@ -136,7 +136,7 @@ As such task processing must have a lead of one job.
 class TaskNode:
 
     """ Calculating task cycles works on incremental summing. If the CPU on which the process is
-    running or the GPU changes or the frequency changes then the cycles variable is updated and
+    running or the GPU changes or the frequency changes then the variable is updated and
     the calc time shifted to the point of the event. As such the calc time stores the time since
     the exec time was last changed, and given that the CPU and frequency have been fixed during
     that time, the cycles is easily updated using a += and the current values (before updating them)
@@ -519,8 +519,8 @@ class ProcessBranch:
             self.tasks[-1].finished()
 
             self.graph.add_node(self.tasks[-1],
-                                label=str(self.tasks[0].start_time)[:-6]
-                                      + "." + str(self.tasks[0].start_time)[-6:] + "\npid: "
+                                label=str(self.tasks[-1].events[-1].time)[:-6]
+                                      + "." + str(self.tasks[-1].events[-1].time)[-6:] + "\npid: "
                                       + str(event.PID)
                                       + "  dest PID: " + str(event.dest_proc)
                                       + "\n" + str(event.name)

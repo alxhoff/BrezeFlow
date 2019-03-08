@@ -284,7 +284,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:1000]:
+        for line in raw_lines[70:2000]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
