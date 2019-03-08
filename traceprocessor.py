@@ -45,12 +45,12 @@ class TraceProcessor:
         pid = int(re.findall("-(\d+) *\[", line)[0])
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
-        name = re.findall("^ *(.+)-\d+ +", line)[0]
+        name = re.findall("^ *(.+?)-\d+ +", line)[0]
 
         return EventWakeup(pid, time, cpu, name)
 
     def _process_sched_switch(self, line):
-        name = re.findall("^ *(.+)-\d+ +", line)[0]
+        name = re.findall("^ *(.+?)-\d+ +", line)[0]
 
         state_next = re.findall("prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)", line)
         prev_state = state_next[0][0]
@@ -66,7 +66,7 @@ class TraceProcessor:
     def _process_sched_idle(self, line):
         time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
         cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
-        name = re.findall("^ *(.+)-\d+ +", line)[0]
+        name = re.findall("^ *(.+?)-\d+ +", line)[0]
         state = int(re.findall("state=(\d+)", line)[0])
 
         return EventIdle(time, cpu, state, name)
