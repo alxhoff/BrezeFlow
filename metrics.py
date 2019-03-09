@@ -69,6 +69,17 @@ class SystemUtilization:
         for x in range(core_count):
             self.core_utils.append(UtilizationTable())
 
+    def get_util(self, core, time):
+        core_util = self.core_utils[core]
+
+        event_time = time - core_util.initial_time
+
+        # start walking events to find util
+        for slice in core_util.events:
+            if event_time >= slice.start_time \
+                and event_time < slice.start_time + slice.duration:
+                return slice.utilization
+
 class SystemMetrics:
 
     current_metrics = None

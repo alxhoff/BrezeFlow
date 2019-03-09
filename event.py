@@ -200,6 +200,7 @@ class TaskNode:
                         self.cpu_cycles += new_cycles
                         self.gpu_cycles += int((pe.time - self.calc_time) * 0.000001 * pe.gpu_frequency * 1000000)
                         ##TODO ENERGY!
+                        util = SystemMetrics.current_metrics.sys_util.get_util(pe.cpu, pe.time)
                         # cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency)
                         # self.energy += cycle_energy * new_cycles
 
@@ -395,7 +396,7 @@ class ProcessBranch:
         else:
             return None
 
-    def handle_cpu_freq_change(self):
+    def handle_cpu_freq_change(self, event):
         if self.tasks:
             try:
                 self.tasks[-1].add_cpu_gpu_event(self.CPUs[self.CPU].events[-1].time,
@@ -426,7 +427,7 @@ class ProcessBranch:
     def handle_gpu_change(self):
         if self.tasks:
             try:
-                self.tasks[-1].add_cpu_gpu_event(self.CPUs[self.CPU].events[-1].time,
+                self.tasks[-1].add_cpu_gpu_event(self.gpu.events[-1].time,
                                                  self.CPU,
                                                  self.CPUs[self.CPU].freq,
                                                  self.CPUs[self.CPU].util,
