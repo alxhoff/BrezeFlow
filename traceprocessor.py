@@ -39,6 +39,8 @@ class TraceProcessor:
             return True
         elif "mali_utilization_stats" in line:
             return True
+        elif "cpu_idle:" in line:
+            return True
         return False
 
     def _process_sched_wakeup(self, line):
@@ -64,12 +66,13 @@ class TraceProcessor:
         return EventSchedSwitch(pid, time, cpu, name, prev_state, next_pid)
 
     def _process_sched_idle(self, line):
-        time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
-        cpu = int(re.findall(" +\[(\d+)\] +", line)[0])
-        name = re.findall("^ *(.+?)-\d+ +", line)[0]
-        state = int(re.findall("state=(\d+)", line)[0])
+        regex_line = re.findall("\[(\d{3})\] .{4} +(\d+.\d+): cpu_idle: state=(\d+)", line)
 
-        return EventIdle(time, cpu, state, name)
+        time = int(round(float(regex_line[0][1]) * 1000000))
+        cpu = int(regex_line[0][0])
+        state = int(regex_line[0][2])
+
+        return EventIdle(time, cpu, "idle", state)
 
     def _process_sched_freq(self, line):
         regex_line = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
@@ -284,7 +287,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[300:2000]:
+        for line in raw_lines[11:200]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue

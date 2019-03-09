@@ -683,6 +683,7 @@ class ProcessTree:
 
         # Also used in the calculation of system load
         elif isinstance(event, EventIdle):
+            self.metrics.sys_util.core_utils[event.cpu].add_event(event)
             return
 
         # Binder transactions show IPCs between tasks.
