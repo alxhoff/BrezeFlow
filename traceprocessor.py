@@ -284,7 +284,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[70:2000]:
+        for line in raw_lines[300:2000]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
@@ -324,6 +324,10 @@ class TraceProcessor:
         process_tree = ProcessTree(PIDt, metrics)
 
         for x, event in enumerate(processed_events):
+            # if event.time == 4450786545:
+            #     print "wait here"
+            # elif event.time == 4450786693:
+            #     print "wait here"
             process_tree.handle_event(event)
 
         draw_graph = Grapher(process_tree)
