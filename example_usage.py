@@ -4,23 +4,24 @@ from metrics import SystemMetrics
 from pytracer import Tracer
 from traceprocessor import TraceProcessor
 import argparse
+from constants_xu3 import EnergyProfile
 
-parser = argparse.ArgumentParser()
-
-parser.add_argument("-l", "--little", nargs=5, required=True, type=int, default=None,
-                    help="List of frequencies for the little core, from smallest to greatest")
-parser.add_argument("-le", "--little_energy", nargs=5, required=True, type=float, default=None,
-                    help="List of clock cycle energy for the little core frequencies")
-parser.add_argument("-b", "--big", nargs=9, required=True, type=int, default=None,
-                    help="List of frequencies for the big core, from smallest to greatest")
-parser.add_argument("-be", "--big_energy", nargs=9, required=True, type=float, default=None,
-                    help="List of clock cycle energy for the big core frequencies")
-parser.add_argument("-g", "--gpu", nargs=6, required=True, type=int, default=None,
-                    help="List of frequencies for the GPU, from smallest to greatest")
-parser.add_argument("-ge", "--gpu_energy", nargs=6, required=True, type=float, default=None,
-                    help="List of clock cycle energy for the CPU frequencies")
-
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+#
+# parser.add_argument("-l", "--little", nargs=5, required=True, type=int, default=None,
+#                     help="List of frequencies for the little core, from smallest to greatest")
+# parser.add_argument("-le", "--little_energy", nargs=5, required=True, type=float, default=None,
+#                     help="List of clock cycle energy for the little core frequencies")
+# parser.add_argument("-b", "--big", nargs=9, required=True, type=int, default=None,
+#                     help="List of frequencies for the big core, from smallest to greatest")
+# parser.add_argument("-be", "--big_energy", nargs=9, required=True, type=float, default=None,
+#                     help="List of clock cycle energy for the big core frequencies")
+# parser.add_argument("-g", "--gpu", nargs=6, required=True, type=int, default=None,
+#                     help="List of frequencies for the GPU, from smallest to greatest")
+# parser.add_argument("-ge", "--gpu_energy", nargs=6, required=True, type=float, default=None,
+#                     help="List of clock cycle energy for the CPU frequencies")
+#
+# args = parser.parse_args()
 
 def main():
     adbBridge = adbInterface()
@@ -28,9 +29,9 @@ def main():
     PIDt = PIDtracer(adbBridge, "hillclimb")
     #PIDt = PIDtracer(adbBridge, "miami")
 
-    sys_metrics = SystemMetrics(adbBridge, args.little, args.little_energy,
-                                args.big, args.big_energy,
-                                args.gpu, args.gpu_energy)
+    xu3_energy = EnergyProfile()
+
+    sys_metrics = SystemMetrics(adbBridge, xu3_energy)
 
     # combo_tracer = Tracer(adbBridge,
     #                      "combo",

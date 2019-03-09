@@ -154,14 +154,23 @@ class TaskNode:
         self.graph = graph
         self.PID = PID
 
-    def get_cycle_energy(self, CPU, freq):
+    def get_cycle_energy(self, CPU, freq, utilization, gpu=False):
         try:
+            if gpu:
+                for x, entry in enumerate(SystemMetrics.current_metrics.energy_profile.gpu_values):
+                    if entry.frequency == freq:
+                        return entry.alpha * utilization + entry.beta
+                return 0
             if CPU in range(4):
-                cycle_energy_index = SystemMetrics.current_metrics.little_freqs.index(freq)
-                return SystemMetrics.current_metrics.little_energy[cycle_energy_index]
+                for x, entry in enumerate(SystemMetrics.current_metrics.energy_profile.little_values):
+                    if entry.frequency == freq:
+                        return entry.alpha * utilization + entry.beta
+                return 0
             else:
-                cycle_energy_index = SystemMetrics.current_metrics.big_freqs.index(freq)
-                return SystemMetrics.current_metrics.big_energy[cycle_energy_index]
+                for x, entry in enumerate(SystemMetrics.current_metrics.energy_profile.big_values):
+                    if entry.frequency == freq:
+                        return entry.alpha * utilization + entry.beta
+                return 0
         except ValueError:
             print "invalid frequency"
 
@@ -190,9 +199,9 @@ class TaskNode:
                         new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency * 1000)
                         self.cpu_cycles += new_cycles
                         self.gpu_cycles += int((pe.time - self.calc_time) * 0.000001 * pe.gpu_frequency * 1000000)
-
-                        cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency)
-                        self.energy += cycle_energy * new_cycles
+                        ##TODO ENERGY!
+                        # cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency)
+                        # self.energy += cycle_energy * new_cycles
 
                         self.duration += pe.time - self.calc_time
                         self.calc_time = pe.time
@@ -206,8 +215,8 @@ class TaskNode:
                     self.cpu_cycles += new_cycles
                     self.gpu_cycles += int((event.time - self.calc_time) * 0.000001 * gpu_speed * 1000000)
 
-                    cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed)
-                    self.energy += cycle_energy * new_cycles
+                    # cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed)
+                    # self.energy += cycle_energy * new_cycles
 
                     self.duration += event.time - self.calc_time
                     self.calc_time = event.time
