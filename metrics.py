@@ -21,7 +21,6 @@ class UtilizationTable:
         self.initial_time = 0
         self.last_event_time = 0
         self.core_state = 0
-        self.current_util = 0
         self.events = []
 
     def add_idle_event(self, event):
@@ -46,18 +45,6 @@ class UtilizationTable:
         else:
             self.core_state = event.state
 
-    def init(self, time, util):
-        self.initial_time = time
-        self.current_util = util
-
-    def add_mali_event(self, event):
-        self.events.append(UtilizationSlice(
-            self.last_event_time, event.time - self.initial_time,
-            freq=event.freq, util=self.current_util))
-
-        self.current_util = event.util
-        self.last_event_time = event.time - self.initial_time
-
     def calc_util_last_event(self):
         # Iterate backwards until 250ms has been traversed or until first event hit
         calc_duration = 0
@@ -73,13 +60,63 @@ class UtilizationTable:
         self.events[-1].utilization = float(active_duration)/float(calc_duration) * 100.00
 
 
+class GPUUtilizationTable(UtilizationTable):
+
+    def __init__(self):
+        UtilizationTable.__init__(self)
+        self.current_util = 0
+
+    def init(self, time, util):
+        self.initial_time = time
+        self.current_util = util
+
+    def add_mali_event(self, event):
+        self.events.append(UtilizationSlice(
+            self.last_event_time, event.time - self.initial_time,
+            freq=event.freq, util=self.current_util))
+
+        self.current_util = event.util
+        self.last_event_time = event.time - self.initial_time
+
+    @staticmethod
+    def get_cycle_energy(self, freq, util):
+        for entry in SystemMetrics.current_metrics.energy_profile.gpu_values:
+            if entry.frequency == freq:
+                return entry.alpha * util + entry.beta
+        return 0
+
+    def calc_GPU_power(self, start_time, finish_time):
+        relative_start_time = start_time - self.initial_time
+        relative_finish_time = finish_time - self.initial_time
+        energy = 0
+        cycle_energy = 0
+        cycles = 0
+        # iterate through power events
+        for x, event in enumerate(self.events):
+            # find start event
+            if (relative_start_time >= event.time) and (relative_start_time < (event.time + event.duration)):
+                cycle_energy = self.get_cycle_energy(event.freq, event.util)
+                cycles = (event.duration - relative_start_time - event.start_time) * 0.000001 * event.frequency
+            # end case
+            elif (relative_finish_time >= event.time) and (relative_finish_time < (event.time + event.duration)):
+                cycle_energy = self.get_cycle_energy(event.freq, event.util)
+                cycles = (event.duration - relative_finish_time - event.start_time) * 0.000001 * event.frequency
+            # middle cases
+            elif (relative_start_time < event.time) and (relative_finish_time > (event.time + event.duration)):
+                cycle_energy = self.get_cycle_energy(event.freq, event.util)
+                cycles = event.duration * 0.000001 * event.frequency
+
+            energy += cycle_energy * cycles
+
+        return energy
+
+
 class SystemUtilization:
 
     def __init__(self, core_count):
         self.core_utils = []
         self.init_tables(core_count)
-        self.gpu_utils = UtilizationTable()
-
+        self.gpu_utils = GPUUtilizationTable()
 
     def init_tables(self, core_count):
         for x in range(core_count):
@@ -99,10 +136,11 @@ class SystemUtilization:
 
         # start walking events to find util
         for slice in core_util.events:
-            if event_time >= slice.start_time \
-                and event_time < slice.start_time + slice.duration:
+            if (event_time >= slice.start_time) \
+                    and (event_time < (slice.start_time + slice.duration)):
                 return slice.utilization
         return 0.0
+
 
 class SystemMetrics:
 
