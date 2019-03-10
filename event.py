@@ -208,7 +208,6 @@ class TaskNode:
                 # remaining cycles
                 if event.time != self.calc_time:
                     cpu_speed = SystemMetrics.current_metrics.get_CPU_core_freq(event.cpu)
-                    gpu_speed = SystemMetrics.current_metrics.get_GPU_core_freq()
 
                     new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed * 1000)
                     self.cpu_cycles += new_cycles
@@ -335,7 +334,7 @@ class GPUBranch:
                 self.prev_util = self.util
             self.util = event.util
 
-            self.send_change_event()
+        # Update metrics and energy usage
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
@@ -345,7 +344,11 @@ class GPUBranch:
                                     style='filled',
                                     shape='box', fillcolor='magenta')
 
+
     # self.gpu_cycles += int((event.time - self.calc_time) * 0.000001 * gpu_speed * 1000000)
+
+
+# gpu_speed = SystemMetrics.current_metrics.get_GPU_core_freq()
 
 
 class ProcessBranch:
@@ -682,11 +685,13 @@ class ProcessTree:
             self.metrics.gpu_freq = event.freq
             self.metrics.gpu_util = event.util
 
+            self.metrics.sys_util.cpu_utils.add_mali_event(event)
+
             self.gpu.add_job(event)
 
         # Also used in the calculation of system load
         elif isinstance(event, EventIdle):
-            self.metrics.sys_util.core_utils[event.cpu].add_event(event)
+            self.metrics.sys_util.core_utils[event.cpu].add_idle_event(event)
             return
 
         # Binder transactions show IPCs between tasks.

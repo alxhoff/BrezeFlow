@@ -249,7 +249,7 @@ class TraceProcessor:
 
         output_workbook.close()
 
-    def process_trace_file(self, filename, PIDt, metrics=None):
+    def process_trace_file(self, filename, PIDt, metrics):
         try:
             f = open(filename, "r")
             self.logger.debug("Tracer " + filename + " opened for \
@@ -270,19 +270,13 @@ class TraceProcessor:
             self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
 
-        if tracer.metrics:
-            self.process_trace(f, PIDt, tracer.metrics)
-        else:
-            self.process_trace(f, PIDt, None)
+        self.process_trace(f, PIDt, tracer.metrics)
 
-    def process_trace(self, f, PIDt, metrics=None):
+
+    def process_trace(self, f, PIDt, metrics):
 
         raw_lines = f.readlines()
         processed_events = []
-
-        if metrics is None:
-            metrics = SystemMetrics(adbInterface.current_interface,
-                                    None, None, None, None, None, None)
 
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
@@ -326,7 +320,13 @@ class TraceProcessor:
         # generate pointers to most recent nodes for each PID (branch heads)
         process_tree = ProcessTree(PIDt, metrics)
 
-        # Create utilization tree first
+        # Init GPU util tree
+        # set initial time as first event in log as mali util is able to be found via sysfs
+        # and as such available from the start and must not be calculated
+        # TODO does it matter if the first event is a mali event?
+        metrics.sys_util.gpu_utils.init(processed_events[0].time, metrics.gpu_util)
+
+        # Create CPU utilization tree first
         i = 0
         length = len(processed_events)
         while i < length:
@@ -337,12 +337,7 @@ class TraceProcessor:
             else:
                 i += 1
 
-
         for x, event in enumerate(processed_events):
-            # if event.time == 4450786545:
-            #     print "wait here"
-            # elif event.time == 4450786693:
-            #     print "wait here"
             process_tree.handle_event(event)
 
         draw_graph = Grapher(process_tree)

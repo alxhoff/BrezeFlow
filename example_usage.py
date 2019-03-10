@@ -4,7 +4,7 @@ from metrics import SystemMetrics
 from pytracer import Tracer
 from traceprocessor import TraceProcessor
 import argparse
-from constants_xu3 import EnergyProfile
+from energy_metrics import EnergyProfile
 
 # parser = argparse.ArgumentParser()
 #
@@ -33,17 +33,17 @@ def main():
 
     sys_metrics = SystemMetrics(adbBridge, xu3_energy)
 
-    # combo_tracer = Tracer(adbBridge,
-    #                      "combo",
-    #                       events=["binder_transaction", "cpu_idle",
-    #                      "sched_switch", "cpu_frequency",
-    #                      "mali_utilization_stats"],
-    #                       PID_filter=PIDt,
-    #                       duration=1,
-    #                       metrics=sys_metrics)
-    # combo_tracer.runTracer()
-    # tp.process_tracer(combo_tracer, PIDt)
-    tp.process_trace_file("combo_tracer.trace", PIDt, sys_metrics)
+    combo_tracer = Tracer(adbBridge,
+                         "combo",
+                          events=["binder_transaction", "cpu_idle",
+                         "sched_switch", "cpu_frequency",
+                         "mali_utilization_stats"],
+                          PID_filter=PIDt,
+                          duration=1,
+                          metrics=sys_metrics)
+    combo_tracer.runTracer()
+    tp.process_tracer(combo_tracer, PIDt)
+    # tp.process_trace_file("combo_tracer.trace", PIDt, sys_metrics)
     # tp.filterTracePID(combo_tracer, PIDt, combo_tracer.filename)
 
 

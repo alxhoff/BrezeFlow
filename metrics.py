@@ -7,11 +7,12 @@ class IdleState(Enum):
 
 class UtilizationSlice:
 
-    def __init__(self, start_time, finish_time, state):
+    def __init__(self, start_time, finish_time, freq, state=0, util=0):
         self.start_time = start_time
         self.duration = (finish_time - 1) - start_time
         self.state = state
         self.utilization = 0
+        self.freq = freq
 
 
 class UtilizationTable:
@@ -20,13 +21,13 @@ class UtilizationTable:
         self.initial_time = 0
         self.last_event_time = 0
         self.core_state = 0
+        self.current_util = 0
         self.events = []
 
-    def add_event(self, event):
+    def add_idle_event(self, event):
         # First event
         if self.initial_time is 0:
             self.initial_time = event.time
-            self.last_event_time = 0
             if event.state == 4294967295:
                 self.core_state = IdleState.is_not_idle
             else:
@@ -34,7 +35,8 @@ class UtilizationTable:
             return
         else:
             self.events.append(UtilizationSlice(
-                self.last_event_time, event.time - self.initial_time, self.core_state))
+                self.last_event_time, event.time - self.initial_time,
+                SystemMetrics.current_metrics.core_freqs[event.cpu], state=self.core_state))
 
         self.last_event_time = event.time - self.initial_time
         self.calc_util_last_event()
@@ -43,6 +45,18 @@ class UtilizationTable:
             self.core_state = not self.core_state
         else:
             self.core_state = event.state
+
+    def init(self, time, util):
+        self.initial_time = time
+        self.current_util = util
+
+    def add_mali_event(self, event):
+        self.events.append(UtilizationSlice(
+            self.last_event_time, event.time - self.initial_time,
+            freq=event.freq, util=self.current_util))
+
+        self.current_util = event.util
+        self.last_event_time = event.time - self.initial_time
 
     def calc_util_last_event(self):
         # Iterate backwards until 250ms has been traversed or until first event hit
@@ -64,13 +78,18 @@ class SystemUtilization:
     def __init__(self, core_count):
         self.core_utils = []
         self.init_tables(core_count)
+        self.gpu_utils = UtilizationTable()
+
 
     def init_tables(self, core_count):
         for x in range(core_count):
             self.core_utils.append(UtilizationTable())
 
     def get_util(self, core, time):
-        core_util = self.core_utils[core]
+        if core == -1:
+            core_util = self.gpu_utils
+        else:
+            core_util = self.core_utils[core]
 
         event_time = time - core_util.initial_time
 
