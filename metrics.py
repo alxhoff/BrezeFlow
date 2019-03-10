@@ -74,11 +74,16 @@ class SystemUtilization:
 
         event_time = time - core_util.initial_time
 
+        # before first util calc
+        if event_time < 0:
+            return 0.0
+
         # start walking events to find util
         for slice in core_util.events:
             if event_time >= slice.start_time \
                 and event_time < slice.start_time + slice.duration:
                 return slice.utilization
+        return 0.0
 
 class SystemMetrics:
 

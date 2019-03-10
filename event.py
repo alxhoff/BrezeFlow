@@ -198,11 +198,9 @@ class TaskNode:
                         #TODO reduce this
                         new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency * 1000)
                         self.cpu_cycles += new_cycles
-                        self.gpu_cycles += int((pe.time - self.calc_time) * 0.000001 * pe.gpu_frequency * 1000000)
-                        ##TODO ENERGY!
                         util = SystemMetrics.current_metrics.sys_util.get_util(pe.cpu, pe.time)
-                        # cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency)
-                        # self.energy += cycle_energy * new_cycles
+                        cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency, util)
+                        self.energy += cycle_energy * new_cycles
 
                         self.duration += pe.time - self.calc_time
                         self.calc_time = pe.time
@@ -214,11 +212,10 @@ class TaskNode:
 
                     new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed * 1000)
                     self.cpu_cycles += new_cycles
-                    self.gpu_cycles += int((event.time - self.calc_time) * 0.000001 * gpu_speed * 1000000)
+                    util = SystemMetrics.current_metrics.sys_util.get_util(event.cpu, event.time)
+                    cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed, util)
 
-                    # cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed)
-                    # self.energy += cycle_energy * new_cycles
-
+                    self.energy += cycle_energy * new_cycles
                     self.duration += event.time - self.calc_time
                     self.calc_time = event.time
 
@@ -348,6 +345,9 @@ class GPUBranch:
                                     style='filled',
                                     shape='box', fillcolor='magenta')
 
+    # self.gpu_cycles += int((event.time - self.calc_time) * 0.000001 * gpu_speed * 1000000)
+
+
 class ProcessBranch:
     """
     Events must be added to the "branch" of their PID. The data is processed
@@ -425,16 +425,18 @@ class ProcessBranch:
         self.CPU = event.cpu
 
     def handle_gpu_change(self):
-        if self.tasks:
-            try:
-                self.tasks[-1].add_cpu_gpu_event(self.gpu.events[-1].time,
-                                                 self.CPU,
-                                                 self.CPUs[self.CPU].freq,
-                                                 self.CPUs[self.CPU].util,
-                                                 self.gpu.prev_freq,
-                                                 self.gpu.prev_util)
-            except Exception:
-                pass
+        return
+        # if self.tasks:
+        #     try:
+        #         #TODO GPU POWER
+        #         # self.tasks[-1].add_cpu_gpu_event(self.gpu.events[-1].time,
+        #         #                                  self.CPU,
+        #         #                                  self.CPUs[self.CPU].freq,
+        #         #                                  self.CPUs[self.CPU].util,
+        #         #                                  self.gpu.prev_freq,
+        #         #                                  self.gpu.prev_util)
+        #     except Exception:
+        #         pass
 
     def add_job(self, event, event_type=JobType.UNKNOWN):
 

@@ -287,7 +287,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:2000]:
+        for line in raw_lines[11:1000]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
@@ -325,6 +325,18 @@ class TraceProcessor:
 
         # generate pointers to most recent nodes for each PID (branch heads)
         process_tree = ProcessTree(PIDt, metrics)
+
+        # Create utilization tree first
+        i = 0
+        length = len(processed_events)
+        while i < length:
+            if isinstance(processed_events[i], EventIdle):
+                process_tree.handle_event(processed_events[i])
+                del processed_events[i]
+                length -= 1
+            else:
+                i += 1
+
 
         for x, event in enumerate(processed_events):
             # if event.time == 4450786545:
