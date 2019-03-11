@@ -84,7 +84,7 @@ class TraceProcessor:
         regex_line = re.findall("cpu: (\d+) freq: (\d+) load: (\d+)", line)
 
         target_cpu = int(regex_line[0][0])
-        freq = int(regex_line[0][1])
+        freq = int(regex_line[0][1]) * 1000
         util = int(regex_line[0][2])
 
         return EventFreqChange(pid, time, cpu, freq, util, target_cpu)
@@ -117,7 +117,7 @@ class TraceProcessor:
         cpu = int(regex_line[0][1])
         time = int(round(float(regex_line[0][2]) * 1000000))
         util = int(regex_line[0][3])
-        freq = int(regex_line[0][4])
+        freq = int(regex_line[0][4]) * 1000000
 
         return EventMaliUtil(pid, time, cpu, util, freq)
 
@@ -281,7 +281,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:1000]:
+        for line in raw_lines[11:500]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue

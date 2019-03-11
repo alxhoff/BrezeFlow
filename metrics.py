@@ -25,6 +25,8 @@ class UtilizationTable:
 
     def add_idle_event(self, event):
         # First event
+        # TODO once the first event is found, account for the period before it (since beginnign)
+        #  that was probably the inverse state to it's current state
         if self.initial_time is 0:
             self.initial_time = event.time
             if event.state == 4294967295:
@@ -166,7 +168,7 @@ class SystemMetrics:
         for core in range(self.core_count):
             frequencies.append(
                 int(self.adb.run_command("cat /sys/devices/system/cpu/cpu"
-                                         + str(core) + "/cpufreq/scaling_cur_freq")))
+                                         + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
         return frequencies
 
     def get_core_utils(self):

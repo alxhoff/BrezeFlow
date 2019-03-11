@@ -36,7 +36,7 @@ def main():
     # combo_tracer = Tracer(adbBridge,
     #                      "combo",
     #                       events=["binder_transaction", "cpu_idle",
-    #                      "sched_switch", "cpu_frequency",
+    #                      "sched_switch", "cpu_frequency", "update_cpu_metric",
     #                      "mali_utilization_stats"],
     #                       PID_filter=PIDt,
     #                       duration=1,

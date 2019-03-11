@@ -196,7 +196,7 @@ class TaskNode:
                             continue
                         # calc time is the point until which the cycles were last counted
                         #TODO reduce this
-                        new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency * 1000)
+                        new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency)
                         self.cpu_cycles += new_cycles
                         util = SystemMetrics.current_metrics.sys_util.get_util(pe.cpu, pe.time)
                         cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency, util)
@@ -209,7 +209,7 @@ class TaskNode:
                 if event.time != self.calc_time:
                     cpu_speed = SystemMetrics.current_metrics.get_CPU_core_freq(event.cpu)
 
-                    new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed * 1000)
+                    new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed)
                     self.cpu_cycles += new_cycles
                     util = SystemMetrics.current_metrics.sys_util.get_util(event.cpu, event.time)
                     cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed, util)
@@ -399,7 +399,7 @@ class ProcessBranch:
         else:
             return None
 
-    def handle_cpu_freq_change(self, event):
+    def handle_cpu_freq_change(self):
         if self.tasks:
             try:
                 self.tasks[-1].add_cpu_gpu_event(self.CPUs[self.CPU].events[-1].time,
@@ -512,7 +512,7 @@ class ProcessBranch:
                                     + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
                                     + str(self.tasks[-1].finish_time)[-6:]
                                     + "\nCPU: " + str(event.cpu) + "   PID: " + str(event.PID)
-                                    + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "MHz   "
+                                    + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "Hz   "
                                     + str(SystemMetrics.current_metrics.gpu_util) + "% Util"
                                     + "\nDuration: " + str(self.tasks[-1].duration)
                                     + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
@@ -685,7 +685,7 @@ class ProcessTree:
             self.metrics.gpu_freq = event.freq
             self.metrics.gpu_util = event.util
 
-            self.metrics.sys_util.cpu_utils.add_mali_event(event)
+            self.metrics.sys_util.gpu_utils.add_mali_event(event)
 
             self.gpu.add_job(event)
 
