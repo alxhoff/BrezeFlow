@@ -4,14 +4,19 @@ class IdleState(Enum):
     is_idle = 0
     is_not_idle = 1
 
-
 class UtilizationSlice:
 
-    def __init__(self, start_time, finish_time, freq, state=0, util=0):
+    def __init__(self, start_time, util=0):
         self.start_time = start_time
+        self.utilization = util
+
+
+class CPUUtilizationSlice(UtilizationSlice):
+
+    def __init__(self, start_time, finish_time, freq, state=0, util=0):
+        UtilizationSlice.__init__(self, start_time, util)
         self.duration = (finish_time - 1) - start_time
         self.state = state
-        self.utilization = 0
         self.freq = freq
 
 
@@ -22,6 +27,12 @@ class UtilizationTable:
         self.last_event_time = 0
         self.core_state = 0
         self.events = []
+
+class CPUUtilizationTable(UtilizationTable):
+
+    def __init__(self, core_num):
+        UtilizationTable.__init__(self)
+        self.core = core_num
 
     def add_idle_event(self, event):
         # First event
@@ -35,7 +46,7 @@ class UtilizationTable:
                 self.core_state = not event.state
             return
         else:
-            self.events.append(UtilizationSlice(
+            self.events.append(CPUUtilizationSlice(
                 self.last_event_time, event.time - self.initial_time,
                 SystemMetrics.current_metrics.core_freqs[event.cpu], state=self.core_state))
 
@@ -59,7 +70,31 @@ class UtilizationTable:
             if calc_duration >= 250000:
                 break
 
-        self.events[-1].utilization = float(active_duration)/float(calc_duration) * 100.00
+        self.events[-1].utilization = float(active_duration) / float(calc_duration) * 100.00
+
+class TotalUtilizationTable(UtilizationTable):
+
+    def __init__(self):
+        UtilizationTable.__init__(self)
+        self.end_time = 0
+        self.slices = []
+
+    def compile_table(self, cores):
+        core_count = len(cores)
+        self.initial_time = min(core.initial_time for core in cores)
+        self.end_time = max((event.events[-1].start_time + event.events[-1].duration) for event in cores)
+
+        for x in range(self.end_time):
+            util = 0.0
+
+            for core in range(core_count):
+                util += SystemMetrics.current_metrics.sys_util.get_util_from_idle_events(core, x + self.initial_time)
+
+            util /= core_count
+
+            self.slices.append(UtilizationSlice(x, util))
+
+        return
 
 
 class GPUUtilizationTable(UtilizationTable):
@@ -73,7 +108,7 @@ class GPUUtilizationTable(UtilizationTable):
         self.current_util = util
 
     def add_mali_event(self, event):
-        self.events.append(UtilizationSlice(
+        self.events.append(CPUUtilizationSlice(
             self.last_event_time, event.time - self.initial_time,
             freq=event.freq, util=self.current_util))
 
@@ -117,14 +152,18 @@ class SystemUtilization:
 
     def __init__(self, core_count):
         self.core_utils = []
+        self.cluster_utils = []
         self.init_tables(core_count)
         self.gpu_utils = GPUUtilizationTable()
 
     def init_tables(self, core_count):
         for x in range(core_count):
-            self.core_utils.append(UtilizationTable())
+            self.core_utils.append(CPUUtilizationTable(x))
+        # TODO remove magic number
+        for x in range(2):
+            self.cluster_utils.append(TotalUtilizationTable())
 
-    def get_util(self, core, time):
+    def get_util_from_idle_events(self, core, time):
         if core == -1:
             core_util = self.gpu_utils
         else:

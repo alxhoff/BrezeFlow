@@ -164,12 +164,14 @@ class TaskNode:
             if CPU in range(4):
                 for x, entry in enumerate(SystemMetrics.current_metrics.energy_profile.little_values):
                     if entry.frequency == freq:
-                        return entry.alpha * utilization + entry.beta
+                        cycle_energy = entry.alpha * utilization + entry.beta
+                        return cycle_energy
                 return 0
             else:
                 for x, entry in enumerate(SystemMetrics.current_metrics.energy_profile.big_values):
                     if entry.frequency == freq:
-                        return entry.alpha * utilization + entry.beta
+                        cycle_energy = entry.alpha * utilization + entry.beta
+                        return cycle_energy
                 return 0
         except ValueError:
             print "invalid frequency"
@@ -198,7 +200,7 @@ class TaskNode:
                         #TODO reduce this
                         new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency)
                         self.cpu_cycles += new_cycles
-                        util = SystemMetrics.current_metrics.sys_util.get_util(pe.cpu, pe.time)
+                        util = SystemMetrics.current_metrics.sys_util.get_util_from_idle_events(pe.cpu, pe.time)
                         cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency, util)
                         self.energy += cycle_energy * new_cycles
 
@@ -211,7 +213,7 @@ class TaskNode:
 
                     new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed)
                     self.cpu_cycles += new_cycles
-                    util = SystemMetrics.current_metrics.sys_util.get_util(event.cpu, event.time)
+                    util = SystemMetrics.current_metrics.sys_util.get_util_from_idle_events(event.cpu, event.time)
                     cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed, util)
 
                     self.energy += cycle_energy * new_cycles

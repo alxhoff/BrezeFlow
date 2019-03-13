@@ -281,7 +281,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:500]:
+        for line in raw_lines[11:300]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
@@ -326,7 +326,7 @@ class TraceProcessor:
         # TODO does it matter if the first event is a mali event?
         metrics.sys_util.gpu_utils.init(processed_events[0].time, metrics.gpu_util)
 
-        # Create CPU utilization tree first
+        # Create CPU core utilization trees first
         i = 0
         length = len(processed_events)
         while i < length:
@@ -336,6 +336,10 @@ class TraceProcessor:
                 length -= 1
             else:
                 i += 1
+
+        # compile cluster utilizations
+        for x, cluster in enumerate(metrics.sys_util.cluster_utils):
+            cluster.compile_table(metrics.sys_util.core_utils[x*4 : x*4 + 4])
 
         for x, event in enumerate(processed_events):
             process_tree.handle_event(event)
