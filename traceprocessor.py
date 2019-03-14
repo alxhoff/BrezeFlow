@@ -52,70 +52,100 @@ class TraceProcessor:
         return EventWakeup(pid, time, cpu, name)
 
     def _process_sched_switch(self, line):
-        name = re.findall("^ *(.+?)-\d+ +", line)[0]
 
-        state_next = re.findall("prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)", line)
-        prev_state = state_next[0][0]
-        next_pid = int(state_next[0][1])
+        regex_line = re.findall("^ *(.+?)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+).+prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)", line)
 
-        pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
-        pid = int(pid_cpu_time[0][0])
-        cpu = int(pid_cpu_time[0][1])
-        time = int(round(float(pid_cpu_time[0][2]) * 1000000))
+        # name = re.findall("^ *(.+?)-\d+ +", line)[0]
+        name = regex_line[0][0]
+
+        # state_next = re.findall("prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)", line)
+        # prev_state = state_next[0][0]
+        prev_state = regex_line[0][4]
+        # next_pid = int(state_next[0][1])
+        next_pid = int(regex_line[0][5])
+        #
+        # pid_cpu_time = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
+        # pid = int(pid_cpu_time[0][0])
+        pid = int(regex_line[0][1])
+        # cpu = int(pid_cpu_tme[0][1])
+        cpu = int(regex_line[0][2])
+        # time = int(round(float(pid_cpu_time[0][2]) * 1000000))
+        time = int(float(regex_line[0][3]) * 1000000)
 
         return EventSchedSwitch(pid, time, cpu, name, prev_state, next_pid)
 
     def _process_sched_idle(self, line):
         regex_line = re.findall("\[(\d{3})\] .{4} +(\d+.\d+): cpu_idle: state=(\d+)", line)
 
-        time = int(round(float(regex_line[0][1]) * 1000000))
+        time = int(float(regex_line[0][1]) * 1000000)
         cpu = int(regex_line[0][0])
         state = int(regex_line[0][2])
 
         return EventIdle(time, cpu, "idle", state)
 
-    def _process_sched_freq(self, line):
-        regex_line = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
+    def _process_cpu_metric(self, line):
+        # regex_line = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
+        regex_line = re.findall(
+            "-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): update_cpu_metric: cpu_load: cpu: (\d+) freq: (\d+) load: (\d+)",
+            line)
 
+        # pid = int(regex_line[0][0])
         pid = int(regex_line[0][0])
+        # cpu = int(regex_line[0][1])
         cpu = int(regex_line[0][1])
-        time = int(round(float(regex_line[0][2]) * 1000000))
-
-        regex_line = re.findall("cpu: (\d+) freq: (\d+) load: (\d+)", line)
-
-        target_cpu = int(regex_line[0][0])
-        freq = int(regex_line[0][1]) * 1000
-        util = int(regex_line[0][2])
+        # time = int(round(float(regex_line[0][2]) * 1000000))
+        time = int(float(regex_line[0][2]))
+        #
+        # regex_line = re.findall("cpu: (\d+) freq: (\d+) load: (\d+)", line)
+        #
+        # target_cpu = int(regex_line[0][0])
+        target_cpu = int(regex_line[0][3])
+        # freq = int(regex_line[0][1]) * 1000
+        freq = int(regex_line[0][4])
+        # util = int(regex_line[0][2])
+        util = int(regex_line[0][5])
 
         return EventFreqChange(pid, time, cpu, freq, util, target_cpu)
 
     def _process_binder_transaction(self, line):
-        regex_line = re.findall("^ *(.*)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
-
-        name = regex_line[0][0]
-        pid = int(regex_line[0][1])
-        cpu = int(regex_line[0][2])
-        time = int(round(float(regex_line[0][3]) * 1000000))
-
         regex_line = re.findall(
-            "dest_proc=(\d+) dest_thread=(\d+) reply=(\d) flags=(0x[0-9a-f]+) code=(0x[0-9a-f]+)", line)
-
-        to_proc = int(regex_line[0][1])
+            "^ *(.*)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): binder_transaction: transaction=\d+ dest_node=\d+ dest_proc=(\d+) dest_thread=(\d+) reply=(\d) flags=(0x[0-9a-f]+) code=(0x[0-9a-f]+)",
+            line)
+        # regex_line = re.findall("^ *(.*)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+)", line)
+        #
+        # name = regex_line[0][0]
+        name = regex_line[0][0]
+        # pid = int(regex_line[0][1])
+        pid = int(regex_line[0][1])
+        # cpu = int(regex_line[0][2])
+        cpu = int(regex_line[0][2])
+        # time = int(round(float(regex_line[0][3]) * 1000000))
+        time = int(float(regex_line[0][3]) * 1000000)
+        #
+        # regex_line = re.findall(
+        #     "dest_proc=(\d+) dest_thread=(\d+) reply=(\d) flags=(0x[0-9a-f]+) code=(0x[0-9a-f]+)", line)
+        #
+        # to_proc = int(regex_line[0][1])
+        to_proc = int(regex_line[0][5])
         if to_proc == 0:
-            to_proc = int(regex_line[0][0])
-        trans_type = int(regex_line[0][2])
-        flags = int(regex_line[0][3], 16)
-        code = int(regex_line[0][4], 16)
+            to_proc = int(regex_line[0][4])
+        # trans_type = int(regex_line[0][2])
+        trans_type = int(regex_line[0][6])
+        # flags = int(regex_line[0][3], 6)
+        flags = int(regex_line[0][7], 16)
+        # code = int(regex_line[0][4], 16)
+        code = int(regex_line[0][8], 16)
 
         return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
 
     def _process_mali_util(self, line):
-        regex_line = re.findall("-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): mali_utilization_stats: util=(\d+) norm_util=\d+ norm_freq=(\d+)",
+        regex_line = re.findall(
+            "-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): mali_utilization_stats: util=(\d+) norm_util=\d+ norm_freq=(\d+)",
                                 line)
 
         pid = int(regex_line[0][0])
         cpu = int(regex_line[0][1])
-        time = int(round(float(regex_line[0][2]) * 1000000))
+        time = int(float(regex_line[0][2]) * 1000000)
         util = int(regex_line[0][3])
         freq = int(regex_line[0][4]) * 1000000
 
@@ -281,7 +311,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:300]:
+        for line in raw_lines[11:2000]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
@@ -299,7 +329,7 @@ class TraceProcessor:
                 self.logger.debug("Idle event line: " + line)
 
             elif "update_cpu_metric" in line:
-                processed_events.append(self._process_sched_freq(line))
+                processed_events.append(self._process_cpu_metric(line))
                 self.logger.debug("Freq event line: " + line)
 
             elif "binder" in line:
