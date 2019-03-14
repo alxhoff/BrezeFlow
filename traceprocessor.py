@@ -82,7 +82,7 @@ class TraceProcessor:
         cpu = int(regex_line[0][1])
         time = int(float(regex_line[0][2]))
         target_cpu = int(regex_line[0][3])
-        freq = int(regex_line[0][4])
+        freq = int(regex_line[0][4]) * 1000
         util = int(regex_line[0][5])
 
         return EventFreqChange(pid, time, cpu, freq, util, target_cpu)
