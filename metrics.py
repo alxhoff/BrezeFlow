@@ -82,7 +82,11 @@ class TotalUtilizationTable(UtilizationTable):
     def compile_table(self, cores):
         core_count = len(cores)
         self.initial_time = min(core.initial_time for core in cores)
-        self.end_time = max((event.events[-1].start_time + event.events[-1].duration) for event in cores)
+        self.end_time = 0
+        for event in cores:
+            if event.events:
+                if (event.events[-1].start_time + event.events[-1].duration) > self.end_time:
+                    self.end_time = event.events[-1].start_time + event.events[-1].duration
 
         for x in range(self.end_time):
             util = 0.0
@@ -164,10 +168,7 @@ class SystemUtilization:
             self.cluster_utils.append(TotalUtilizationTable())
 
     def get_util_from_idle_events(self, core, time):
-        if core == -1:
-            core_util = self.gpu_utils
-        else:
-            core_util = self.core_utils[core]
+        core_util = self.core_utils[core]
 
         event_time = time - core_util.initial_time
 

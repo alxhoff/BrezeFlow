@@ -279,6 +279,7 @@ class TraceProcessor:
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
         for line in raw_lines[11:]:
+        # for line in raw_lines[1800:2300]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
@@ -339,6 +340,8 @@ class TraceProcessor:
             cluster.compile_table(metrics.sys_util.core_utils[x*4 : x*4 + 4])
 
         for x, event in enumerate(processed_events):
+            if event.time == 8872620069:
+                print "wait here"
             process_tree.handle_event(event)
 
         draw_graph = Grapher(process_tree)

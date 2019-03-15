@@ -345,17 +345,7 @@ class GPUBranch:
                                     + "\n" + str(self.events[-1].__class__.__name__),
                                     style='filled',
                                     shape='box', fillcolor='magenta')
-
-    def get_energy(self, start_time, finish_time):
-        # first event
-        for event in self.events:
-            # if event.
-            return
-    # self.gpu_cycles += int((event.time - self.calc_time) * 0.000001 * gpu_speed * 1000000)
-
-
-# gpu_speed = SystemMetrics.current_metrics.get_GPU_core_freq()
-
+        
 
 class ProcessBranch:
     """
@@ -712,6 +702,12 @@ class ProcessTree:
             # From client process to binder thread
             if str(event.PID) in self.PIDt.allAppPIDStrings or \
                     str(event.PID) in self.PIDt.allSystemPIDStrings:
+
+                # TODO sometimes binder transactions are sent to binder threads without a target
+                #  process. I am unsure what purpose this serves
+                if str(event.dest_proc) in self.PIDt.allBinderPIDStrings:
+                    return
+
                 process_branch = \
                     self.process_branches[self.PIDt.get_PID_string_index(event.PID)]
 
