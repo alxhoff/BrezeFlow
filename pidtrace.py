@@ -53,60 +53,63 @@ class PIDtracer:
                 return x
 
     def find_main_PID(self):
+        
         res = self.adb_device.run_command("ps | grep " + self.name)
         if res == "":
             self.logger.error("No process running matching given process name")
             sys.exit('Need valid application name')
-        pid = int(re.findall(" +(\d+) +\d+ +\d+", res)[0])
-        pname = re.findall("([^ ]+)$", res)[-1]
-        self.logger.debug("Found main PID of " + str(pid) + " for process "
-                          + pname)
+
+        regex_line = re.findall(" +(\d+) +\d+ +\d+ .+ ([^ ]+)$", res)
+        pid = int(regex_line[0][0])
+        pname = regex_line[0][1]
+
         return PID(pid, pname, "main")
 
     def find_system_server_PIDs(self):
         # Get all processes except the system_server itself
         res = self.adb_device.run_command("busybox ps -T | grep /system/bin")
         res = res.splitlines()
+
         for line in res:
             # skip binder threads
-            if re.search(".*{(Binder):.+}", line):
+            if re.search("(Binder)", line):
                 continue
             if line.isspace():
                 continue
-            # remove grep process
-            if not re.search("^((?!grep).)*$", line):
+            # skip grep process
+            if re.search("(grep)", line):
                 continue
-            # remove grep process
-            pid = int(re.findall("^ *(\d+)", line)[0])
-            pname = re.findall(".* +(.*)$", line)[0]
-            tname = re.findall("\{(.*)\}", line)
-            if not tname:
-                tname = pname
+
+            regex_line = re.findall("^[ +]?(\d+) \d+ +\d+:\d+ ?({(.*)})? (.+)", line)
+            pid = int(regex_line[0][0])
+            if regex_line[0][1] == "":
+                tname = pname = regex_line[0][3]
+            else:
+                tname = regex_line[0][2]
+                pname = regex_line[0][3]
+
             self.allSystemPID.append(PID(pid, pname, tname))
-            self.logger.debug("Found system thread " + tname[0] + " with PID: " \
-                              + str(pid))
+
 
     def find_binder_PIDs(self):
         # Get all processes except the system_server itself
         res = self.adb_device.run_command("busybox ps -T | grep {Binder:")
         res = res.splitlines()
+
         for line in res:
             # skip non binder threads
-            if not re.search(".*{(Binder):.+}", line):
+            if not re.search("(Binder)", line):
                 continue
             if line.isspace():
                 continue
             # remove grep process
-            if "grep" in line:
+            if re.search("(grep)", line):
                 continue
 
-            regex_find = re.findall("(\d+) \d+ +\d+:\d+ {(Binder:(\d+)_.+)} (.+)$", line)
+            regex_find = re.findall("(\d+) \d+ +\d+:\d+ {(Binder:(\d+)_.+)} (.+)", line)
             pid = int(regex_find[0][0])
-            pname = regex_find[0][3]
             tname = regex_find[0][1]
-
-            if not tname:
-                tname = pname
+            pname = regex_find[0][3]
 
             self.allBinderPID.append(PID(pid, pname, tname))
             self.logger.debug("Found binder thread " + tname[0] + " with PID: " \
@@ -137,9 +140,10 @@ class PIDtracer:
 
 
     def find_child_binder_threads(self, PID):
-        res = self.adb_device.run_command("busybox ps -T | grep Binder | grep " + \
-                                          str(PID))
+
+        res = self.adb_device.run_command("busybox ps -T | grep Binder | grep " + str(PID))
         res = res.splitlines()
+
         child_PIDs = []
         for line in res:
             if line.isspace():
@@ -148,22 +152,24 @@ class PIDtracer:
         return child_PIDs
 
     def find_all_app_PID(self):
+
         res = self.adb_device.run_command("busybox ps -T | grep " + self.name)
         res = res.splitlines()
+
         for line in res:
             if line.isspace():
                 continue
             # remove grep process
-            if not re.match("^((?!grep).)*$", line):
+            if re.search("(grep)", line):
                 continue
-            pid = int(re.findall("(\d+) +\d+ +\d+:\d+", line)[0])
-            tname = re.findall("\d+ *\d+ *\d*:\d* ?({?.*?})[^g][^r][^e][^p].*",
-                               line)[0]
-            pname = re.findall("\d+ *\d+ *\d*:\d* ?{?.*?} ([^g][^r][^e][^p].*)",
-                               line)[0]
+
+            regex_line = re.findall("(\d+) \d+ +\d+:\d+ {(.+)} (.+)", line)
+
+            pid = int(regex_line[0][0])
+            tname = regex_line[0][1]
+            pname = regex_line[0][2]
 
             self.allAppPID.append(PID(pid, pname, tname))
-            self.logger.debug("Found thread " + tname + " with PID: " + str(pid))
 
     def find_all_PID(self):
         self.find_main_PID

@@ -346,7 +346,11 @@ class GPUBranch:
                                     style='filled',
                                     shape='box', fillcolor='magenta')
 
-
+    def get_energy(self, start_time, finish_time):
+        # first event
+        for event in self.events:
+            # if event.
+            return
     # self.gpu_cycles += int((event.time - self.calc_time) * 0.000001 * gpu_speed * 1000000)
 
 
