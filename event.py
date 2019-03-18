@@ -200,7 +200,7 @@ class TaskNode:
                         #TODO reduce this
                         new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency)
                         self.cpu_cycles += new_cycles
-                        util = SystemMetrics.current_metrics.sys_util.get_util_from_idle_events(pe.cpu, pe.time)
+                        util = SystemMetrics.current_metrics.sys_util.core_utils[pe.cpu].get_util(pe.time)
                         cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency, util)
                         self.energy += cycle_energy * new_cycles
 
@@ -213,7 +213,7 @@ class TaskNode:
 
                     new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed)
                     self.cpu_cycles += new_cycles
-                    util = SystemMetrics.current_metrics.sys_util.get_util_from_idle_events(event.cpu, event.time)
+                    util = SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)
                     cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed, util)
 
                     self.energy += cycle_energy * new_cycles
@@ -345,7 +345,7 @@ class GPUBranch:
                                     + "\n" + str(self.events[-1].__class__.__name__),
                                     style='filled',
                                     shape='box', fillcolor='magenta')
-        
+
 
 class ProcessBranch:
     """
@@ -503,20 +503,22 @@ class ProcessBranch:
             self.active = False
 
             self.graph.add_node(self.tasks[-1],
-                                label=str(self.tasks[-1].start_time)[:-6] + "."
-                                    + str(self.tasks[-1].start_time)[-6:]
-                                    + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
-                                    + str(self.tasks[-1].finish_time)[-6:]
-                                    + "\nCPU: " + str(event.cpu) + "   PID: " + str(event.PID)
-                                    + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "Hz   "
-                                    + str(SystemMetrics.current_metrics.gpu_util) + "% Util"
-                                    + "\nDuration: " + str(self.tasks[-1].duration)
-                                    + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
-                                    + "\nEnergy: " + str(self.tasks[-1].energy)
-                                    + "\n" + str(event.name)
-                                    + "\n" + str(self.tasks[-1].__class__.__name__),
-                                fillcolor='darkolivegreen3',
-                                style='filled,bold,rounded', shape='box')
+                label=str(self.tasks[-1].start_time)[:-6] + "."
+                    + str(self.tasks[-1].start_time)[-6:]
+                    + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
+                    + str(self.tasks[-1].finish_time)[-6:]
+                    + "\nCPU: " + str(event.cpu)
+                    + "   Util: " + str(SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)) +"%"
+                    + "   PID: " + str(event.PID)
+                    + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "Hz   "
+                    + str(SystemMetrics.current_metrics.gpu_util) + "% Util"
+                    + "\nDuration: " + str(self.tasks[-1].duration)
+                    + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
+                    + "\nEnergy: " + str(self.tasks[-1].energy)
+                    + "\n" + str(event.name)
+                    + "\n" + str(self.tasks[-1].__class__.__name__),
+                fillcolor='darkolivegreen3',
+                style='filled,bold,rounded', shape='box')
 
             # Jobs sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
@@ -536,16 +538,16 @@ class ProcessBranch:
             self.tasks[-1].finished()
 
             self.graph.add_node(self.tasks[-1],
-                                label=
-                                    str(self.tasks[-1].events[0].time)[:-6]
-                                    + "." + str(self.tasks[-1].events[0].time)[-6:]
-                                    + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
-                                    + "." + str(self.tasks[-1].events[-1].time)[-6:]
-                                    + "\npid: " + str(event.PID)
-                                    + "  dest PID: " + str(event.dest_proc)
-                                    + "\n" + str(event.name)
-                                    + "\n" + str(self.tasks[-1].__class__.__name__),
-                                fillcolor='coral', style='filled,bold', shape='box')
+                label=
+                    str(self.tasks[-1].events[0].time)[:-6]
+                    + "." + str(self.tasks[-1].events[0].time)[-6:]
+                    + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
+                    + "." + str(self.tasks[-1].events[-1].time)[-6:]
+                    + "\npid: " + str(event.PID)
+                    + "  dest PID: " + str(event.dest_proc)
+                    + "\n" + str(event.name)
+                    + "\n" + str(self.tasks[-1].__class__.__name__),
+                fillcolor='coral', style='filled,bold', shape='box')
             return
 
         # all other job types just need to get added to the task

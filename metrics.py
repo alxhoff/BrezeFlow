@@ -34,6 +34,21 @@ class CPUUtilizationTable(UtilizationTable):
         UtilizationTable.__init__(self)
         self.core = core_num
 
+    def get_util(self, time):
+
+        event_time = time - self.initial_time
+
+        # before first util calc
+        if event_time < 0:
+            return 0.0
+
+        # start walking events to find util
+        for slice in self.events:
+            if (event_time >= slice.start_time) \
+                    and (event_time < (slice.start_time + slice.duration)):
+                return  round(slice.utilization, 2)
+        return 0.0
+
     def add_idle_event(self, event):
         # First event
         # TODO once the first event is found, account for the period before it (since beginnign)
@@ -92,7 +107,7 @@ class TotalUtilizationTable(UtilizationTable):
             util = 0.0
 
             for core in range(core_count):
-                util += SystemMetrics.current_metrics.sys_util.get_util_from_idle_events(core, x + self.initial_time)
+                util += SystemMetrics.current_metrics.sys_util.core_utils[core].get_util(x + self.initial_time)
 
             util /= core_count
 
@@ -166,22 +181,6 @@ class SystemUtilization:
         # TODO remove magic number
         for x in range(2):
             self.cluster_utils.append(TotalUtilizationTable())
-
-    def get_util_from_idle_events(self, core, time):
-        core_util = self.core_utils[core]
-
-        event_time = time - core_util.initial_time
-
-        # before first util calc
-        if event_time < 0:
-            return 0.0
-
-        # start walking events to find util
-        for slice in core_util.events:
-            if (event_time >= slice.start_time) \
-                    and (event_time < (slice.start_time + slice.duration)):
-                return slice.utilization
-        return 0.0
 
 
 class SystemMetrics:
