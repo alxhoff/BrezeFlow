@@ -153,6 +153,7 @@ class TaskNode:
         self.finish_time = 0
         self.graph = graph
         self.PID = PID
+        self.temp = 0
 
     def get_cycle_energy(self, CPU, freq, utilization, gpu=False):
         try:
@@ -212,14 +213,14 @@ class TaskNode:
                     cpu_speed = SystemMetrics.current_metrics.get_CPU_core_freq(event.cpu)
 
                     new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed)
-                    self.cpu_cycles += new_cycles
                     util = SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)
                     cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed, util)
+                    self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
 
+                    self.cpu_cycles += new_cycles
                     self.energy += cycle_energy * new_cycles
                     self.duration += event.time - self.calc_time
                     self.calc_time = event.time
-
 
             # Switching in
             if event.next_pid == self.PID:
@@ -509,6 +510,7 @@ class ProcessBranch:
                     + str(self.tasks[-1].finish_time)[-6:]
                     + "\nCPU: " + str(event.cpu)
                     + "   Util: " + str(SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)) +"%"
+                    + "   Temp: " + str(self.tasks[-1].temp)
                     + "   PID: " + str(event.PID)
                     + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "Hz   "
                     + str(SystemMetrics.current_metrics.gpu_util) + "% Util"

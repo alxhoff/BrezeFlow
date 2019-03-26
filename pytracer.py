@@ -1,11 +1,15 @@
 import logging
 import os.path as op
 import time
+from adbinterface import *
+import re
 
-from metrics import *
+class TempLogEntry:
 
-
-# def adb_write_to_file(dev, filename, contents):
+    def __init__(self, time, cpu0, cpu1, cpu2, cpu3, gpu):
+        self.time = time
+        self.cpus = [cpu0, cpu1, cpu2, cpu3]
+        self.gpu = gpu
 
 class Tracer:
     ftrace_path = '/d/tracing/'
@@ -39,10 +43,20 @@ class Tracer:
             self.adb_device.write_to_file(self.ftrace_path + "tracing_on", "0")
             self.logger.debug('Tracing disabled')
 
-    def traceForTime(self, duration):
-        start = time.time()
+    def traceForTime(self, duration, temps):
+        start_time = time.time()
+        temp_timer = start_time
         self.setTracing(True)
-        time.sleep(duration)
+        while (time.time() - start_time) < duration:
+            # log timestamp and temps
+            sys_time = adbInterface.current_interface.run_command("cat /proc/uptime")
+            sys_temp = adbInterface.current_interface.run_command("cat /sys/devices/10060000.tmu/temp")
+            sys_time = int(float(re.findall("(\d+.\d{2})", sys_time)[0]) * 1000000)
+            sys_temps = re.findall("sensor[0-4] : (\d+)", sys_temp)
+            temps.append(TempLogEntry(sys_time, int(sys_temps[0]) / 1000, int(sys_temps[1]) / 1000,
+                                      int(sys_temps[2]) / 1000, int(sys_temps[3]) / 1000,
+                                      int(sys_temps[4]) / 1000))
+            temp_timer = time.time()
         self.setTracing(False)
         self.logger.debug("Trace finished after " + str(duration) + " seconds")
 
@@ -195,7 +209,7 @@ class Tracer:
             self.setFilterPID(self.PID_filter)
 
         # run
-        self.traceForTime(self.duration)
+        self.traceForTime(self.duration, self.metrics.temps)
 
         # get results
         self.getBinderLogs();

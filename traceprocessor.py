@@ -80,7 +80,7 @@ class TraceProcessor:
 
         pid = int(regex_line[0][0])
         cpu = int(regex_line[0][1])
-        time = int(float(regex_line[0][2]))
+        time = int(float(regex_line[0][2]) * 1000000)
         target_cpu = int(regex_line[0][3])
         freq = int(regex_line[0][4]) * 1000
         util = int(regex_line[0][5])
@@ -279,7 +279,6 @@ class TraceProcessor:
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
         for line in raw_lines[11:1000]:
-        # for line in raw_lines[1800:2300]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
@@ -340,8 +339,6 @@ class TraceProcessor:
             cluster.compile_table(metrics.sys_util.core_utils[x*4 : x*4 + 4])
 
         for x, event in enumerate(processed_events):
-            if event.time == 8872620069:
-                print "wait here"
             process_tree.handle_event(event)
 
         draw_graph = Grapher(process_tree)

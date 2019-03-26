@@ -196,6 +196,7 @@ class SystemMetrics:
         self.gpu_freq = self.get_GPU_freq()
         self.gpu_util = self.get_GPU_util()
         self.sys_util = SystemUtilization(self.core_count)
+        self.temps = []
 
         SystemMetrics.current_metrics = self
 
@@ -233,3 +234,39 @@ class SystemMetrics:
             for x in range(self.core_count):
                 f.write(str(x) + " " + str(self.core_freqs[x]) + "\n" + data)
             f.close()
+
+    def get_average_cpu_temp(self, entry):
+        temp = 0
+        for i in range(4):
+            temp += entry.cpus[i]
+        temp /= 4.0
+
+        return temp
+
+    # Core of -1 is GPU
+    def get_temp(self, time, core):
+        # If time is before first temp recording then default to fire temp recording
+        # TODO index error checking
+        if time < self.temps[0].time:
+            if core == -1:
+                return self.temps[0].gpu
+            elif core <= 3:
+                return self.get_average_cpu_temp(self.temps[0])
+            else:
+                return self.temps[0].cpus[core % 4]
+        elif time > self.temps[-1].time:
+            if core == -1:
+                return self.temps[-1].gpu
+            elif core <= 3:
+                return self.get_average_cpu_temp(self.temps[-1])
+            else:
+                return self.temps[-1].cpus[core % 4]
+        else:
+            for x, entry in enumerate(self.temps[:-2]):
+                if (time >= entry.time) and (time < self.temps[x+1].time):
+                    if core == -1:
+                        return entry.gpu
+                    elif core <= 3:
+                        return self.get_average_cpu_temp(entry)
+                    else:
+                        return entry.cpus[core % 4]
