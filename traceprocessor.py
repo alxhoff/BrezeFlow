@@ -3,10 +3,9 @@ import sys
 
 import xlsxwriter
 
-from adbinterface import *
 from event import *
 from grapher import *
-from metrics import *
+
 
 class TraceProcessor:
 
@@ -53,7 +52,9 @@ class TraceProcessor:
 
     def _process_sched_switch(self, line):
 
-        regex_line = re.findall("^ *(.+?)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+).+prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)", line)
+        regex_line = re.findall(
+            "^ *(.+?)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+).+prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)",
+            line)
 
         name = regex_line[0][0]
         prev_state = regex_line[0][4]
@@ -108,7 +109,7 @@ class TraceProcessor:
     def _process_mali_util(self, line):
         regex_line = re.findall(
             "-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): mali_utilization_stats: util=(\d+) norm_util=\d+ norm_freq=(\d+)",
-                                line)
+            line)
 
         pid = int(regex_line[0][0])
         cpu = int(regex_line[0][1])
@@ -269,7 +270,6 @@ class TraceProcessor:
 
         self.process_trace(f, PIDt, tracer.metrics)
 
-
     def process_trace(self, f, PIDt, metrics):
 
         raw_lines = f.readlines()
@@ -278,7 +278,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:1000]:
+        for line in raw_lines[11:]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
@@ -336,7 +336,7 @@ class TraceProcessor:
 
         # compile cluster utilizations
         for x, cluster in enumerate(metrics.sys_util.cluster_utils):
-            cluster.compile_table(metrics.sys_util.core_utils[x*4 : x*4 + 4])
+            cluster.compile_table(metrics.sys_util.core_utils[x * 4: x * 4 + 4])
 
         for x, event in enumerate(processed_events):
             process_tree.handle_event(event)

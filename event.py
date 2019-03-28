@@ -1,13 +1,10 @@
-import logging
-
 import networkx as nx
 from aenum import Enum
 from pydispatch import dispatcher
-import dispatch
-from pid import PID
+
 from adbinterface import *
-import re
 from metrics import SystemMetrics
+
 
 class BinderType(Enum):
     UNKNOWN = 0
@@ -110,6 +107,8 @@ track of the frequency levels used during a job as well as the durations such th
 total duration of the job can later be divided into periods of different frequency
 use 
 """
+
+
 class FreqPowerEvent:
     # Frequency up until the event, not the frequency after the event
     def __init__(self, time, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util):
@@ -117,7 +116,7 @@ class FreqPowerEvent:
         self.cpu = cpu
         self.cpu_frequency = cpu_freq
         self.gpu_frequency = gpu_freq
-        self.cpu_util = cpu_util #not really needed
+        self.cpu_util = cpu_util  # not really needed
         self.gpu_util = gpu_util
 
 
@@ -134,13 +133,13 @@ As such task processing must have a lead of one job.
 
 
 class TaskNode:
-
     """ Calculating task cycles works on incremental summing. If the CPU on which the process is
     running or the GPU changes or the frequency changes then the variable is updated and
     the calc time shifted to the point of the event. As such the calc time stores the time since
     the exec time was last changed, and given that the CPU and frequency have been fixed during
     that time, the cycles is easily updated using a += and the current values (before updating them)
     """
+
     def __init__(self, graph, PID):
         self.events = []
         self.power_freq_events = []
@@ -154,26 +153,25 @@ class TaskNode:
         self.graph = graph
         self.PID = PID
         self.temp = 0
+        self.util = 0
 
-    def get_cycle_energy(self, CPU, freq, utilization, gpu=False):
+    def get_CPU_per_second_energy(self, CPU, freq, util, temp):
         try:
-            if gpu:
-                for x, entry in enumerate(SystemMetrics.current_metrics.energy_profile.gpu_values):
-                    if entry.frequency == freq:
-                        return entry.alpha * utilization + entry.beta
-                return 0
+            EP = SystemMetrics.current_metrics.energy_profile
             if CPU in range(4):
-                for x, entry in enumerate(SystemMetrics.current_metrics.energy_profile.little_values):
-                    if entry.frequency == freq:
-                        cycle_energy = entry.alpha * utilization + entry.beta
-                        return cycle_energy
-                return 0
+                voltage = EP.little_voltages[freq]
+                a1 = EP.little_reg_const["a1"]
+                a2 = EP.little_reg_const["a2"]
+                a3 = EP.little_reg_const["a3"]
+                energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
+                return energy
             else:
-                for x, entry in enumerate(SystemMetrics.current_metrics.energy_profile.big_values):
-                    if entry.frequency == freq:
-                        cycle_energy = entry.alpha * utilization + entry.beta
-                        return cycle_energy
-                return 0
+                voltage = EP.big_voltages[freq]
+                a1 = EP.big_reg_const["a1"]
+                a2 = EP.big_reg_const["a2"]
+                a3 = EP.big_reg_const["a3"]
+                energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
+                return energy
         except ValueError:
             print "invalid frequency"
 
@@ -194,28 +192,34 @@ class TaskNode:
                 if self.power_freq_events:
                     # Events are sequential in time
                     for x, pe in enumerate(self.power_freq_events):
+
                         if pe.time < self.events[-1].time:
                             # TODO might cause indexing errors
                             continue
                         # calc time is the point until which the cycles were last counted
-                        #TODO reduce this
+                        # TODO reduce this
                         new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency)
                         self.cpu_cycles += new_cycles
-                        util = SystemMetrics.current_metrics.sys_util.core_utils[pe.cpu].get_util(pe.time)
-                        cycle_energy = self.get_cycle_energy(pe.cpu, pe.cpu_frequency, util)
-                        self.energy += cycle_energy * new_cycles
+                        self.util = SystemMetrics.current_metrics.sys_util.core_utils[pe.cpu].get_util(pe.time)
+                        self.temp = SystemMetrics.current_metrics.get_temp(pe.time, pe.cpu)
 
+                        cycle_energy = self.get_CPU_per_second_energy(pe.cpu, pe.cpu_frequency, self.util, self.temp) / pe.cpu_frequency
+
+                        self.energy += cycle_energy * new_cycles
                         self.duration += pe.time - self.calc_time
                         self.calc_time = pe.time
+
                     del self.power_freq_events[:]
                 # remaining cycles
                 if event.time != self.calc_time:
                     cpu_speed = SystemMetrics.current_metrics.get_CPU_core_freq(event.cpu)
 
                     new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed)
-                    util = SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)
-                    cycle_energy = self.get_cycle_energy(event.cpu, cpu_speed, util)
+                    self.util = SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)
                     self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
+
+
+                    cycle_energy = self.get_CPU_per_second_energy(event.cpu, cpu_speed, self.util, self.temp) / cpu_speed
 
                     self.cpu_cycles += new_cycles
                     self.energy += cycle_energy * new_cycles
@@ -224,7 +228,6 @@ class TaskNode:
 
             # Switching in
             if event.next_pid == self.PID:
-
                 # when this slice is switched out we want to append only cycles for this slice
                 self.calc_time = event.time
 
@@ -297,7 +300,6 @@ class CPUBranch:
 
             self.send_change_event()
 
-
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
                                   + "\nCPU: " + str(event.cpu) + " Util: " + str(event.util)
@@ -341,11 +343,11 @@ class GPUBranch:
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
-                                    + "\nUtil: " + str(self.events[-1].util)
-                                    + "\nFreq: " + str(self.events[-1].freq)
-                                    + "\n" + str(self.events[-1].__class__.__name__),
-                                    style='filled',
-                                    shape='box', fillcolor='magenta')
+                                  + "\nUtil: " + str(self.events[-1].util)
+                                  + "\nFreq: " + str(self.events[-1].freq)
+                                  + "\n" + str(self.events[-1].__class__.__name__),
+                            style='filled',
+                            shape='box', fillcolor='magenta')
 
 
 class ProcessBranch:
@@ -371,18 +373,18 @@ class ProcessBranch:
 
     def connect_to_cpu_event(self, cpu):
         dispatcher.connect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
-                            sender=dispatcher.Any)
+                           sender=dispatcher.Any)
 
     def disconnect_from_cpu_event(self, cpu):
         try:
             dispatcher.disconnect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
-                                sender=dispatcher.Any)
+                                  sender=dispatcher.Any)
         except Exception:
             return
 
     def connect_to_gpu_events(self):
         dispatcher.connect(self.handle_gpu_change, signal=self.gpu.signal_change,
-                            sender=dispatcher.Any)
+                           sender=dispatcher.Any)
 
     def get_cur_cpu_freq(self):
         return self.CPUs[self.CPU].freq
@@ -415,10 +417,10 @@ class ProcessBranch:
                 if self.CPUs[event.cpu].freq != self.CPUs[self.CPU].freq:
                     self.tasks[-1].add_cpu_gpu_event(event.time,
                                                      self.CPU,
-                                                    self.CPUs[self.CPU].freq,
-                                                    self.CPUs[self.CPU].util,
-                                                    self.gpu.freq,
-                                                    self.gpu.util)
+                                                     self.CPUs[self.CPU].freq,
+                                                     self.CPUs[self.CPU].util,
+                                                     self.gpu.freq,
+                                                     self.gpu.util)
             except Exception:
                 pass
 
@@ -457,7 +459,7 @@ class ProcessBranch:
                 self.active = False
                 self.tasks[-1].finished()
 
-                #TODO ADD NODE HERE
+                # TODO ADD NODE HERE
                 return
 
             self.active = True
@@ -474,7 +476,6 @@ class ProcessBranch:
                 self.disconnect_from_cpu_event(self.CPU)
                 self.CPU = event.cpu
                 self.connect_to_cpu_event(self.CPU)
-
 
         # New task STARTING
         if event_type == JobType.SCHED_SWITCH_IN and self.active is False:
@@ -504,23 +505,23 @@ class ProcessBranch:
             self.active = False
 
             self.graph.add_node(self.tasks[-1],
-                label=str(self.tasks[-1].start_time)[:-6] + "."
-                    + str(self.tasks[-1].start_time)[-6:]
-                    + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
-                    + str(self.tasks[-1].finish_time)[-6:]
-                    + "\nCPU: " + str(event.cpu)
-                    + "   Util: " + str(SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)) +"%"
-                    + "   Temp: " + str(self.tasks[-1].temp)
-                    + "   PID: " + str(event.PID)
-                    + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "Hz   "
-                    + str(SystemMetrics.current_metrics.gpu_util) + "% Util"
-                    + "\nDuration: " + str(self.tasks[-1].duration)
-                    + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
-                    + "\nEnergy: " + str(self.tasks[-1].energy)
-                    + "\n" + str(event.name)
-                    + "\n" + str(self.tasks[-1].__class__.__name__),
-                fillcolor='darkolivegreen3',
-                style='filled,bold,rounded', shape='box')
+                                label=str(self.tasks[-1].start_time)[:-6] + "."
+                                      + str(self.tasks[-1].start_time)[-6:]
+                                      + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
+                                      + str(self.tasks[-1].finish_time)[-6:]
+                                      + "\nCPU: " + str(event.cpu)
+                                      + "   Util: " + str(self.tasks[-1].util) + "%"
+                                      + "   Temp: " + str(self.tasks[-1].temp)
+                                      + "   PID: " + str(event.PID)
+                                      + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "Hz   "
+                                      + str(SystemMetrics.current_metrics.gpu_util) + "% Util"
+                                      + "\nDuration: " + str(self.tasks[-1].duration)
+                                      + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
+                                      + "\nEnergy: " + str(self.tasks[-1].energy)
+                                      + "\n" + str(event.name)
+                                      + "\n" + str(self.tasks[-1].__class__.__name__),
+                                fillcolor='darkolivegreen3',
+                                style='filled,bold,rounded', shape='box')
 
             # Jobs sub-graph
             self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
@@ -540,16 +541,16 @@ class ProcessBranch:
             self.tasks[-1].finished()
 
             self.graph.add_node(self.tasks[-1],
-                label=
-                    str(self.tasks[-1].events[0].time)[:-6]
-                    + "." + str(self.tasks[-1].events[0].time)[-6:]
-                    + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
-                    + "." + str(self.tasks[-1].events[-1].time)[-6:]
-                    + "\npid: " + str(event.PID)
-                    + "  dest PID: " + str(event.dest_proc)
-                    + "\n" + str(event.name)
-                    + "\n" + str(self.tasks[-1].__class__.__name__),
-                fillcolor='coral', style='filled,bold', shape='box')
+                                label=
+                                str(self.tasks[-1].events[0].time)[:-6]
+                                + "." + str(self.tasks[-1].events[0].time)[-6:]
+                                + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
+                                + "." + str(self.tasks[-1].events[-1].time)[-6:]
+                                + "\npid: " + str(event.PID)
+                                + "  dest PID: " + str(event.dest_proc)
+                                + "\n" + str(event.name)
+                                + "\n" + str(self.tasks[-1].__class__.__name__),
+                                fillcolor='coral', style='filled,bold', shape='box')
             return
 
         # all other job types just need to get added to the task
@@ -563,6 +564,7 @@ entry shows possible child thread PID that could appear in the corresponding
 wake event. Allowing binder transactions to be matched to their corresponding
 wake event.
 """
+
 
 class PendingBinderTransaction:
 
@@ -641,7 +643,6 @@ class ProcessTree:
                 # if switched in because of binder
                 for x, task in enumerate(self.pending_binder_tasks):
                     if event.next_pid == task.dest_pid:
-
                         # edge from prev task to binder thread
                         self.graph.add_edge(
                             # original process branch that started transaction
@@ -742,7 +743,6 @@ class ProcessTree:
                         # is a child of a previous transactions parent binder PID
                         if any(pid == event.PID for pid in transaction.child_PIDs) or \
                                 event.PID == transaction.parent_PID:
-
                             # Add starting binder event to branch
                             process_branch.add_job(transaction.send_event, event_type=JobType.BINDER_SEND)
 

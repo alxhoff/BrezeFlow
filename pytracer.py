@@ -1,8 +1,8 @@
-import logging
-import os.path as op
-import time
-from adbinterface import *
 import re
+import time
+
+from adbinterface import *
+
 
 class TempLogEntry:
 
@@ -10,6 +10,7 @@ class TempLogEntry:
         self.time = time
         self.cpus = [cpu0, cpu1, cpu2, cpu3]
         self.gpu = gpu
+
 
 class Tracer:
     ftrace_path = '/d/tracing/'
@@ -76,7 +77,7 @@ class Tracer:
     ###  FUNCTION TRACING  ###
     def _getFilterFunctions(self):
         return self.adb_device.read_from_file(self.ftrace_path +
-                                            "available_filter_functions")
+                                              "available_filter_functions")
 
     def setFilterFunction(self, functions):
         if functions == []:

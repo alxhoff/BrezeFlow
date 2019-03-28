@@ -1,8 +1,12 @@
 from enum import Enum
 
+from xu3_profile import XU3RegressionConstants
+
+
 class IdleState(Enum):
     is_idle = 0
     is_not_idle = 1
+
 
 class UtilizationSlice:
 
@@ -28,6 +32,7 @@ class UtilizationTable:
         self.core_state = 0
         self.events = []
 
+
 class CPUUtilizationTable(UtilizationTable):
 
     def __init__(self, core_num):
@@ -46,7 +51,7 @@ class CPUUtilizationTable(UtilizationTable):
         for slice in self.events:
             if (event_time >= slice.start_time) \
                     and (event_time < (slice.start_time + slice.duration)):
-                return  round(slice.utilization, 2)
+                return round(slice.utilization, 2)
         return 0.0
 
     def add_idle_event(self, event):
@@ -86,6 +91,7 @@ class CPUUtilizationTable(UtilizationTable):
                 break
 
         self.events[-1].utilization = float(active_duration) / float(calc_duration) * 100.00
+
 
 class TotalUtilizationTable(UtilizationTable):
 
@@ -135,11 +141,13 @@ class GPUUtilizationTable(UtilizationTable):
         self.last_event_time = event.time - self.initial_time
 
     @staticmethod
-    def get_cycle_energy(self, freq, util):
-        for entry in SystemMetrics.current_metrics.energy_profile.gpu_values:
-            if entry.frequency == freq:
-                return entry.alpha * util + entry.beta
-        return 0
+    def get_GPU_cycle_energy(self, freq, util, temp):
+        EP = SystemMetrics.current_metrics.energy_profile
+        voltage = EP.GPU_voltages[freq]
+        a1 = EP.GPU_reg_const["a1"]
+        a2 = EP.GPU_reg_const["a2"]
+        a3 = EP.GPU_reg_const["a3"]
+        return voltage * (a1 * voltage * freq * util + a2 * temp + a3)
 
     def calc_GPU_power(self, start_time, finish_time):
         relative_start_time = start_time - self.initial_time
@@ -151,15 +159,18 @@ class GPUUtilizationTable(UtilizationTable):
         for x, event in enumerate(self.events):
             # find start event
             if (relative_start_time >= event.time) and (relative_start_time < (event.time + event.duration)):
-                cycle_energy = self.get_cycle_energy(event.freq, event.util)
+                temp = SystemMetrics.current_metrics.get_temp(event.time, -1) # -1 for GPU
+                cycle_energy = self.get_GPU_cycle_energy(event.freq, event.util, temp)
                 cycles = (event.duration - relative_start_time - event.start_time) * 0.000001 * event.frequency
             # end case
             elif (relative_finish_time >= event.time) and (relative_finish_time < (event.time + event.duration)):
-                cycle_energy = self.get_cycle_energy(event.freq, event.util)
+                temp = SystemMetrics.current_metrics.get_temp(event.time, -1)
+                cycle_energy = self.get_GPU_cycle_energy(event.freq, event.util, temp)
                 cycles = (event.duration - relative_finish_time - event.start_time) * 0.000001 * event.frequency
             # middle cases
             elif (relative_start_time < event.time) and (relative_finish_time > (event.time + event.duration)):
-                cycle_energy = self.get_cycle_energy(event.freq, event.util)
+                temp = SystemMetrics.current_metrics.get_temp(event.time, -1)
+                cycle_energy = self.get_GPU_cycle_energy(event.freq, event.util, temp)
                 cycles = event.duration * 0.000001 * event.frequency
 
             energy += cycle_energy * cycles
@@ -184,12 +195,11 @@ class SystemUtilization:
 
 
 class SystemMetrics:
-
     current_metrics = None
 
-    def __init__(self, adb, energy_profile):
+    def __init__(self, adb):
         self.adb = adb
-        self.energy_profile = energy_profile
+        self.energy_profile = XU3RegressionConstants()
         self.core_count = self.get_core_count()
         self.core_freqs = self.get_core_freqs()
         self.core_utils = self.get_core_utils()
@@ -212,7 +222,7 @@ class SystemMetrics:
         return frequencies
 
     def get_core_utils(self):
-        #TODO
+        # TODO
         loads = [0] * self.core_count
         return loads
 
@@ -263,7 +273,7 @@ class SystemMetrics:
                 return self.temps[-1].cpus[core % 4]
         else:
             for x, entry in enumerate(self.temps[:-2]):
-                if (time >= entry.time) and (time < self.temps[x+1].time):
+                if (time >= entry.time) and (time < self.temps[x + 1].time):
                     if core == -1:
                         return entry.gpu
                     elif core <= 3:

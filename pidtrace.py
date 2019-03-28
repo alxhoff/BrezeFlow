@@ -1,6 +1,7 @@
 import logging
 import re
 import sys
+
 from pid import PID
 
 
@@ -53,7 +54,7 @@ class PIDtracer:
                 return x
 
     def find_main_PID(self):
-        
+
         res = self.adb_device.run_command("ps | grep " + self.name)
         if res == "":
             self.logger.error("No process running matching given process name")
@@ -89,7 +90,6 @@ class PIDtracer:
                 pname = regex_line[0][3]
 
             self.allSystemPID.append(PID(pid, pname, tname))
-
 
     def find_binder_PIDs(self):
         # Get all processes except the system_server itself
@@ -137,7 +137,6 @@ class PIDtracer:
                         self.allSystemPID.append(PID(pid, pname, tname))
                         self.logger.debug("Found system thread " + tname[0] + " with PID: " \
                                           + str(pid))
-
 
     def find_child_binder_threads(self, PID):
 
