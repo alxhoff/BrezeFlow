@@ -646,7 +646,8 @@ class ProcessTree:
 
         for x in range(0, self.metrics.core_count):
             self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x],
-                                       self.metrics.core_utils[x], self.graph))
+                                   self.metrics.core_utils[x], self.graph))
+
 
     def finish_tree(self, start_time, finish_time):
         for x in range(len(self.process_branches) - 1, -1, -1):

@@ -1,6 +1,9 @@
-from enum import Enum
 import csv
+
+from enum import Enum
+
 from xu3_profile import XU3RegressionConstants
+
 
 class TempLogEntry:
 
@@ -8,6 +11,7 @@ class TempLogEntry:
         self.time = time
         self.cpus = [cpu0, cpu1, cpu2, cpu3]
         self.gpu = gpu
+
 
 class IdleState(Enum):
     is_idle = 0
@@ -165,7 +169,7 @@ class GPUUtilizationTable(UtilizationTable):
         for x, event in enumerate(self.events):
             # find start event
             if (relative_start_time >= event.time) and (relative_start_time < (event.time + event.duration)):
-                temp = SystemMetrics.current_metrics.get_temp(event.time, -1) # -1 for GPU
+                temp = SystemMetrics.current_metrics.get_temp(event.time, -1)  # -1 for GPU
                 cycle_energy = self.get_GPU_cycle_energy(event.freq, event.util, temp)
                 cycles = (event.duration - relative_start_time - event.start_time) * 0.000001 * event.frequency
             # end case
@@ -203,7 +207,7 @@ class SystemUtilization:
 class SystemMetrics:
     current_metrics = None
 
-    def __init__(self, adb):
+    def __init__(self, adb, filename):
         self.adb = adb
         self.energy_profile = XU3RegressionConstants()
         self.core_count = self.get_core_count()
@@ -213,8 +217,43 @@ class SystemMetrics:
         self.gpu_util = self.get_GPU_util()
         self.sys_util = SystemUtilization(self.core_count)
         self.temps = []
+        self.save_to_file(filename)
 
         SystemMetrics.current_metrics = self
+
+    def save_to_file(self, filename):
+        with open(filename + "_metrics.csv", "w+") as f:
+            writer = csv.writer(f, delimiter=',')
+            writer.writerow([self.core_count])
+            core_freqs = []
+            core_utils = []
+            for i in range(self.core_count):
+                core_freqs.append(str(self.core_freqs[i]))
+                core_utils.append(str(self.core_utils[i]))
+            writer.writerow(core_freqs)
+            writer.writerow(core_utils)
+            writer.writerow([self.gpu_freq])
+            writer.writerow([self.gpu_util])
+
+
+    def load_from_file(self, filename):
+        with open(filename + "_metrics.csv", "r") as f:
+            data = csv.reader(f)
+            self.core_freqs = []
+            self.core_utils = []
+            for x, row in enumerate(data):
+                if x == 0:
+                    self.core_count = int(row[0])
+                elif x == 1:
+                    for i in range(self.core_count):
+                        self.core_freqs.append(int(row[i]))
+                elif x == 2:
+                    for i in range(self.core_count):
+                    self.core_utils.append(int(row[i]))
+                elif x == 3:
+                    self.gpu_freq = int(row[0])
+                elif x == 4:
+                    self.gpu_util = int(row[0])
 
     def get_core_count(self):
         return int(self.adb.run_command("nproc"))

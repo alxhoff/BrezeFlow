@@ -17,6 +17,8 @@ parser.add_argument("-f", "--filename", type=str, default="output",
                     help="Specify the name of the output trace file")
 parser.add_argument("-e", "--events", required=True, type=str,
                     help="Events that are to be traced")
+parser.add_argument("-p", "--processor", action='store_true',
+                    help="If the tool should just process and not trace")
 
 args = parser.parse_args()
 
@@ -226,17 +228,23 @@ def main():
     PIDt = PIDtracer(adbBridge, args.game)
     tp = TraceProcessor(PIDt)
 
-    sys_metrics = SystemMetrics(adbBridge)
+    sys_metrics = SystemMetrics(adbBridge, args.filename)
 
-    tracer = Tracer(adbBridge,
-                    args.filename,
-                    PID_filter=PIDt,
-                    metrics=sys_metrics,
-                    events=args.events.split(','),
-                    duration=args.duration
-                    )
-    tracer.runTracer()
-    tp.process_tracer(tracer)
+    # Sys metrics needds to be fixed for offline processing (saving metrics)
+
+    if args.processor is True:
+        sys_metrics.load_from_file(args.filename)
+        tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics)
+    else:
+        tracer = Tracer(adbBridge,
+                        args.filename,
+                        PID_filter=PIDt,
+                        metrics=sys_metrics,
+                        events=args.events.split(','),
+                        duration=args.duration
+                        )
+        tracer.runTracer()
+        tp.process_tracer(tracer)
 
     # combo_tracer = Tracer(adbBridge,
     #                       "combo",
