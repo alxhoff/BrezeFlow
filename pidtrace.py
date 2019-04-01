@@ -81,7 +81,7 @@ class PIDtracer:
             if re.search("(grep)", line):
                 continue
 
-            regex_line = re.findall("^[ +]?(\d+) \d+ +\d+:\d+ ?({(.*)})? (.+)", line)
+            regex_line = re.findall("(\d+) \d+ +\d+:\d+ ?({(.*)})? (.+)", line)
             pid = int(regex_line[0][0])
             if regex_line[0][1] == "":
                 tname = pname = regex_line[0][3]

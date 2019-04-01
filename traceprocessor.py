@@ -9,11 +9,12 @@ from grapher import *
 
 class TraceProcessor:
 
-    def __init__(self):
+    def __init__(self, PIDt):
         logging.basicConfig(filename="pytracer.log",
                             format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Trace processor created")
+        self.PIDt = PIDt
 
     def filter_trace_PID(self, tracer, PIDt, output_filename=""):
         if output_filename == "":
@@ -30,8 +31,8 @@ class TraceProcessor:
         self.logger.debug("Written filtered lines to: " + output_filename)
         f.close()
 
-    def keep_PID_line(self, line, PIDt):
-        pids = PIDt.allPIDStrings[1:]
+    def keep_PID_line(self, line):
+        pids = self.PIDt.allPIDStrings[1:]
         if any(re.search("-(" + str(pid) + ") +|=(" + str(pid) + ") ", line) for pid in pids):
             return True
         elif "update_cpu_metric" in line:
@@ -247,7 +248,7 @@ class TraceProcessor:
 
         output_workbook.close()
 
-    def process_trace_file(self, filename, PIDt, metrics):
+    def process_trace_file(self, filename, metrics):
         try:
             f = open(filename, "r")
             self.logger.debug("Tracer " + filename + " opened for \
@@ -259,9 +260,9 @@ class TraceProcessor:
         #read temps from file
         SystemMetrics.current_metrics.read_temps()
 
-        self.process_trace(f, PIDt, metrics)
+        self.process_trace(f, metrics)
 
-    def process_tracer(self, tracer, PIDt):
+    def process_tracer(self, tracer):
         # open trace
         try:
             f = open(tracer.filename, "r")
@@ -271,9 +272,9 @@ class TraceProcessor:
             self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
 
-        self.process_trace(f, PIDt, tracer.metrics)
+        self.process_trace(f, tracer.metrics)
 
-    def process_trace(self, f, PIDt, metrics):
+    def process_trace(self, f, metrics):
 
         raw_lines = f.readlines()
         processed_events = []
@@ -283,7 +284,7 @@ class TraceProcessor:
 
         for line in raw_lines[11:1000]:
 
-            if not self.keep_PID_line(line, PIDt):
+            if not self.keep_PID_line(line):
                 continue
 
             if "sched_wakeup" in line:
@@ -318,7 +319,7 @@ class TraceProcessor:
         # self.writeToXlsx(processed_events, op.basename(f.name))
 
         # generate pointers to most recent nodes for each PID (branch heads)
-        process_tree = ProcessTree(PIDt, metrics)
+        process_tree = ProcessTree(self.PIDt, metrics)
 
         # Init GPU util tree
         # set initial time as first event in log as mali util is able to be found via sysfs

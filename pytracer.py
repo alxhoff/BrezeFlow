@@ -1,8 +1,24 @@
+import argparse
 import re
 import time
 
 from adbinterface import *
 from metrics import *
+from pidtrace import PIDtracer
+from traceprocessor import TraceProcessor
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("-g", "--game", required=True, type=str,
+                    help="Specifies the name of the game to be traced")
+parser.add_argument("-d", "--duration", required=True, type=int,
+                    help="The duration to trace")
+parser.add_argument("-f", "--filename", type=str, default="output",
+                    help="Specify the name of the output trace file")
+parser.add_argument("-e", "--events", required=True, type=str,
+                    help="Events that are to be traced")
+
+args = parser.parse_args()
 
 
 class Tracer:
@@ -158,11 +174,6 @@ class Tracer:
             self.adb_device.append_to_file(self.ftrace_path + "set_ftrace_pid", PID)
             self.logger.debug("Filtering PID: " + PID)
 
-        if self.events != []:
-            for PID in PID_strings:
-                self.adb_device.append_to_file(self.ftrace_path + "set_ftrace_pid", PID)
-                self.logger.debug("Filtering events with PID: " + PID)
-
     ##  TRACER TYPES  ###
     def getAvailableTracer(self):
         return self.adb_device.read_from_file(self.ftrace_path + "available_tracers")
@@ -207,3 +218,39 @@ class Tracer:
         self.getBinderLogs();
         self.getTraceResults(self.name + "_tracer.trace")
         self.logger.debug("Tracer " + self.name + " finished running")
+
+
+def main():
+    adbBridge = adbInterface()
+    # PIDt = PIDtracer(adbBridge, "hillclimb")
+    PIDt = PIDtracer(adbBridge, args.game)
+    tp = TraceProcessor(PIDt)
+
+    sys_metrics = SystemMetrics(adbBridge)
+
+    tracer = Tracer(adbBridge,
+                    args.filename,
+                    PID_filter=PIDt,
+                    metrics=sys_metrics,
+                    events=args.events.split(','),
+                    duration=args.duration
+                    )
+    tracer.runTracer()
+    tp.process_tracer(tracer)
+
+    # combo_tracer = Tracer(adbBridge,
+    #                       "combo",
+    #                       events=["binder_transaction", "cpu_idle",
+    #                               "sched_switch", "cpu_frequency", "update_cpu_metric",
+    #                               "mali_utilization_stats"],
+    #                       PID_filter=PIDt,
+    #                       duration=1,
+    #                       metrics=sys_metrics)
+    # combo_tracer.runTracer()
+    # tp.process_tracer(combo_tracer)
+    # tp.process_trace_file("combo_tracer.trace", sys_metrics)
+    # tp.filterTracePID(combo_tracer, PIDt, combo_tracer.filename)
+
+
+if __name__ == '__main__':
+    main()
