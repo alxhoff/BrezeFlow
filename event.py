@@ -205,7 +205,8 @@ class TaskNode:
                         self.util = SystemMetrics.current_metrics.sys_util.core_utils[pe.cpu].get_util(pe.time)
                         self.temp = SystemMetrics.current_metrics.get_temp(pe.time, pe.cpu)
 
-                        cycle_energy = self.get_CPU_per_second_energy(pe.cpu, pe.cpu_frequency, self.util, self.temp) / pe.cpu_frequency
+                        cycle_energy = self.get_CPU_per_second_energy(pe.cpu, pe.cpu_frequency, self.util,
+                                                                      self.temp) / pe.cpu_frequency
 
                         self.energy += cycle_energy * new_cycles
                         self.duration += pe.time - self.calc_time
@@ -220,8 +221,8 @@ class TaskNode:
                     self.util = SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)
                     self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
 
-
-                    cycle_energy = self.get_CPU_per_second_energy(event.cpu, cpu_speed, self.util, self.temp) / cpu_speed
+                    cycle_energy = self.get_CPU_per_second_energy(event.cpu, cpu_speed, self.util,
+                                                                  self.temp) / cpu_speed
 
                     self.cpu_cycles += new_cycles
                     self.energy += cycle_energy * new_cycles
@@ -372,6 +373,36 @@ class ProcessBranch:
         self.CPUs = CPUs
         self.gpu = GPU
         self.connect_to_gpu_events()
+        self.energy = 0 # calculated upon request at the end between given intervals
+
+    def _sum_energy_until_finish(self, start_event_index, finish_time):
+        task_energy = 0
+        if finish_time == 0:
+            for task in self.tasks:
+                task_energy += task.energy
+        else:
+            for x, task in enumerate(self.tasks[start_event_index:-1]):
+                if finish_time < self.tasks[x + 1]:
+                    # calculate % of energy to take
+                    task_energy += ((finish_time - task.time) / task.duration) * task.energy
+                else:
+                    task_energy += task.energy
+        return task_energy
+
+    def sum_task_energy(self, start_time, finish_time):
+        task_energy = 0
+        if start_time == 0:
+            # sum all events
+            task_energy += self._sum_energy_until_finish(0, finish_time)
+        else:
+            # find first task and get the partial sum
+            for x, task in enumerate(self.tasks):
+                if (start_time > task.time) and (start_time < (task.time + task.duration)):
+                    task_energy += (((task.time + task.duration) - start_time) / task.duration) * task.energy
+                elif start_time < task.time:
+                    task_energy += self._sum_energy_until_finish(x, finish_time)
+                    return task_energy
+        return task_energy
 
     def connect_to_cpu_event(self, cpu):
         dispatcher.connect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
@@ -616,6 +647,15 @@ class ProcessTree:
         for x in range(0, self.metrics.core_count):
             self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x],
                                        self.metrics.core_utils[x], self.graph))
+
+    def finish_tree(self, start_time, finish_time):
+        for x in range(len(self.process_branches) - 1, -1, -1):
+            # Remove empty PID branches
+            if self.process_branches[x].tasks == []:
+                del self.process_branches[x]
+                continue
+            self.process_branches[x].energy = self.process_branches[x].sum_task_energy(start_time, finish_time)
+
 
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and

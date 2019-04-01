@@ -278,7 +278,7 @@ class TraceProcessor:
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
-        for line in raw_lines[11:]:
+        for line in raw_lines[11:1000]:
 
             if not self.keep_PID_line(line, PIDt):
                 continue
@@ -340,6 +340,8 @@ class TraceProcessor:
 
         for x, event in enumerate(processed_events):
             process_tree.handle_event(event)
+
+        process_tree.finish_tree(0, 0)
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()
