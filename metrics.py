@@ -1,5 +1,5 @@
 from enum import Enum
-
+import csv
 from xu3_profile import XU3RegressionConstants
 
 class TempLogEntry:
@@ -288,8 +288,16 @@ class SystemMetrics:
                         return entry.cpus[core % 4]
 
     def save_temps(self):
-        with open("temps.csv", "w+") as f:
+        with open("/tmp/temps.csv", "w+") as f:
             for x in self.temps:
                 f.write(str(x.time) + ", " + str(x.cpus[0]) + ", " + str(x.cpus[1]) + ", "
                         + str(x.cpus[2]) + ", " + str(x.cpus[3]) + ", " + str(x.gpu) + "\n")
+            f.close()
+
+    def read_temps(self):
+        with open("/tmp/temps.csv", "r") as f:
+            data = csv.reader(f)
+            for x in data:
+                self.temps.append(TempLogEntry(int(x[0]), int(x[1]), int(x[2]), int(x[3]),
+                                               int(x[4]), int(x[5])))
             f.close()

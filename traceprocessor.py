@@ -256,6 +256,9 @@ class TraceProcessor:
             self.logger.error("Could not open trace file" + filename)
             sys.exit("Tracer " + filename + " unable to be opened for processing")
 
+        #read temps from file
+        SystemMetrics.current_metrics.read_temps()
+
         self.process_trace(f, PIDt, metrics)
 
     def process_tracer(self, tracer, PIDt):
