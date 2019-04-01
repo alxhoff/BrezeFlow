@@ -2,14 +2,7 @@ import re
 import time
 
 from adbinterface import *
-
-
-class TempLogEntry:
-
-    def __init__(self, time, cpu0, cpu1, cpu2, cpu3, gpu):
-        self.time = time
-        self.cpus = [cpu0, cpu1, cpu2, cpu3]
-        self.gpu = gpu
+from metrics import *
 
 
 class Tracer:
@@ -46,7 +39,6 @@ class Tracer:
 
     def traceForTime(self, duration, temps):
         start_time = time.time()
-        temp_timer = start_time
         self.setTracing(True)
         while (time.time() - start_time) < duration:
             # log timestamp and temps
@@ -57,7 +49,6 @@ class Tracer:
             temps.append(TempLogEntry(sys_time, int(sys_temps[0]) / 1000, int(sys_temps[1]) / 1000,
                                       int(sys_temps[2]) / 1000, int(sys_temps[3]) / 1000,
                                       int(sys_temps[4]) / 1000))
-            temp_timer = time.time()
         self.setTracing(False)
         self.logger.debug("Trace finished after " + str(duration) + " seconds")
 
@@ -189,7 +180,6 @@ class Tracer:
         self.adb_device.clear_file(self.ftrace_path + "trace")
         self.logger.debug("Trace output file cleared")
 
-    ##  RUNNING CONFIGURED TRACER OBJECT  ###
     def runTracer(self):
         self.logger.debug("Running tracer: " + self.name)
         self.clearTracer()
@@ -211,6 +201,7 @@ class Tracer:
 
         # run
         self.traceForTime(self.duration, self.metrics.temps)
+        SystemMetrics.current_metrics.save_temps()
 
         # get results
         self.getBinderLogs();

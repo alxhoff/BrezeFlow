@@ -2,6 +2,12 @@ from enum import Enum
 
 from xu3_profile import XU3RegressionConstants
 
+class TempLogEntry:
+
+    def __init__(self, time, cpu0, cpu1, cpu2, cpu3, gpu):
+        self.time = time
+        self.cpus = [cpu0, cpu1, cpu2, cpu3]
+        self.gpu = gpu
 
 class IdleState(Enum):
     is_idle = 0
@@ -280,3 +286,10 @@ class SystemMetrics:
                         return self.get_average_cpu_temp(entry)
                     else:
                         return entry.cpus[core % 4]
+
+    def save_temps(self):
+        with open("temps.csv", "w+") as f:
+            for x in self.temps:
+                f.write(str(x.time) + ", " + str(x.cpus[0]) + ", " + str(x.cpus[1]) + ", "
+                        + str(x.cpus[2]) + ", " + str(x.cpus[3]) + ", " + str(x.gpu) + "\n")
+            f.close()
