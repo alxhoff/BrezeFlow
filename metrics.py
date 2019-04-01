@@ -272,7 +272,7 @@ class SystemMetrics:
             else:
                 return self.temps[-1].cpus[core % 4]
         else:
-            for x, entry in enumerate(self.temps[:-2]):
+            for x, entry in enumerate(self.temps[:-1]):
                 if (time >= entry.time) and (time < self.temps[x + 1].time):
                     if core == -1:
                         return entry.gpu

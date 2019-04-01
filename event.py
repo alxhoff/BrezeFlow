@@ -174,6 +174,8 @@ class TaskNode:
                 return energy
         except ValueError:
             print "invalid frequency"
+        except TypeError:
+            print "Type error"
 
     def add_job(self, event, binder_send=False):
 
