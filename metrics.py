@@ -222,7 +222,7 @@ class SystemMetrics:
         SystemMetrics.current_metrics = self
 
     def save_to_file(self, filename):
-        with open(filename + "_metrics.csv", "w+") as f:
+        with open("/tmp/" + filename + "_metrics.csv", "w+") as f:
             writer = csv.writer(f, delimiter=',')
             writer.writerow([self.core_count])
             core_freqs = []
@@ -237,7 +237,7 @@ class SystemMetrics:
 
 
     def load_from_file(self, filename):
-        with open(filename + "_metrics.csv", "r") as f:
+        with open("/tmp/" + filename + "_metrics.csv", "r") as f:
             data = csv.reader(f)
             self.core_freqs = []
             self.core_utils = []
@@ -249,7 +249,7 @@ class SystemMetrics:
                         self.core_freqs.append(int(row[i]))
                 elif x == 2:
                     for i in range(self.core_count):
-                    self.core_utils.append(int(row[i]))
+                        self.core_utils.append(int(row[i]))
                 elif x == 3:
                     self.gpu_freq = int(row[0])
                 elif x == 4:

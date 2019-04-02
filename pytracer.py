@@ -19,6 +19,10 @@ parser.add_argument("-e", "--events", required=True, type=str,
                     help="Events that are to be traced")
 parser.add_argument("-p", "--processor", action='store_true',
                     help="If the tool should just process and not trace")
+parser.add_argument("-t", "--trace", action='store_true',
+                    help="Only traces, does not process trace")
+parser.add_argument("-s", "--skip", action='store_true',
+                     help="Skip clearing trace settings")
 
 args = parser.parse_args()
 
@@ -71,7 +75,7 @@ class Tracer:
         self.logger.debug("Trace finished after " + str(duration) + " seconds")
 
     ###  RESULTS  ###
-    def getTraceResults(self, filename="results.trace"):
+    def getTraceResults(self):
         out_file = open(self.filename, "w+")
         out_file.write(self.adb_device.read_from_file(self.ftrace_path + "trace"))
         out_file.close()
@@ -195,30 +199,34 @@ class Tracer:
 
     def runTracer(self):
         self.logger.debug("Running tracer: " + self.name)
-        self.clearTracer()
+        if not args.skip:
+            self.clearTracer()
         # set trace type
-        self.setAvailableTracer(self.trace_type)
+        if not args.skip:
+            self.setAvailableTracer(self.trace_type)
 
         # set filters
         # functions
-        self.adb_device.clear_file(self.ftrace_path + "set_ftrace_filter")
+        if not args.skip:
+            self.adb_device.clear_file(self.ftrace_path + "set_ftrace_filter")
         self.setFilterFunction(self.functions)
 
         # events
-        self.adb_device.clear_file(self.ftrace_path + "set_event")
+        if not args.skip:
+            self.adb_device.clear_file(self.ftrace_path + "set_event")
         self.setAvailableEvent(self.events)
 
         # PID
-        if self.PID_filter is not None:
-            self.setFilterPID(self.PID_filter)
+        # if self.PID_filter is not None:
+        #     self.setFilterPID(self.PID_filter)
 
         # run
         self.traceForTime(self.duration, self.metrics.temps)
         SystemMetrics.current_metrics.save_temps()
 
         # get results
-        self.getBinderLogs();
-        self.getTraceResults(self.name + "_tracer.trace")
+        self.getBinderLogs()
+        self.getTraceResults()
         self.logger.debug("Tracer " + self.name + " finished running")
 
 
@@ -244,7 +252,10 @@ def main():
                         duration=args.duration
                         )
         tracer.runTracer()
-        tp.process_tracer(tracer)
+        if args.trace is True:
+            tp.process_tracer(tracer)
+        else:
+            print "Skipping processing of trace"
 
     # combo_tracer = Tracer(adbBridge,
     #                       "combo",
