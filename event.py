@@ -1,10 +1,14 @@
 import networkx as nx
+import csv
 from aenum import Enum
 from pydispatch import dispatcher
 
 from adbinterface import *
 from metrics import SystemMetrics
 
+PL_PID='PID'
+PL_ENERGY='ENERGY [J]'
+PL_DURATION='DURATION [nS]'
 
 class BinderType(Enum):
     UNKNOWN = 0
@@ -353,6 +357,12 @@ class GPUBranch:
                             shape='box', fillcolor='magenta')
 
 
+class EnergyDuration:
+
+    def __init__(self):
+        self.energy = 0
+        self.duration = 0
+
 class ProcessBranch:
     """
     Events must be added to the "branch" of their PID. The data is processed
@@ -374,35 +384,46 @@ class ProcessBranch:
         self.gpu = GPU
         self.connect_to_gpu_events()
         self.energy = 0 # calculated upon request at the end between given intervals
+        self.duration = 0
 
-    def _sum_energy_until_finish(self, start_event_index, finish_time):
-        task_energy = 0
+    def _sum_stats_until_finish(self, start_event_index, finish_time):
+        task_stats = EnergyDuration()
         if finish_time == 0:
             for task in self.tasks:
-                task_energy += task.energy
+                task_stats.energy += task.energy
+                task_stats.duration += task.duration
         else:
             for x, task in enumerate(self.tasks[start_event_index:-1]):
                 if finish_time < self.tasks[x + 1]:
                     # calculate % of energy to take
-                    task_energy += ((finish_time - task.time) / task.duration) * task.energy
+                    percent = ((finish_time - task.time) / task.duration)
+                    task_stats.energy += percent * task.energy
+                    task_stats.duration += percent * task.duration
                 else:
-                    task_energy += task.energy
-        return task_energy
+                    task_stats.energy += task.energy
+                    task_stats.duration += task.duration
+        return task_stats
 
-    def sum_task_energy(self, start_time, finish_time):
-        task_energy = 0
+    def sum_task_stats(self, start_time, finish_time):
+        task_stats = EnergyDuration()
         if start_time == 0:
             # sum all events
-            task_energy += self._sum_energy_until_finish(0, finish_time)
+            end_stats = self._sum_stats_until_finish(0, finish_time)
+            task_stats.energy += end_stats.energy
+            task_stats.duration += end_stats.duration
         else:
             # find first task and get the partial sum
             for x, task in enumerate(self.tasks):
                 if (start_time > task.time) and (start_time < (task.time + task.duration)):
-                    task_energy += (((task.time + task.duration) - start_time) / task.duration) * task.energy
+                    percent = (((task.time + task.duration) - start_time) / task.duration)
+                    task_stats.energy += percent * task.energy
+                    task_stats.duration += percent * task.duration
                 elif start_time < task.time:
-                    task_energy += self._sum_energy_until_finish(x, finish_time)
-                    return task_energy
-        return task_energy
+                    end_stats = self._sum_stats_until_finish(x, finish_time)
+                    task_stats.energy += end_stats.energy
+                    task_stats.duration += end_stats.duration
+                    return task_stats
+        return task_stats
 
     def connect_to_cpu_event(self, cpu):
         dispatcher.connect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
@@ -649,13 +670,23 @@ class ProcessTree:
                                    self.metrics.core_utils[x], self.graph))
 
 
-    def finish_tree(self, start_time, finish_time):
-        for x in range(len(self.process_branches) - 1, -1, -1):
-            # Remove empty PID branches
-            if self.process_branches[x].tasks == []:
-                del self.process_branches[x]
-                continue
-            self.process_branches[x].energy = self.process_branches[x].sum_task_energy(start_time, finish_time)
+    def finish_tree(self, start_time, finish_time, filename):
+        with open(filename + "_results.csv", "w+") as f:
+            writer = csv.writer(f, delimiter=',')
+            writer.writerow([PL_PID, PL_ENERGY, PL_DURATION])
+
+            for x in range(len(self.process_branches) - 1, -1, -1):
+                branch = self.process_branches[x]
+                # Remove empty PID branches
+                if branch.tasks == []:
+                    del self.process_branches[x]
+                    continue
+                branch_stats = branch.sum_task_stats(start_time, finish_time)
+                branch.energy = branch_stats.energy
+                branch.duration = branch_stats.duration
+
+                # Write results to file
+                writer.writerow([branch.PID, branch.energy, branch.duration])
 
 
     def handle_event(self, event):

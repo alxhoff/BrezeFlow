@@ -9,12 +9,13 @@ from grapher import *
 
 class TraceProcessor:
 
-    def __init__(self, PIDt):
+    def __init__(self, PIDt, filename):
         logging.basicConfig(filename="pytracer.log",
                             format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Trace processor created")
         self.PIDt = PIDt
+        self.filename = filename
 
     def filter_trace_PID(self, tracer, PIDt, output_filename=""):
         if output_filename == "":
@@ -345,7 +346,7 @@ class TraceProcessor:
         for x, event in enumerate(processed_events):
             process_tree.handle_event(event)
 
-        process_tree.finish_tree(0, 0)
+        process_tree.finish_tree(0, 0, self.filename)
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()

@@ -234,7 +234,7 @@ def main():
     adbBridge = adbInterface()
     # PIDt = PIDtracer(adbBridge, "hillclimb")
     PIDt = PIDtracer(adbBridge, args.game)
-    tp = TraceProcessor(PIDt)
+    tp = TraceProcessor(PIDt, args.filename)
 
     sys_metrics = SystemMetrics(adbBridge, args.filename)
 
