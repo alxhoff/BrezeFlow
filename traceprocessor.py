@@ -276,36 +276,43 @@ class TraceProcessor:
 def keep_PID_line(pids, line):
     if any(re.search("-(" + str(pid) + ") +|=(" + str(pid) + ") ", line) for pid in pids):
         return True
-    elif "update_cpu_metric" in line:
-        return True
-    elif "mali_utilization_stats" in line:
-        return True
-    elif "cpu_idle:" in line:
-        return True
     return False
 
 
 def process_raw_line(pids, line):
-    if not keep_PID_line(pids, line):
-        return None
+    regex_line = re.findall(": ([a-z_]+): ", line)
 
-    if "sched_wakeup" in line:
+    if regex_line[0] == "sched_wakeup" in line:
+        if not keep_PID_line(pids, line):
+            return None
         return process_sched_wakeup(line)
 
-    elif "sched_switch" in line:
+    elif regex_line[0] == "sched_switch" in line:
+        if not keep_PID_line(pids, line):
+            return None
         return process_sched_switch(line)
 
-    elif "cpu_idle" in line:
+    elif regex_line[0] == "cpu_idle" in line:
+        if not keep_PID_line(pids, line):
+            return None
         return process_sched_idle(line)
 
-    elif "update_cpu_metric" in line:
+    elif regex_line[0] == "update_cpu_metric" in line:
+        if not keep_PID_line(pids, line):
+            return None
         return process_cpu_metric(line)
 
-    elif "binder" in line:
+    elif regex_line[0] == "binder" in line:
+        if not keep_PID_line(pids, line):
+            return None
         return process_binder_transaction(line)
 
-    elif "mali_utilization_stats" in line:
+    elif regex_line[0] == "mali_utilization_stats" in line:
+        if not keep_PID_line(pids, line):
+            return None
         return process_mali_util(line)
+
+    return None
 
 
 def process_sched_wakeup(line):
