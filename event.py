@@ -831,7 +831,8 @@ class ProcessTree:
                             del self.pending_binder_transactions[x]
                             return
             else:
-                print "Unhandled binder"
+                return
+                # print "Unhandled binder"
                 # Find the unknown PID and add it to the system if possible
                 # child_threads = adbInterface.current_interface.run_command("busybox ps -T | grep " + str(event.PID))
                 # child_threads = child_threads.splitlines()

@@ -48,21 +48,35 @@ class CPUUtilizationTable(UtilizationTable):
     def __init__(self, core_num):
         UtilizationTable.__init__(self)
         self.core = core_num
+        self.utils = []
+
+    def compile_lookup(self, start_time, end_time):
+        self.utils = [0.0] * (end_time - start_time + 1)
+        if len(self.events) != 0:
+            for event in self.events:
+                for x in range(event.duration + 1):
+                    self.utils[x + event.start_time] = round(event.utilization, 2)
+        return
 
     def get_util(self, time):
 
-        event_time = time - self.initial_time
+        event_time = time - self.initial_time - 1
 
-        # before first util calc
-        if event_time < 0:
+        try:
+            return self.utils[event_time]
+        except IndexError:
+            print "wait here"
             return 0.0
-
-        # start walking events to find util
-        for slice in self.events:
-            if (event_time >= slice.start_time) \
-                    and (event_time < (slice.start_time + slice.duration)):
-                return round(slice.utilization, 2)
-        return 0.0
+        # # before first util calc
+        # if event_time < 0:
+        #     return 0.0
+        #
+        # # start walking events to find util
+        # for slice in self.events:
+        #     if (event_time >= slice.start_time) \
+        #             and (event_time < (slice.start_time + slice.duration)):
+        #         return round(slice.utilization, 2)
+        # return 0.0
 
     def add_idle_event(self, event):
         # First event
@@ -114,12 +128,16 @@ class TotalUtilizationTable(UtilizationTable):
         core_count = len(cores)
         self.initial_time = min(core.initial_time for core in cores)
         self.end_time = 0
-        for event in cores:
-            if event.events:
-                if (event.events[-1].start_time + event.events[-1].duration) > self.end_time:
-                    self.end_time = event.events[-1].start_time + event.events[-1].duration
+        for core in cores:
+            if len(core.events) != 0:
+                if (self.initial_time + core.events[-1].start_time + core.events[-1].duration) > self.end_time:
+                    self.end_time = self.initial_time + core.events[-1].start_time + core.events[-1].duration
 
-        for x in range(self.end_time):
+        # Compile util lookup tables for each core
+        for core in cores:
+            core.compile_lookup(self.initial_time, self.end_time)
+
+        for x in range(self.end_time - self.initial_time + 1):
             util = 0.0
 
             for core in range(core_count):
@@ -130,6 +148,8 @@ class TotalUtilizationTable(UtilizationTable):
             self.slices.append(UtilizationSlice(x, util))
 
         return
+
+
 
 
 class GPUUtilizationTable(UtilizationTable):

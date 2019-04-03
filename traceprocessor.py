@@ -189,10 +189,10 @@ class TraceProcessor:
         self.process_trace(f, tracer.metrics, multi)
 
     def process_trace(self, f, metrics, multi):
+        process_start_time = time.time()
 
         raw_lines = f.readlines()
         processed_events = []
-        idle_events = []
 
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
@@ -203,7 +203,7 @@ class TraceProcessor:
         start_time = time.time()
         pids = self.PIDt.allPIDStrings[1:]
         if not multi:
-            for line in raw_lines[11:]:
+            for line in raw_lines[11:1000]:
                 processed_events.append(process_raw_line(pids, line))
 
                 print "Processed " + str(lines_processed) + "/" + str(line_count) + "\r",
@@ -211,7 +211,7 @@ class TraceProcessor:
         else:
             print "Running regex parsing on " + str(multip.cpu_count()) + " CPUs"
             poolv = multip.Pool(multip.cpu_count())
-            processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:]]
+            processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:1000]]
             poolv.close()
 
         if processed_events == []:
@@ -269,6 +269,8 @@ class TraceProcessor:
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()
+
+        print ("Processing finished in %s seconds" % (time.time() - process_start_time))
 
 
 def keep_PID_line(pids, line):
