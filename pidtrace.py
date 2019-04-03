@@ -33,19 +33,19 @@ class PIDtracer:
     def get_app_PID_strings(self):
         strings = []
         for x, pid in enumerate(self.allAppPID):
-            strings.append(str(pid.pid))
+            strings.append(pid.pid)
         return strings
 
     def get_system_PID_strings(self):
         strings = []
         for x, pid in enumerate(self.allSystemPID):
-            strings.append(str(pid.pid))
+            strings.append(pid.pid)
         return strings
 
     def get_binder_PID_strings(self):
         strings = []
         for x, pid in enumerate(self.allBinderPID):
-            strings.append(str(pid.pid))
+            strings.append(pid.pid)
         return strings
 
     def get_PID_string_index(self, pid_string):

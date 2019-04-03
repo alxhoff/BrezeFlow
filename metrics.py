@@ -65,18 +65,7 @@ class CPUUtilizationTable(UtilizationTable):
         try:
             return self.utils[event_time]
         except IndexError:
-            print "wait here"
             return 0.0
-        # # before first util calc
-        # if event_time < 0:
-        #     return 0.0
-        #
-        # # start walking events to find util
-        # for slice in self.events:
-        #     if (event_time >= slice.start_time) \
-        #             and (event_time < (slice.start_time + slice.duration)):
-        #         return round(slice.utilization, 2)
-        # return 0.0
 
     def add_idle_event(self, event):
         # First event
@@ -148,8 +137,6 @@ class TotalUtilizationTable(UtilizationTable):
             self.slices.append(UtilizationSlice(x, util))
 
         return
-
-
 
 
 class GPUUtilizationTable(UtilizationTable):

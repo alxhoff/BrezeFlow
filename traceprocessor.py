@@ -203,7 +203,7 @@ class TraceProcessor:
         start_time = time.time()
         pids = self.PIDt.allPIDStrings[1:]
         if not multi:
-            for line in raw_lines[11:1000]:
+            for line in raw_lines[11:]:
                 processed_events.append(process_raw_line(pids, line))
 
                 print "Processed " + str(lines_processed) + "/" + str(line_count) + "\r",
@@ -211,7 +211,7 @@ class TraceProcessor:
         else:
             print "Running regex parsing on " + str(multip.cpu_count()) + " CPUs"
             poolv = multip.Pool(multip.cpu_count())
-            processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:1000]]
+            processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:]]
             poolv.close()
 
         if processed_events == []:
@@ -282,34 +282,29 @@ def keep_PID_line(pids, line):
 def process_raw_line(pids, line):
     regex_line = re.findall(": ([a-z_]+): ", line)
 
-    if regex_line[0] == "sched_wakeup" in line:
-        if not keep_PID_line(pids, line):
-            return None
-        return process_sched_wakeup(line)
+    # if regex_line[0] == "sched_wakeup" in line:
+    #     # TODO customized regex
+    #     if not keep_PID_line(pids, line):
+    #         return None
+    #     return process_sched_wakeup(line)
 
-    elif regex_line[0] == "sched_switch" in line:
-        if not keep_PID_line(pids, line):
-            return None
-        return process_sched_switch(line)
+    if regex_line[0] == "sched_switch" in line:
+        # if not keep_PID_line(pids, line):
+        #     return None
+        return process_sched_switch(line, pids)
 
     elif regex_line[0] == "cpu_idle" in line:
-        if not keep_PID_line(pids, line):
-            return None
         return process_sched_idle(line)
 
     elif regex_line[0] == "update_cpu_metric" in line:
-        if not keep_PID_line(pids, line):
-            return None
         return process_cpu_metric(line)
 
-    elif regex_line[0] == "binder" in line:
-        if not keep_PID_line(pids, line):
-            return None
-        return process_binder_transaction(line)
+    elif regex_line[0] == "binder_transaction" in line:
+        # if not keep_PID_line(pids, line):
+        #     return None
+        return process_binder_transaction(line, pids)
 
     elif regex_line[0] == "mali_utilization_stats" in line:
-        if not keep_PID_line(pids, line):
-            return None
         return process_mali_util(line)
 
     return None
@@ -324,7 +319,7 @@ def process_sched_wakeup(line):
     return EventWakeup(pid, time, cpu, name)
 
 
-def process_sched_switch(line):
+def process_sched_switch(line, pids):
     regex_line = re.findall(
         "^ *(.+?)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+).+prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)",
         line)
@@ -336,7 +331,10 @@ def process_sched_switch(line):
     cpu = int(regex_line[0][2])
     time = int(float(regex_line[0][3]) * 1000000)
 
-    return EventSchedSwitch(pid, time, cpu, name, prev_state, next_pid)
+    if pid in pids or next_pid in pids:
+        return EventSchedSwitch(pid, time, cpu, name, prev_state, next_pid)
+    else:
+        return None
 
 
 def process_sched_idle(line):
@@ -364,7 +362,7 @@ def process_cpu_metric(line):
     return EventFreqChange(pid, time, cpu, freq, util, target_cpu)
 
 
-def process_binder_transaction(line):
+def process_binder_transaction(line, pids):
     regex_line = re.findall(
         "^ *(.*)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): binder_transaction: transaction=\d+ dest_node=\d+ dest_proc=(\d+) dest_thread=(\d+) reply=(\d) flags=(0x[0-9a-f]+) code=(0x[0-9a-f]+)",
         line)
@@ -380,7 +378,10 @@ def process_binder_transaction(line):
     flags = int(regex_line[0][7], 16)
     code = int(regex_line[0][8], 16)
 
-    return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
+    if pid in pids or to_proc in pids:
+        return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
+    else:
+        return None
 
 
 def process_mali_util(line):

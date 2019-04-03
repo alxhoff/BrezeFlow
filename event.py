@@ -552,7 +552,7 @@ class ProcessBranch:
         # Current task FINISHING
         elif event_type == JobType.SCHED_SWITCH_OUT and \
                 event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value and \
-                str(event.PID) not in self.PIDt.allBinderPIDStrings:
+                event.PID not in self.PIDt.allBinderPIDStrings:
 
             self.tasks[-1].add_job(event)
             self.tasks[-1].finished()
@@ -624,7 +624,7 @@ class PendingBinderTransaction:
 
     def __init__(self, event, PIDt):
         self.parent_PID = event.dest_proc
-        if str(event.dest_proc) in PIDt.allBinderPIDStrings:
+        if event.dest_proc in PIDt.allBinderPIDStrings:
             self.child_PIDs = [event.dest_proc]
         else:
             self.child_PIDs = PIDt.find_child_binder_threads(event.dest_proc)
@@ -662,7 +662,7 @@ class ProcessTree:
         self.gpu = GPUBranch(self.metrics.gpu_freq, self.metrics.gpu_util, self.graph)
 
         for pid in self.PIDt.allPIDStrings:
-            self.process_branches.append(ProcessBranch(int(pid), None, self.graph,
+            self.process_branches.append(ProcessBranch(pid, None, self.graph,
                                                        self.PIDt, self.cpus, self.gpu))
 
         for x in range(0, self.metrics.core_count):
@@ -779,12 +779,12 @@ class ProcessTree:
         elif isinstance(event, EventBinderCall):
 
             # From client process to binder thread
-            if str(event.PID) in self.PIDt.allAppPIDStrings or \
-                    str(event.PID) in self.PIDt.allSystemPIDStrings:
+            if event.PID in self.PIDt.allAppPIDStrings or \
+                    event.PID in self.PIDt.allSystemPIDStrings:
 
                 # TODO sometimes binder transactions are sent to binder threads without a target
                 #  process. I am unsure what purpose this serves
-                if str(event.dest_proc) in self.PIDt.allBinderPIDStrings:
+                if event.dest_proc in self.PIDt.allBinderPIDStrings:
                     return
 
                 process_branch = \
@@ -804,7 +804,7 @@ class ProcessTree:
                                   " to " + str(event.dest_proc))
 
             # from binder thread to target server process
-            elif str(event.PID) in self.PIDt.allBinderPIDStrings:
+            elif event.PID in self.PIDt.allBinderPIDStrings:
 
                 # get event from binder transactions list and merge
                 if self.pending_binder_transactions:
@@ -830,29 +830,6 @@ class ProcessTree:
                             # remove completed transaction
                             del self.pending_binder_transactions[x]
                             return
-            else:
-                return
-                # print "Unhandled binder"
-                # Find the unknown PID and add it to the system if possible
-                # child_threads = adbInterface.current_interface.run_command("busybox ps -T | grep " + str(event.PID))
-                # child_threads = child_threads.splitlines()
-                # for line in child_threads:
-                #     if "grep" not in line:
-                #         regex_find = re.findall("(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", line)
-                #         pid = int(regex_find[0][0])
-                #         pname = regex_find[0][3]
-                #         if not regex_find[0][2]:
-                #             tname = pname
-                #         else:
-                #             tname = regex_find[0][2]
-                #
-                #         # if the thread is new then save it
-                #         if not any(proc.pid == pid for proc in self.allSystemPID):
-                #             new_pid = PID(pid, pname, tname)
-                #             self.allSystemPID.append(new_pid)
-                #             self.allPid.append(new_pid)
-                #             self.allSystemPIDStrings.append(str(pid))
-                #             self.allPIDStrings.append(str(pid))
 
             return
 
