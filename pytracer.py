@@ -23,6 +23,8 @@ parser.add_argument("-t", "--trace", action='store_true',
                     help="Only traces, does not process trace")
 parser.add_argument("-s", "--skip", action='store_true',
                      help="Skip clearing trace settings")
+parser.add_argument("-m", "--multi", action='store_true',
+                    help="Enables multicore processing of regex expressions")
 
 args = parser.parse_args()
 
@@ -242,7 +244,7 @@ def main():
 
     if args.processor is True:
         sys_metrics.load_from_file(args.filename)
-        tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics)
+        tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi)
     else:
         tracer = Tracer(adbBridge,
                         args.filename,
@@ -253,7 +255,7 @@ def main():
                         )
         tracer.runTracer()
         if args.trace is True:
-            tp.process_tracer(tracer)
+            tp.process_tracer(tracer, args.multi)
         else:
             print "Skipping processing of trace"
 
