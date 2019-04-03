@@ -287,7 +287,7 @@ class TraceProcessor:
         line_count = len(raw_lines)
         lines_processed = 0
 
-        for line in raw_lines[11:]:
+        for line in raw_lines[11:1000]:
 
             if not self.keep_PID_line(line):
                 continue
@@ -316,7 +316,7 @@ class TraceProcessor:
                 processed_events.append(self._process_mali_util(line))
                 self.logger.debug("Mali util line: " + line)
 
-            print "Processed" + str(lines_processed) + "/" + str(line_count)
+            print "Processed " + str(lines_processed) + "/" + str(line_count)
             lines_processed += 1
 
         if processed_events == []:
@@ -338,7 +338,7 @@ class TraceProcessor:
         # Create CPU core utilization trees first
         i = 0
         length = len(processed_events)
-        for x, event in idle_events:
+        for x, event in enumerate(idle_events):
             process_tree.handle_event(event)
 
         # compile cluster utilizations
