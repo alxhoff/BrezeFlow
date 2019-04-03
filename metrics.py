@@ -235,7 +235,6 @@ class SystemMetrics:
             writer.writerow([self.gpu_freq])
             writer.writerow([self.gpu_util])
 
-
     def load_from_file(self, filename):
         with open("/tmp/" + filename + "_metrics.csv", "r") as f:
             data = csv.reader(f)

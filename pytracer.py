@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("-g", "--game", required=True, type=str,
                     help="Specifies the name of the game to be traced")
-parser.add_argument("-d", "--duration", required=True, type=int,
+parser.add_argument("-d", "--duration", required=True, type=float,
                     help="The duration to trace")
 parser.add_argument("-f", "--filename", type=str, default="output",
                     help="Specify the name of the output trace file")

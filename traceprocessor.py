@@ -1,7 +1,8 @@
+import multiprocessing as multip
 import re
 import sys
-import multiprocessing as multip
 import time
+
 import xlsxwriter
 
 from event import *
@@ -170,7 +171,7 @@ class TraceProcessor:
             self.logger.error("Could not open trace file" + filename)
             sys.exit("Tracer " + filename + " unable to be opened for processing")
 
-        #read temps from file
+        # read temps from file
         SystemMetrics.current_metrics.read_temps()
 
         self.process_trace(f, metrics, multi)
@@ -203,14 +204,15 @@ class TraceProcessor:
         pids = self.PIDt.allPIDStrings[1:]
         if not multi:
             for line in raw_lines[11:]:
-
                 processed_events.append(process_raw_line(pids, line))
 
                 print "Processed " + str(lines_processed) + "/" + str(line_count) + "\r",
                 lines_processed += 1
         else:
+            print "Running regex parsing on " + str(multip.cpu_count()) + " CPUs"
             poolv = multip.Pool(multip.cpu_count())
             processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:]]
+            poolv.close()
 
         if processed_events == []:
             self.logger.debug("Processing trace failed")
@@ -224,35 +226,50 @@ class TraceProcessor:
         # generate pointers to most recent nodes for each PID (branch heads)
         process_tree = ProcessTree(self.PIDt, metrics)
 
+        # Create CPU core utilization trees first
+        start_time = time.time()
+        i = 0
+        length = len(processed_events)
+        while i < length:
+            if isinstance(processed_events[i], EventIdle):
+                process_tree.handle_event(processed_events[i])
+                del processed_events[i]
+                length -= 1
+            elif processed_events[i] is None:
+                del processed_events[i]
+                length -= 1
+            else:
+                i += 1
+        print ("Util tree took %s seconds to build" % (time.time() - start_time))
+
         # Init GPU util tree
         # set initial time as first event in log as mali util is able to be found via sysfs
         # and as such available from the start and must not be calculated
         # TODO does it matter if the first event is a mali event?
         metrics.sys_util.gpu_utils.init(processed_events[0].time, metrics.gpu_util)
 
-        # Create CPU core utilization trees first
-        start_time = time.time()
-        for event in processed_events:
-            if isinstance(event, EventIdle):
-                process_tree.handle_event(event)
-        print ("Util tree took %s seconds to build" % (time.time() - start_time))
-
         # compile cluster utilizations
+        start_time = time.time()
         for x, cluster in enumerate(metrics.sys_util.cluster_utils):
             cluster.compile_table(metrics.sys_util.core_utils[x * 4: x * 4 + 4])
+        print ("Cluster util table generated in %s seconds" % (time.time() - start_time))
 
         num_events = len(processed_events)
         print "Total events: " + str(num_events)
 
+        start_time = time.time()
         for x, event in enumerate(processed_events):
             print str(x) + "/" + str(num_events) + "\r",
-            if event is not None and not isinstance(event, EventIdle):
-                process_tree.handle_event(event)
+            process_tree.handle_event(event)
+        print ("All events handled in %s seconds" % (time.time() - start_time))
 
+        start_time = time.time()
         process_tree.finish_tree(0, 0, self.filename)
+        print ("Finished tree in %s seconds" % (time.time() - start_time))
 
         draw_graph = Grapher(process_tree)
         draw_graph.drawGraph()
+
 
 def keep_PID_line(pids, line):
     if any(re.search("-(" + str(pid) + ") +|=(" + str(pid) + ") ", line) for pid in pids):
@@ -288,6 +305,7 @@ def process_raw_line(pids, line):
     elif "mali_utilization_stats" in line:
         return process_mali_util(line)
 
+
 def process_sched_wakeup(line):
     pid = int(re.findall("-(\d+) *\[", line)[0])
     time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
@@ -296,8 +314,8 @@ def process_sched_wakeup(line):
 
     return EventWakeup(pid, time, cpu, name)
 
-def process_sched_switch(line):
 
+def process_sched_switch(line):
     regex_line = re.findall(
         "^ *(.+?)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+).+prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)",
         line)
@@ -311,6 +329,7 @@ def process_sched_switch(line):
 
     return EventSchedSwitch(pid, time, cpu, name, prev_state, next_pid)
 
+
 def process_sched_idle(line):
     regex_line = re.findall("\[(\d{3})\] .{4} +(\d+.\d+): cpu_idle: state=(\d+)", line)
 
@@ -319,6 +338,7 @@ def process_sched_idle(line):
     state = int(regex_line[0][2])
 
     return EventIdle(time, cpu, "idle", state)
+
 
 def process_cpu_metric(line):
     regex_line = re.findall(
@@ -333,6 +353,7 @@ def process_cpu_metric(line):
     util = int(regex_line[0][5])
 
     return EventFreqChange(pid, time, cpu, freq, util, target_cpu)
+
 
 def process_binder_transaction(line):
     regex_line = re.findall(
@@ -351,6 +372,7 @@ def process_binder_transaction(line):
     code = int(regex_line[0][8], 16)
 
     return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
+
 
 def process_mali_util(line):
     regex_line = re.findall(
