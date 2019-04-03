@@ -279,9 +279,13 @@ class TraceProcessor:
 
         raw_lines = f.readlines()
         processed_events = []
+        idle_events = []
 
         # Filter and sort events
         self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
+
+        line_count = len(raw_lines)
+        lines_processed = 0
 
         for line in raw_lines[11:]:
 
@@ -297,7 +301,7 @@ class TraceProcessor:
                 self.logger.debug("Sched switch: " + line)
 
             elif "cpu_idle" in line:
-                processed_events.append(self._process_sched_idle(line))
+                idle_events.append(self._process_sched_idle(line))
                 self.logger.debug("Idle event line: " + line)
 
             elif "update_cpu_metric" in line:
@@ -311,6 +315,9 @@ class TraceProcessor:
             elif "mali_utilization_stats" in line:
                 processed_events.append(self._process_mali_util(line))
                 self.logger.debug("Mali util line: " + line)
+
+            print "Processed" + str(lines_processed) + "/" + str(line_count)
+            lines_processed += 1
 
         if processed_events == []:
             self.logger.debug("Processing trace failed")
@@ -331,19 +338,18 @@ class TraceProcessor:
         # Create CPU core utilization trees first
         i = 0
         length = len(processed_events)
-        while i < length:
-            if isinstance(processed_events[i], EventIdle):
-                process_tree.handle_event(processed_events[i])
-                del processed_events[i]
-                length -= 1
-            else:
-                i += 1
+        for x, event in idle_events:
+            process_tree.handle_event(event)
 
         # compile cluster utilizations
         for x, cluster in enumerate(metrics.sys_util.cluster_utils):
             cluster.compile_table(metrics.sys_util.core_utils[x * 4: x * 4 + 4])
 
+        num_events = len(processed_events)
+        print "Total events: " + str(num_events)
+
         for x, event in enumerate(processed_events):
+            print str(x) + "/" + str(num_events)
             process_tree.handle_event(event)
 
         process_tree.finish_tree(0, 0, self.filename)
