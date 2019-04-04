@@ -2,7 +2,12 @@ import logging
 import re
 import sys
 
-from pid import PID
+class PID:
+
+    def __init__(self, pid, pname, tname):
+        self.pid = pid
+        self.pname = pname
+        self.tname = tname
 
 
 class PIDtracer:

@@ -1,3 +1,8 @@
+# EXAMPLE USE
+# pytracer.py -g hillclimb -d 1 -e binder_transaction,cpu_idle,sched_switch,
+# cpu_frequency,update_cpu_metric,mali_utilization_stats -f output -t
+
+
 import argparse
 import re
 import time
@@ -22,9 +27,11 @@ parser.add_argument("-p", "--processor", action='store_true',
 parser.add_argument("-t", "--trace", action='store_true',
                     help="Only traces, does not process trace")
 parser.add_argument("-s", "--skip", action='store_true',
-                     help="Skip clearing trace settings")
+                    help="Skip clearing trace settings")
 parser.add_argument("-m", "--multi", action='store_true',
                     help="Enables multicore processing of regex expressions")
+parser.add_argument("-d", "--draw", action='store_true',
+                    help="Enables the drawing of the generated graph")
 
 args = parser.parse_args()
 
@@ -234,7 +241,6 @@ class Tracer:
 
 def main():
     adbBridge = adbInterface()
-    # PIDt = PIDtracer(adbBridge, "hillclimb")
     PIDt = PIDtracer(adbBridge, args.game)
     tp = TraceProcessor(PIDt, args.filename)
 
@@ -243,9 +249,11 @@ def main():
     # Sys metrics needds to be fixed for offline processing (saving metrics)
 
     if args.processor is True:
+        print "Loading trace data from file and processing"
         sys_metrics.load_from_file(args.filename)
-        tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi)
+        tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi, args.draw)
     else:
+        print "Creating tracer and running"
         tracer = Tracer(adbBridge,
                         args.filename,
                         PID_filter=PIDt,
@@ -255,23 +263,10 @@ def main():
                         )
         tracer.runTracer()
         if args.trace is True:
-            tp.process_tracer(tracer, args.multi)
+            "Processing trace"
+            tp.process_tracer(tracer, args.multi, args.draw)
         else:
             print "Skipping processing of trace"
-
-    # combo_tracer = Tracer(adbBridge,
-    #                       "combo",
-    #                       events=["binder_transaction", "cpu_idle",
-    #                               "sched_switch", "cpu_frequency", "update_cpu_metric",
-    #                               "mali_utilization_stats"],
-    #                       PID_filter=PIDt,
-    #                       duration=1,
-    #                       metrics=sys_metrics)
-    # combo_tracer.runTracer()
-    # tp.process_tracer(combo_tracer)
-    # tp.process_trace_file("combo_tracer.trace", sys_metrics)
-    # tp.filterTracePID(combo_tracer, PIDt, combo_tracer.filename)
-
 
 if __name__ == '__main__':
     main()

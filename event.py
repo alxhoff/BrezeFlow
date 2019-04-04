@@ -1,14 +1,19 @@
-import networkx as nx
 import csv
+
+import networkx as nx
 from aenum import Enum
 from pydispatch import dispatcher
 
 from adbinterface import *
 from metrics import SystemMetrics
 
-PL_PID='PID'
-PL_ENERGY='ENERGY [J]'
-PL_DURATION='DURATION [nS]'
+PL_PID = 'PID'
+PL_PID_PNAME = 'PNAME'
+PL_PID_TNAME = 'TNAME'
+PL_TASK_COUNT = 'TASK COUNT'
+PL_ENERGY = 'ENERGY [J]'
+PL_DURATION = 'DURATION [nS]'
+
 
 class BinderType(Enum):
     UNKNOWN = 0
@@ -363,6 +368,7 @@ class EnergyDuration:
         self.energy = 0
         self.duration = 0
 
+
 class ProcessBranch:
     """
     Events must be added to the "branch" of their PID. The data is processed
@@ -372,8 +378,10 @@ class ProcessBranch:
     sleep event).
     """
 
-    def __init__(self, pid, start, graph, PIDt, CPUs, GPU):
+    def __init__(self, pid, pname, tname, start, graph, PIDt, CPUs, GPU):
         self.PID = pid
+        self.pname = pname
+        self.tname = tname
         self.tasks = []
         self.start = start
         self.active = False
@@ -383,7 +391,7 @@ class ProcessBranch:
         self.CPUs = CPUs
         self.gpu = GPU
         self.connect_to_gpu_events()
-        self.energy = 0 # calculated upon request at the end between given intervals
+        self.energy = 0  # calculated upon request at the end between given intervals
         self.duration = 0
 
     def _sum_stats_until_finish(self, start_event_index, finish_time):
@@ -661,19 +669,19 @@ class ProcessTree:
 
         self.gpu = GPUBranch(self.metrics.gpu_freq, self.metrics.gpu_util, self.graph)
 
-        for pid in self.PIDt.allPIDStrings:
-            self.process_branches.append(ProcessBranch(pid, None, self.graph,
+        for pid in self.PIDt.allPID:
+            self.process_branches.append(ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
                                                        self.PIDt, self.cpus, self.gpu))
 
         for x in range(0, self.metrics.core_count):
             self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x],
-                                   self.metrics.core_utils[x], self.graph))
-
+                                       self.metrics.core_utils[x], self.graph))
 
     def finish_tree(self, start_time, finish_time, filename):
         with open(filename + "_results.csv", "w+") as f:
             writer = csv.writer(f, delimiter=',')
-            writer.writerow([PL_PID, PL_ENERGY, PL_DURATION])
+            writer.writerow([PL_PID, PL_PID_PNAME, PL_PID_TNAME, PL_TASK_COUNT,
+                             PL_ENERGY, PL_DURATION])
 
             for x in range(len(self.process_branches) - 1, -1, -1):
                 branch = self.process_branches[x]
@@ -686,8 +694,8 @@ class ProcessTree:
                 branch.duration = branch_stats.duration
 
                 # Write results to file
-                writer.writerow([branch.PID, branch.energy, branch.duration])
-
+                writer.writerow([branch.PID, branch.pname, branch.tname, str(len(branch.tasks)),
+                                 branch.energy, branch.duration])
 
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and

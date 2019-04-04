@@ -162,7 +162,7 @@ class TraceProcessor:
 
         output_workbook.close()
 
-    def process_trace_file(self, filename, metrics, multi):
+    def process_trace_file(self, filename, metrics, multi, draw):
         try:
             f = open(filename, "r")
             self.logger.debug("Tracer " + filename + " opened for \
@@ -174,9 +174,9 @@ class TraceProcessor:
         # read temps from file
         SystemMetrics.current_metrics.read_temps()
 
-        self.process_trace(f, metrics, multi)
+        self.process_trace(f, metrics, multi, draw)
 
-    def process_tracer(self, tracer, multi):
+    def process_tracer(self, tracer, multi, draw):
         # open trace
         try:
             f = open(tracer.filename, "r")
@@ -186,9 +186,9 @@ class TraceProcessor:
             self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
 
-        self.process_trace(f, tracer.metrics, multi)
+        self.process_trace(f, tracer.metrics, multi, draw)
 
-    def process_trace(self, f, metrics, multi):
+    def process_trace(self, f, metrics, multi, draw):
         process_start_time = time.time()
 
         raw_lines = f.readlines()
@@ -213,6 +213,7 @@ class TraceProcessor:
             poolv = multip.Pool(multip.cpu_count())
             processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:]]
             poolv.close()
+            poolv.join()
 
         if processed_events == []:
             self.logger.debug("Processing trace failed")
@@ -267,8 +268,11 @@ class TraceProcessor:
         process_tree.finish_tree(0, 0, self.filename)
         print ("Finished tree in %s seconds" % (time.time() - start_time))
 
-        draw_graph = Grapher(process_tree)
-        draw_graph.drawGraph()
+        if draw:
+            start_time = time.time()
+            draw_graph = Grapher(process_tree)
+            draw_graph.drawGraph()
+            print ("Graph drawn in %s seconds" % (time.time() - start_time))
 
         print ("Processing finished in %s seconds" % (time.time() - process_start_time))
 
@@ -288,24 +292,28 @@ def process_raw_line(pids, line):
     #         return None
     #     return process_sched_wakeup(line)
 
-    if regex_line[0] == "sched_switch" in line:
-        # if not keep_PID_line(pids, line):
-        #     return None
-        return process_sched_switch(line, pids)
+    try:
+        if regex_line[0] == "sched_switch" in line:
+            # if not keep_PID_line(pids, line):
+            #     return None
+            return process_sched_switch(line, pids)
 
-    elif regex_line[0] == "cpu_idle" in line:
-        return process_sched_idle(line)
+        elif regex_line[0] == "cpu_idle" in line:
+            return process_sched_idle(line)
 
-    elif regex_line[0] == "update_cpu_metric" in line:
-        return process_cpu_metric(line)
+        elif regex_line[0] == "update_cpu_metric" in line:
+            return process_cpu_metric(line)
 
-    elif regex_line[0] == "binder_transaction" in line:
-        # if not keep_PID_line(pids, line):
-        #     return None
-        return process_binder_transaction(line, pids)
+        elif regex_line[0] == "binder_transaction" in line:
+            # if not keep_PID_line(pids, line):
+            #     return None
+            return process_binder_transaction(line, pids)
 
-    elif regex_line[0] == "mali_utilization_stats" in line:
-        return process_mali_util(line)
+        elif regex_line[0] == "mali_utilization_stats" in line:
+            return process_mali_util(line)
+    except IndexError:
+        # Irrelevant log messages
+        return None
 
     return None
 
