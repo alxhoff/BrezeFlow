@@ -1,5 +1,5 @@
 import csv
-
+import time
 import networkx as nx
 from aenum import Enum
 from pydispatch import dispatcher
@@ -209,14 +209,14 @@ class TaskNode:
                             continue
                         # calc time is the point until which the cycles were last counted
                         # TODO reduce this
-                        new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency)
-                        self.cpu_cycles += new_cycles
+
+                        new_cycles = int((pe.time - self.calc_time) * 0.000000001 * pe.cpu_frequency)
                         self.util = SystemMetrics.current_metrics.sys_util.core_utils[pe.cpu].get_util(pe.time)
                         self.temp = SystemMetrics.current_metrics.get_temp(pe.time, pe.cpu)
 
                         cycle_energy = self.get_CPU_per_second_energy(pe.cpu, pe.cpu_frequency, self.util,
                                                                       self.temp) / pe.cpu_frequency
-
+                        self.cpu_cycles += new_cycles
                         self.energy += cycle_energy * new_cycles
                         self.duration += pe.time - self.calc_time
                         self.calc_time = pe.time
@@ -226,7 +226,7 @@ class TaskNode:
                 if event.time != self.calc_time:
                     cpu_speed = SystemMetrics.current_metrics.get_CPU_core_freq(event.cpu)
 
-                    new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed)
+                    new_cycles = int((event.time - self.calc_time) * 0.000000001 * cpu_speed)
                     self.util = SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)
                     self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
 
@@ -422,11 +422,11 @@ class ProcessBranch:
         else:
             # find first task and get the partial sum
             for x, task in enumerate(self.tasks):
-                if (start_time > task.time) and (start_time < (task.time + task.duration)):
-                    percent = (((task.time + task.duration) - start_time) / task.duration)
+                if (start_time > task.start_time) and (start_time < (task.start_time + task.duration)):
+                    percent = (((task.start_time + task.duration) - start_time) / task.duration)
                     task_stats.energy += percent * task.energy
                     task_stats.duration += percent * task.duration
-                elif start_time < task.time:
+                elif start_time < task.start_time:
                     end_stats = self._sum_stats_until_finish(x, finish_time)
                     task_stats.energy += end_stats.energy
                     task_stats.duration += end_stats.duration
@@ -680,8 +680,32 @@ class ProcessTree:
     def finish_tree(self, start_time, finish_time, filename):
         with open(filename + "_results.csv", "w+") as f:
             writer = csv.writer(f, delimiter=',')
+
+            # Start and end time
+            start_time = 0
+            end_time = 0
+            for branch in self.process_branches:
+                if branch.tasks:
+                    if branch.tasks[0].start_time < start_time or start_time == 0:
+                        start_time = branch.tasks[0].start_time
+                    if (branch.tasks[-1].start_time + branch.tasks[-1].duration) > end_time or end_time == 0:
+                        end_time = branch.tasks[-1].start_time + branch.tasks[-1].duration
+
+            writer.writerow(["Start", start_time/1000000.0])
+            writer.writerow(["Finish", end_time/1000000.0])
+            duration = (end_time - start_time) * 0.000001
+            writer.writerow(["Duration", duration])
+
             writer.writerow([PL_PID, PL_PID_PNAME, PL_PID_TNAME, PL_TASK_COUNT,
                              PL_ENERGY, PL_DURATION])
+
+            total_energy = 0;
+
+            # Calculate GPU energy
+            GPU_energy = self.metrics.sys_util.gpu_utils.calc_GPU_power(0,0)
+            writer.writerow(["GPU", GPU_energy])
+
+            total_energy += GPU_energy
 
             for x in range(len(self.process_branches) - 1, -1, -1):
                 branch = self.process_branches[x]
@@ -691,11 +715,15 @@ class ProcessTree:
                     continue
                 branch_stats = branch.sum_task_stats(start_time, finish_time)
                 branch.energy = branch_stats.energy
+                total_energy += branch.energy
                 branch.duration = branch_stats.duration
 
                 # Write results to file
                 writer.writerow([branch.PID, branch.pname, branch.tname, str(len(branch.tasks)),
                                  branch.energy, branch.duration])
+            writer.writerow([])
+            writer.writerow(["Total Energy", total_energy])
+            writer.writerow(["Average wattage", total_energy/duration])
 
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and

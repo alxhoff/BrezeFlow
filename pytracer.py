@@ -14,7 +14,7 @@ from traceprocessor import TraceProcessor
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-g", "--game", required=True, type=str,
+parser.add_argument("-a", "--app", required=True, type=str,
                     help="Specifies the name of the game to be traced")
 parser.add_argument("-d", "--duration", required=True, type=float,
                     help="The duration to trace")
@@ -30,7 +30,7 @@ parser.add_argument("-s", "--skip", action='store_true',
                     help="Skip clearing trace settings")
 parser.add_argument("-m", "--multi", action='store_true',
                     help="Enables multicore processing of regex expressions")
-parser.add_argument("-d", "--draw", action='store_true',
+parser.add_argument("-g", "--graph", action='store_true',
                     help="Enables the drawing of the generated graph")
 
 args = parser.parse_args()
@@ -241,7 +241,7 @@ class Tracer:
 
 def main():
     adbBridge = adbInterface()
-    PIDt = PIDtracer(adbBridge, args.game)
+    PIDt = PIDtracer(adbBridge, args.app)
     tp = TraceProcessor(PIDt, args.filename)
 
     sys_metrics = SystemMetrics(adbBridge, args.filename)
@@ -251,7 +251,7 @@ def main():
     if args.processor is True:
         print "Loading trace data from file and processing"
         sys_metrics.load_from_file(args.filename)
-        tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi, args.draw)
+        tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi, args.graph)
     else:
         print "Creating tracer and running"
         tracer = Tracer(adbBridge,
@@ -264,7 +264,7 @@ def main():
         tracer.runTracer()
         if args.trace is True:
             "Processing trace"
-            tp.process_tracer(tracer, args.multi, args.draw)
+            tp.process_tracer(tracer, args.multi, args.graph)
         else:
             print "Skipping processing of trace"
 

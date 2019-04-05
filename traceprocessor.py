@@ -191,11 +191,11 @@ class TraceProcessor:
     def process_trace(self, f, metrics, multi, draw):
         process_start_time = time.time()
 
+        print "Processing trace"
         raw_lines = f.readlines()
         processed_events = []
 
         # Filter and sort events
-        self.logger.debug("Trace contains " + str(len(raw_lines)) + " lines")
 
         line_count = len(raw_lines)
         lines_processed = 0
@@ -229,6 +229,7 @@ class TraceProcessor:
 
         # Create CPU core utilization trees first
         start_time = time.time()
+        print "Compiling util trees"
         i = 0
         length = len(processed_events)
         while i < length:
@@ -241,7 +242,7 @@ class TraceProcessor:
                 length -= 1
             else:
                 i += 1
-        print ("Util tree took %s seconds to build" % (time.time() - start_time))
+        print ("Util trees took %s seconds to build" % (time.time() - start_time))
 
         # Init GPU util tree
         # set initial time as first event in log as mali util is able to be found via sysfs
@@ -251,6 +252,7 @@ class TraceProcessor:
 
         # compile cluster utilizations
         start_time = time.time()
+        print "Compiling cluster util tables"
         for x, cluster in enumerate(metrics.sys_util.cluster_utils):
             cluster.compile_table(metrics.sys_util.core_utils[x * 4: x * 4 + 4])
         print ("Cluster util table generated in %s seconds" % (time.time() - start_time))
@@ -259,12 +261,14 @@ class TraceProcessor:
         print "Total events: " + str(num_events)
 
         start_time = time.time()
+        print "Processing events"
         for x, event in enumerate(processed_events):
-            print str(x) + "/" + str(num_events) + "\r",
+            print str(x) + "/" + str(num_events) + " " + str(round(float(x)/num_events * 100, 2)) + "%\r",
             process_tree.handle_event(event)
         print ("All events handled in %s seconds" % (time.time() - start_time))
 
         start_time = time.time()
+        print "Finishing process tree"
         process_tree.finish_tree(0, 0, self.filename)
         print ("Finished tree in %s seconds" % (time.time() - start_time))
 
