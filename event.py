@@ -394,6 +394,30 @@ class ProcessBranch:
         self.energy = 0  # calculated upon request at the end between given intervals
         self.duration = 0
 
+    def get_second_energy(self, second, time_offset):
+        energy = 0.0
+        nanosecond_start = time_offset + (second * 1000000)
+        nanosecond_finish = nanosecond_start + 1000000
+        # Find task that contains the start of the second of interest
+        for task in self.tasks:
+            if isinstance(task, EventBinderCall) or isinstance(task, BinderNode):
+                continue
+            # Task that falls at starting point
+            if (task.start_time <= nanosecond_start) and (task.finish_time > nanosecond_start):
+                try:
+                    energy += (task.finish_time - nanosecond_start) / task.duration * task.energy
+                except ZeroDivisionError:
+                    continue
+            # Task that falls at the ending of the second
+            elif (task.start_time <= nanosecond_finish) and (nanosecond_finish < task.finish_time):
+                try:
+                    energy += (nanosecond_finish - task.start_time) / task.duration * task.energy
+                except ZeroDivisionError:
+                    continue
+            elif (task.start_time > nanosecond_start) and (task.finish_time < nanosecond_finish):
+                energy += task.energy
+        return energy
+
     def _sum_stats_until_finish(self, start_event_index, finish_time):
         task_stats = EnergyDuration()
         if finish_time == 0:
@@ -724,6 +748,18 @@ class ProcessTree:
             writer.writerow([])
             writer.writerow(["Total Energy", total_energy])
             writer.writerow(["Average wattage", total_energy/duration])
+
+            # Go through each branch and calculate the values energy values for each second
+            energy_timeline = [0.0] * int(duration + 1)
+
+            for branch in self.process_branches:
+                for x in range(len(energy_timeline)):
+                    energy_timeline[x] += branch.get_second_energy(x, start_time)
+
+            writer.writerow(["Sec", "Energy"])
+            for x, second in enumerate(energy_timeline):
+                writer.writerow([str(x), str(second)])
+
 
     def handle_event(self, event):
         # Wakeup events show us the same information as sched switch events and

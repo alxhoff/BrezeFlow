@@ -32,6 +32,8 @@ parser.add_argument("-m", "--multi", action='store_true',
                     help="Enables multicore processing of regex expressions")
 parser.add_argument("-g", "--graph", action='store_true',
                     help="Enables the drawing of the generated graph")
+parser.add_argument("-u", "--manual", action='store_true',
+                    help="If set then tracing will need to be stopped manually")
 
 args = parser.parse_args()
 
@@ -68,7 +70,7 @@ class Tracer:
             self.adb_device.write_to_file(self.ftrace_path + "tracing_on", "0")
             self.logger.debug('Tracing disabled')
 
-    def traceForTime(self, duration, temps):
+    def traceForTime(self, duration, temps, manual):
         start_time = time.time()
         self.setTracing(True)
         while (time.time() - start_time) < duration:
@@ -80,7 +82,8 @@ class Tracer:
             temps.append(TempLogEntry(sys_time, int(sys_temps[0]) / 1000, int(sys_temps[1]) / 1000,
                                       int(sys_temps[2]) / 1000, int(sys_temps[3]) / 1000,
                                       int(sys_temps[4]) / 1000))
-        self.setTracing(False)
+        if not manual:
+            self.setTracing(False)
         self.logger.debug("Trace finished after " + str(duration) + " seconds")
 
     ###  RESULTS  ###
@@ -206,7 +209,7 @@ class Tracer:
         self.adb_device.clear_file(self.ftrace_path + "trace")
         self.logger.debug("Trace output file cleared")
 
-    def runTracer(self):
+    def runTracer(self, manual):
         self.logger.debug("Running tracer: " + self.name)
         if not args.skip:
             self.clearTracer()
@@ -230,7 +233,7 @@ class Tracer:
         #     self.setFilterPID(self.PID_filter)
 
         # run
-        self.traceForTime(self.duration, self.metrics.temps)
+        self.traceForTime(self.duration, self.metrics.temps, manual)
         SystemMetrics.current_metrics.save_temps()
 
         # get results
@@ -261,7 +264,7 @@ def main():
                         events=args.events.split(','),
                         duration=args.duration
                         )
-        tracer.runTracer()
+        tracer.runTracer(args.manual)
         if args.trace is True:
             "Processing trace"
             tp.process_tracer(tracer, args.multi, args.graph)
