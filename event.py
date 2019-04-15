@@ -84,18 +84,18 @@ class EventIdle(Event):
 
 class EventBinderCall(Event):
 
-    def __init__(self, PID, time, cpu, name, trans_type, dest_proc, flags, code):
+    def __init__(self, PID, time, cpu, name, reply, dest_pid, flags, code):
         Event.__init__(self, PID, time, cpu, name)
-        if trans_type == 0:
+        if reply == 0:
             if flags & 0b1:
                 self.trans_type = BinderType.ASYNC
             else:
                 self.trans_type = BinderType.CALL
-        elif trans_type == 1:
+        elif reply == 1:
             self.trans_type = BinderType.REPLY
         else:
             self.trans_type = BinderType.UNKNOWN
-        self.dest_proc = dest_proc
+        self.dest_pid = dest_pid
         self.flags = flags
         self.code = code
         self.recv_time = 0
@@ -258,7 +258,7 @@ class TaskNode:
         elif isinstance(event, EventBinderCall) and binder_send is False:
             self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
                                              " CPU: " + str(event.cpu) + "\n" + str(event.PID)
-                                             + " ==> " + str(event.dest_proc)
+                                             + " ==> " + str(event.dest_pid)
                                              + "\n" + str(event.name)
                                              + "\n" + str(event.__class__.__name__)
                                 , fillcolor='aquamarine1', style='filled', shape='box')
@@ -633,7 +633,7 @@ class ProcessBranch:
                                 + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
                                 + "." + str(self.tasks[-1].events[-1].time)[-6:]
                                 + "\npid: " + str(event.PID)
-                                + "  dest PID: " + str(event.dest_proc)
+                                + "  dest PID: " + str(event.dest_pid)
                                 + "\n" + str(event.name)
                                 + "\n" + str(self.tasks[-1].__class__.__name__),
                                 fillcolor='coral', style='filled,bold', shape='box')
@@ -655,11 +655,11 @@ wake event.
 class PendingBinderTransaction:
 
     def __init__(self, event, PIDt):
-        self.parent_PID = event.dest_proc
-        if event.dest_proc in PIDt.allBinderPIDStrings:
-            self.child_PIDs = [event.dest_proc]
+        self.parent_PID = event.dest_pid
+        if event.dest_pid in PIDt.allBinderPIDStrings:
+            self.child_PIDs = event.dest_pid
         else:
-            self.child_PIDs = PIDt.find_child_binder_threads(event.dest_proc)
+            self.child_PIDs = PIDt.find_child_binder_threads(event.dest_pid)
         self.send_event = event
 
 
@@ -667,7 +667,7 @@ class PendingBinderTask:
 
     def __init__(self, from_event, dest_event):
         self.from_pid = from_event.PID
-        self.dest_pid = dest_event.dest_proc
+        self.dest_pid = dest_event.dest_pid
         self.binder_thread = dest_event.PID
         self.time = from_event.time
         self.duration = dest_event.time - from_event.time
@@ -820,11 +820,17 @@ class ProcessTree:
             return
 
         elif isinstance(event, EventFreqChange):
-            # update cpu freq
-            self.metrics.core_freqs[event.target_cpu] = event.freq
-            self.metrics.core_utils[event.target_cpu] = event.util
-            # add event to cpu branch
-            self.cpus[event.target_cpu].add_job(event)
+            if event.cpu == 0:
+                for i in range(4):
+                    self.metrics.core_freqs[i] = event.freq
+                    self.metrics.core_utils[i] = event.util
+                    self.cpus[i].add_job(event)
+            else:
+                for i in range(4):
+                    self.metrics.core_freqs[i+1] = event.freq
+                    self.metrics.core_utils[i+1] = event.util
+                    self.cpus[i+4].add_job(event)
+
             return
 
         elif isinstance(event, EventMaliUtil):
@@ -856,7 +862,7 @@ class ProcessTree:
 
                 # TODO sometimes binder transactions are sent to binder threads without a target
                 #  process. I am unsure what purpose this serves
-                if event.dest_proc in self.PIDt.allBinderPIDStrings:
+                if event.dest_pid in self.PIDt.allBinderPIDStrings:
                     return
 
                 process_branch = \
@@ -873,7 +879,7 @@ class ProcessTree:
                 # process_branch.add_job(event, event_type=JobType.BINDER_SEND)
 
                 self.logger.debug("Binder event from: " + str(event.PID) + \
-                                  " to " + str(event.dest_proc))
+                                  " to " + str(event.dest_pid))
 
             # from binder thread to target server process
             elif event.PID in self.PIDt.allBinderPIDStrings:

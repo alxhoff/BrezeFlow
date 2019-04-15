@@ -7,6 +7,7 @@ import argparse
 import re
 import time
 
+from tracecmd_processor import TracecmdProcessor
 from adbinterface import *
 from metrics import *
 from pidtrace import PIDtracer
@@ -34,6 +35,8 @@ parser.add_argument("-g", "--graph", action='store_true',
                     help="Enables the drawing of the generated graph")
 parser.add_argument("-u", "--manual", action='store_true',
                     help="If set then tracing will need to be stopped manually")
+parser.add_argument("-c", "--tracecmd", type=str,
+                    help="Opts to parse the give tracecmd binary over regex parsing ftrace logs(faster)")
 
 args = parser.parse_args()
 
@@ -251,10 +254,15 @@ def main():
 
     # Sys metrics needds to be fixed for offline processing (saving metrics)
 
-    if args.processor is True:
-        print "Loading trace data from file and processing"
+    if args.processor is True or args.tracecmd is not None:
         sys_metrics.load_from_file(args.filename)
-        tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi, args.graph)
+        if args.tracecmd:
+            print "Loading tracecmd data and processing"
+            TCProcessor = TracecmdProcessor(args.tracecmd)
+            tp.process_tracecmd(sys_metrics, args.multi, args.graph, TCProcessor)
+        else:
+            print "Loading trace data from file and processing"
+            tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi, args.graph)
     else:
         print "Creating tracer and running"
         tracer = Tracer(adbBridge,

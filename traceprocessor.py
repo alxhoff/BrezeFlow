@@ -147,7 +147,7 @@ class TraceProcessor:
                 output_worksheet.write_number(start_row,
                                               PID_col, event.PID)
                 output_worksheet.write_number(start_row,
-                                              next_pid_col, event.dest_proc)
+                                              next_pid_col, event.dest_pid)
                 output_worksheet.write_number(start_row,
                                               binder_type_col, event.trans_type.value)
                 output_worksheet.write_number(start_row,
@@ -174,7 +174,7 @@ class TraceProcessor:
         # read temps from file
         SystemMetrics.current_metrics.read_temps()
 
-        self.process_trace(f, metrics, multi, draw)
+        self.process_trace(metrics, multi, draw, filename=f)
 
     def process_tracer(self, tracer, multi, draw):
         # open trace
@@ -186,34 +186,45 @@ class TraceProcessor:
             self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
 
-        self.process_trace(f, tracer.metrics, multi, draw)
+        self.process_trace(tracer.metrics, multi, draw, filename=f)
 
-    def process_trace(self, f, metrics, multi, draw):
+    def process_tracecmd(self, metrics, multi, draw, TCProcessor):
+        self.process_trace(metrics, multi, draw, tracecmd=TCProcessor)
+
+
+    def process_trace(self, metrics, multi, draw, tracecmd=None, filename=None):
         process_start_time = time.time()
-
         print "Processing trace"
-        raw_lines = f.readlines()
-        processed_events = []
-
-        # Filter and sort events
-
-        line_count = len(raw_lines)
-        lines_processed = 0
 
         start_time = time.time()
         pids = self.PIDt.allPIDStrings[1:]
-        if not multi:
-            for line in raw_lines[11:]:
-                processed_events.append(process_raw_line(pids, line))
 
-                print "Processed " + str(lines_processed) + "/" + str(line_count) + "\r",
-                lines_processed += 1
+        if tracecmd is not None:
+            processed_events = tracecmd.processed_events
         else:
-            print "Running regex parsing on " + str(multip.cpu_count()) + " CPUs"
-            poolv = multip.Pool(multip.cpu_count())
-            processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:]]
-            poolv.close()
-            poolv.join()
+            if filename is None:
+                print "Filename required"
+                sys.exit(1)
+            raw_lines = filename.readlines()
+            processed_events = []
+
+            # Filter and sort events
+
+            line_count = len(raw_lines)
+            lines_processed = 0
+
+            if not multi:
+                for line in raw_lines[11:]:
+                    processed_events.append(process_raw_line(pids, line))
+
+                    print "Processed " + str(lines_processed) + "/" + str(line_count) + "\r",
+                    lines_processed += 1
+            else:
+                print "Running regex parsing on " + str(multip.cpu_count()) + " CPUs"
+                poolv = multip.Pool(multip.cpu_count())
+                processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:]]
+                poolv.close()
+                poolv.join()
 
         if processed_events == []:
             self.logger.debug("Processing trace failed")
@@ -386,12 +397,12 @@ def process_binder_transaction(line, pids):
     to_proc = int(regex_line[0][5])
     if to_proc == 0:
         to_proc = int(regex_line[0][4])
-    trans_type = int(regex_line[0][6])
+    reply = int(regex_line[0][6])
     flags = int(regex_line[0][7], 16)
     code = int(regex_line[0][8], 16)
 
     if pid in pids or to_proc in pids:
-        return EventBinderCall(pid, time, cpu, name, trans_type, to_proc, flags, code)
+        return EventBinderCall(pid, time, cpu, name, reply, to_proc, flags, code)
     else:
         return None
 
