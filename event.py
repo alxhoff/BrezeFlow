@@ -168,14 +168,20 @@ class TaskNode:
         try:
             EP = SystemMetrics.current_metrics.energy_profile
             if CPU in range(4):
-                voltage = EP.little_voltages[freq]
+                try:
+                    voltage = EP.little_voltages[freq]
+                except Exception:
+                    print str(CPU)
                 a1 = EP.little_reg_const["a1"]
                 a2 = EP.little_reg_const["a2"]
                 a3 = EP.little_reg_const["a3"]
                 energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
                 return energy
             else:
-                voltage = EP.big_voltages[freq]
+                try:
+                    voltage = EP.big_voltages[freq]
+                except Exception:
+                    print str(CPU)
                 a1 = EP.big_reg_const["a1"]
                 a2 = EP.big_reg_const["a2"]
                 a3 = EP.big_reg_const["a3"]
@@ -820,17 +826,10 @@ class ProcessTree:
             return
 
         elif isinstance(event, EventFreqChange):
-            if event.cpu == 0:
-                for i in range(4):
+            for i in range(event.target_cpu, event.target_cpu+4):
                     self.metrics.core_freqs[i] = event.freq
                     self.metrics.core_utils[i] = event.util
                     self.cpus[i].add_job(event)
-            else:
-                for i in range(4):
-                    self.metrics.core_freqs[i+1] = event.freq
-                    self.metrics.core_utils[i+1] = event.util
-                    self.cpus[i+4].add_job(event)
-
             return
 
         elif isinstance(event, EventMaliUtil):

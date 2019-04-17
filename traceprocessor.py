@@ -189,6 +189,7 @@ class TraceProcessor:
         self.process_trace(tracer.metrics, multi, draw, filename=f)
 
     def process_tracecmd(self, metrics, multi, draw, TCProcessor):
+        SystemMetrics.current_metrics.read_temps()
         self.process_trace(metrics, multi, draw, tracecmd=TCProcessor)
 
 

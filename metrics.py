@@ -1,4 +1,6 @@
 import csv
+import sys
+import time
 
 from enum import Enum
 
@@ -51,11 +53,13 @@ class CPUUtilizationTable(UtilizationTable):
         self.utils = []
 
     def compile_lookup(self, start_time, end_time):
-        self.utils = [0.0] * (end_time - start_time + 1)
+        lookup_length = end_time - start_time + 1
+        self.utils = [0.0] * lookup_length
         if len(self.events) != 0:
             for event in self.events:
+                util = round(event.util, 2)
                 for x in range(event.duration + 1):
-                    self.utils[x + event.start_time] = round(event.util, 2)
+                    self.utils[x + event.start_time] = util
         return
 
     def get_util(self, time):
@@ -100,7 +104,7 @@ class CPUUtilizationTable(UtilizationTable):
             if event.state:
                 active_duration += event.duration
 
-            if calc_duration >= 250000:
+            if calc_duration >= 25000:
                 break
 
         self.events[-1].util = float(active_duration) / float(calc_duration) * 100.00
@@ -117,15 +121,24 @@ class TotalUtilizationTable(UtilizationTable):
         core_count = len(cores)
         self.initial_time = min(core.initial_time for core in cores)
         self.end_time = 0
+        start_time = time.time()
+
+        # get the starting and finishing time of the events on each core
         for core in cores:
             if len(core.events) != 0:
                 if (self.initial_time + core.events[-1].start_time + core.events[-1].duration) > self.end_time:
                     self.end_time = self.initial_time + core.events[-1].start_time + core.events[-1].duration
+        print ("Start and finish times took %s seconds" % (time.time() - start_time))
+
+        start_time = time.time()
 
         # Compile util lookup tables for each core
         for core in cores:
             core.compile_lookup(self.initial_time, self.end_time)
+        print ("Lookup tables took %s seconds" % (time.time() - start_time))
 
+        #TODO Speed up!
+        start_time = time.time()
         for x in range(self.end_time - self.initial_time + 1):
             util = 0.0
 
@@ -135,6 +148,7 @@ class TotalUtilizationTable(UtilizationTable):
             util /= core_count
 
             self.slices.append(UtilizationSlice(x, util))
+        print ("Total util table took %s seconds" % (time.time() - start_time))
 
         return
 
@@ -159,7 +173,10 @@ class GPUUtilizationTable(UtilizationTable):
 
     def get_GPU_cycle_energy(self, freq, util, temp):
         EP = SystemMetrics.current_metrics.energy_profile
-        voltage = EP.GPU_voltages[freq]
+        try:
+            voltage = EP.GPU_voltages[freq]
+        except Exception:
+            sys.exit(1)
         a1 = EP.GPU_reg_const["a1"]
         a2 = EP.GPU_reg_const["a2"]
         a3 = EP.GPU_reg_const["a3"]
@@ -322,29 +339,32 @@ class SystemMetrics:
     def get_temp(self, time, core):
         # If time is before first temp recording then default to fire temp recording
         # TODO index error checking
-        if time < self.temps[0].time:
-            if core == -1:
-                return self.temps[0].gpu
-            elif core <= 3:
-                return self.get_average_cpu_temp(self.temps[0])
+        try:
+            if time < self.temps[0].time:
+                if core == -1:
+                    return self.temps[0].gpu
+                elif core <= 3:
+                    return self.get_average_cpu_temp(self.temps[0])
+                else:
+                    return self.temps[0].cpus[core % 4]
+            elif time > self.temps[-1].time:
+                if core == -1:
+                    return self.temps[-1].gpu
+                elif core <= 3:
+                    return self.get_average_cpu_temp(self.temps[-1])
+                else:
+                    return self.temps[-1].cpus[core % 4]
             else:
-                return self.temps[0].cpus[core % 4]
-        elif time > self.temps[-1].time:
-            if core == -1:
-                return self.temps[-1].gpu
-            elif core <= 3:
-                return self.get_average_cpu_temp(self.temps[-1])
-            else:
-                return self.temps[-1].cpus[core % 4]
-        else:
-            for x, entry in enumerate(self.temps[:-1]):
-                if (time >= entry.time) and (time < self.temps[x + 1].time):
-                    if core == -1:
-                        return entry.gpu
-                    elif core <= 3:
-                        return self.get_average_cpu_temp(entry)
-                    else:
-                        return entry.cpus[core % 4]
+                for x, entry in enumerate(self.temps[:-1]):
+                    if (time >= entry.time) and (time < self.temps[x + 1].time):
+                        if core == -1:
+                            return entry.gpu
+                        elif core <= 3:
+                            return self.get_average_cpu_temp(entry)
+                        else:
+                            return entry.cpus[core % 4]
+        except Exception:
+            sys.exit(1)
 
     def save_temps(self):
         with open("/tmp/temps.csv", "w+") as f:

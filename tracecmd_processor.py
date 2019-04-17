@@ -54,12 +54,12 @@ class TracecmdProcessor:
                 prev_state = 'P'
 
             next_pid = event.num_field("next_pid")
-            self.processed_events.append(EventSchedSwitch(event.pid, event.ts,
+            self.processed_events.append(EventSchedSwitch(event.pid, event.ts / 1000,
                                 event.cpu, event.name, prev_state, next_pid))
             return
         elif event.name == "cpu_idle":
             state = event.num_field("state")
-            self.processed_events.append(EventIdle(event.ts, event.cpu, event.name,
+            self.processed_events.append(EventIdle(event.ts / 1000, event.cpu, event.name,
                                 state))
             return
         elif event.name == "update_cpu_metric":
@@ -67,13 +67,10 @@ class TracecmdProcessor:
             return
         elif event.name == "cpu_freq":
             CPU = event.num_field("cpu")
-            freq = event.num_field("freq")
+            freq = event.num_field("freq") * 1000
+            self.processed_events.append(EventFreqChange(event.pid, event.ts / 1000,
+                        event.cpu, freq, 0, CPU))
 
-                    self.processed_events.append(EventFreqChange(event.pid, event.ts,
-                                event.cpu, freq, 0, i))
-
-                    self.processed_events.append(EventFreqChange(event.pid, event.ts,
-                                 event.cpu, freq, 0, i + 4))
             return
         elif event.name == "binder_transaction":
             reply = event.num_field("reply")
@@ -83,12 +80,12 @@ class TracecmdProcessor:
             if to_proc == 0:
                 to_proc = event.num_field("to_proc")
 
-            self.processed_events.append(EventBinderCall(event.pid, event.ts,
+            self.processed_events.append(EventBinderCall(event.pid, event.ts / 1000,
                                 event.cpu, event.name, reply, to_proc, flags, code))
             return
         elif event.name == "mali_utilization_stats":
             util = event.num_field("util")
             freq = event.num_field("freq")
-            self.processed_events.append(EventMaliUtil(event.pid, event.ts, event.cpu,
+            self.processed_events.append(EventMaliUtil(event.pid, event.ts / 1000, event.cpu,
                                 util, freq))
             return
