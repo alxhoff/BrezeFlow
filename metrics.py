@@ -137,18 +137,18 @@ class TotalUtilizationTable(UtilizationTable):
             core.compile_lookup(self.initial_time, self.end_time)
         print ("Lookup tables took %s seconds" % (time.time() - start_time))
 
-        #TODO Speed up!
-        start_time = time.time()
-        for x in range(self.end_time - self.initial_time + 1):
-            util = 0.0
-
-            for core in range(core_count):
-                util += SystemMetrics.current_metrics.sys_util.core_utils[core].get_util(x + self.initial_time)
-
-            util /= core_count
-
-            self.slices.append(UtilizationSlice(x, util))
-        print ("Total util table took %s seconds" % (time.time() - start_time))
+        # #TODO Speed up!
+        # start_time = time.time()
+        # for x in range(self.end_time - self.initial_time + 1):
+        #     util = 0.0
+        #
+        #     for core in range(core_count):
+        #         util += SystemMetrics.current_metrics.sys_util.core_utils[core].get_util(x + self.initial_time)
+        #
+        #     util /= core_count
+        #
+        #     self.slices.append(UtilizationSlice(x, util))
+        # print ("Total util table took %s seconds" % (time.time() - start_time))
 
         return
 
@@ -176,6 +176,7 @@ class GPUUtilizationTable(UtilizationTable):
         try:
             voltage = EP.GPU_voltages[freq]
         except Exception:
+            print "Attempted to get GPU voltage with invalid freq"
             sys.exit(1)
         a1 = EP.GPU_reg_const["a1"]
         a2 = EP.GPU_reg_const["a2"]

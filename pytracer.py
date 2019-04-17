@@ -259,6 +259,7 @@ def main():
         if args.tracecmd:
             print "Loading tracecmd data and processing"
             TCProcessor = TracecmdProcessor(args.tracecmd)
+            TCProcessor.print_event_count()
             tp.process_tracecmd(sys_metrics, args.multi, args.graph, TCProcessor)
         else:
             print "Loading trace data from file and processing"
