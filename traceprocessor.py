@@ -281,7 +281,7 @@ class TraceProcessor:
 
         start_time = time.time()
         print "Finishing process tree"
-        process_tree.finish_tree( 0, self.filename)
+        process_tree.finish_tree(0, self.filename)
         print ("Finished tree in %s seconds" % (time.time() - start_time))
 
         if draw:
@@ -310,8 +310,6 @@ def process_raw_line(pids, line):
 
     try:
         if regex_line[0] == "sched_switch" in line:
-            # if not keep_PID_line(pids, line):
-            #     return None
             return process_sched_switch(line, pids)
 
         elif regex_line[0] == "cpu_idle" in line:
@@ -321,8 +319,6 @@ def process_raw_line(pids, line):
             return process_cpu_metric(line)
 
         elif regex_line[0] == "binder_transaction" in line:
-            # if not keep_PID_line(pids, line):
-            #     return None
             return process_binder_transaction(line, pids)
 
         elif regex_line[0] == "mali_utilization_stats" in line:
@@ -336,11 +332,11 @@ def process_raw_line(pids, line):
 
 def process_sched_wakeup(line):
     pid = int(re.findall("-(\d+) *\[", line)[0])
-    time = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
+    ts = int(round(float(re.findall(" (\d+\.\d+):", line)[0]) * 1000000))
     cpu = int(re.findall(" target_cpu=(\d+)", line)[0])
     name = re.findall("^ *(.+?)-\d+ +", line)[0]
 
-    return EventWakeup(pid, time, cpu, name)
+    return EventWakeup(pid, ts, cpu, name)
 
 
 def process_sched_switch(line, pids):
@@ -353,10 +349,10 @@ def process_sched_switch(line, pids):
     next_pid = int(regex_line[0][5])
     pid = int(regex_line[0][1])
     cpu = int(regex_line[0][2])
-    time = int(float(regex_line[0][3]) * 1000000)
+    ts = int(float(regex_line[0][3]) * 1000000)
 
     if pid in pids or next_pid in pids:
-        return EventSchedSwitch(pid, time, cpu, name, prev_state, next_pid)
+        return EventSchedSwitch(pid, ts, cpu, name, prev_state, next_pid)
     else:
         return None
 
@@ -364,11 +360,11 @@ def process_sched_switch(line, pids):
 def process_sched_idle(line):
     regex_line = re.findall("\[(\d{3})\] .{4} +(\d+.\d+): cpu_idle: state=(\d+)", line)
 
-    time = int(float(regex_line[0][1]) * 1000000)
+    ts = int(float(regex_line[0][1]) * 1000000)
     cpu = int(regex_line[0][0])
     state = int(regex_line[0][2])
 
-    return EventIdle(time, cpu, "idle", state)
+    return EventIdle(ts, cpu, "idle", state)
 
 
 def process_cpu_metric(line):
@@ -378,12 +374,12 @@ def process_cpu_metric(line):
 
     pid = int(regex_line[0][0])
     cpu = int(regex_line[0][1])
-    time = int(float(regex_line[0][2]) * 1000000)
+    ts = int(float(regex_line[0][2]) * 1000000)
     target_cpu = int(regex_line[0][3])
     freq = int(regex_line[0][4]) * 1000
     util = int(regex_line[0][5])
 
-    return EventFreqChange(pid, time, cpu, freq, util, target_cpu)
+    return EventFreqChange(pid, ts, cpu, freq, util, target_cpu)
 
 
 def process_binder_transaction(line, pids):
@@ -394,7 +390,7 @@ def process_binder_transaction(line, pids):
     name = regex_line[0][0]
     pid = int(regex_line[0][1])
     cpu = int(regex_line[0][2])
-    time = int(float(regex_line[0][3]) * 1000000)
+    ts = int(float(regex_line[0][3]) * 1000000)
     to_proc = int(regex_line[0][5])
     if to_proc == 0:
         to_proc = int(regex_line[0][4])
@@ -403,7 +399,7 @@ def process_binder_transaction(line, pids):
     code = int(regex_line[0][8], 16)
 
     if pid in pids or to_proc in pids:
-        return EventBinderCall(pid, time, cpu, name, reply, to_proc, flags, code)
+        return EventBinderCall(pid, ts, cpu, name, reply, to_proc, flags, code)
     else:
         return None
 
@@ -415,8 +411,8 @@ def process_mali_util(line):
 
     pid = int(regex_line[0][0])
     cpu = int(regex_line[0][1])
-    time = int(float(regex_line[0][2]) * 1000000)
+    ts = int(float(regex_line[0][2]) * 1000000)
     util = int(regex_line[0][3])
     freq = int(regex_line[0][4]) * 1000000
 
-    return EventMaliUtil(pid, time, cpu, util, freq)
+    return EventMaliUtil(pid, ts, cpu, util, freq)

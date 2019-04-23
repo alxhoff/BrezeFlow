@@ -2,7 +2,7 @@
 
 import logging
 import os.path as op
-
+import io
 from adb import adb_commands
 from adb import sign_m2crypto
 
@@ -49,3 +49,8 @@ class adbInterface:
 
     def read_from_file(self, filename):
         return self.device.Pull(filename)
+
+    def pull_file(self, target_file, dest_filename):
+        f = open(dest_filename, 'wb+')
+        f.write(self.device.Pull(target_file))
+        f.close()

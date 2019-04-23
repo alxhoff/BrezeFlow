@@ -906,8 +906,6 @@ class ProcessTree:
                             # remove completed transaction
                             del self.pending_binder_transactions[x]
                             return
-
             return
-
         else:
             self.logger.debug("Unknown event")
