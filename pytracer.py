@@ -1,6 +1,7 @@
 import argparse
 import re
 import time
+import os
 
 from tracecmd_processor import TracecmdProcessor
 from adbinterface import *
@@ -233,9 +234,6 @@ class Tracer:
 
 def main():
     adb = adbInterface()
-
-    adb.pull_file("/data/local/tmp/trace.dat", "trace.dat")
-
     pidtracer = PIDtracer(adb, args.app)
     tp = TraceProcessor(pidtracer, args.filename)
 
@@ -246,6 +244,8 @@ def main():
         sys_metrics.load_from_file(args.filename)
         if args.tracecmd:
             print "Loading tracecmd data and processing"
+            adb.pull_file("/data/local/tmp/trace.dat",
+                    os.path.join(os.path.dirname(os.path.realpath(__file__)),args.tracecmd))
             TCProcessor = TracecmdProcessor(args.tracecmd)
             TCProcessor.print_event_count()
             tp.process_tracecmd(sys_metrics, args.multi, args.graph, TCProcessor)

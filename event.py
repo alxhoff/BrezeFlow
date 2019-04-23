@@ -891,8 +891,8 @@ class ProcessTree:
 
                         # If the binder thread that is completing the transaction
                         # is a child of a previous transactions parent binder PID
-                        if any(pid == event.pid for pid in transaction.child_PIDs) or \
-                                event.pid == transaction.parent_PID:
+                        if any(pid == event.pid for pid in transaction.child_pids) or \
+                                event.pid == transaction.parent_pid:
                             # Add starting binder event to branch
                             process_branch.add_job(transaction.send_event, event_type=JobType.BINDER_SEND)
 
