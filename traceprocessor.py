@@ -8,7 +8,6 @@ import xlsxwriter
 from event import *
 from grapher import *
 
-
 class TraceProcessor:
 
     def __init__(self, PIDt, filename):
@@ -189,7 +188,6 @@ class TraceProcessor:
         self.process_trace(tracer.metrics, multi, draw, filename=f)
 
     def process_tracecmd(self, metrics, multi, draw, TCProcessor):
-        SystemMetrics.current_metrics.read_temps()
         self.process_trace(metrics, multi, draw, tracecmd=TCProcessor)
 
 
@@ -241,11 +239,11 @@ class TraceProcessor:
 
         # Create CPU core utilization trees first
         start_time = time.time()
-        print "Compiling util trees"
+        print "Compiling util and temp trees"
         i = 0
         length = len(processed_events)
         while i < length:
-            if isinstance(processed_events[i], EventIdle):
+            if isinstance(processed_events[i], EventIdle) or isinstance(processed_events[i], EventTempInfo):
                 process_tree.handle_event(processed_events[i])
                 del processed_events[i]
                 length -= 1
@@ -268,6 +266,11 @@ class TraceProcessor:
         for x, cluster in enumerate(metrics.sys_util.cluster_utils):
             cluster.compile_table(metrics.sys_util.core_utils[x * 4: x * 4 + 4])
         print ("Cluster util table generated in %s seconds" % (time.time() - start_time))
+
+        start_time = time.time()
+        print "Compiling temp tables"
+        SystemMetrics.current_metrics.compile_temps_table()
+        print ("Temp table generated in %s seconds" % (time.time() - start_time))
 
         num_events = len(processed_events)
         print "Total events: " + str(num_events)

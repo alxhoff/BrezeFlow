@@ -6,12 +6,12 @@ from enum import Enum
 
 from xu3_profile import XU3RegressionConstants
 
-
 class TempLogEntry:
 
-    def __init__(self, time, cpu0, cpu1, cpu2, cpu3, gpu):
-        self.time = time
-        self.cpus = [cpu0, cpu1, cpu2, cpu3]
+    def __init__(self, ts, big0, big1, big2, big3, little, gpu):
+        self.time = ts
+        self.big = [big0, big1, big2, big3]
+        self.little = little
         self.gpu = gpu
 
 
@@ -118,7 +118,7 @@ class TotalUtilizationTable(UtilizationTable):
         self.slices = []
 
     def compile_table(self, cores):
-        core_count = len(cores)
+
         self.initial_time = min(core.initial_time for core in cores)
         self.end_time = 0
         start_time = time.time()
@@ -136,19 +136,6 @@ class TotalUtilizationTable(UtilizationTable):
         for core in cores:
             core.compile_lookup(self.initial_time, self.end_time)
         print ("Lookup tables took %s seconds" % (time.time() - start_time))
-
-        # #TODO Speed up!
-        # start_time = time.time()
-        # for x in range(self.end_time - self.initial_time + 1):
-        #     util = 0.0
-        #
-        #     for core in range(core_count):
-        #         util += SystemMetrics.current_metrics.sys_util.core_utils[core].get_util(x + self.initial_time)
-        #
-        #     util /= core_count
-        #
-        #     self.slices.append(UtilizationSlice(x, util))
-        # print ("Total util table took %s seconds" % (time.time() - start_time))
 
         return
 
@@ -243,6 +230,14 @@ class SystemUtilization:
             self.cluster_utils.append(TotalUtilizationTable())
 
 
+class SystemTemps:
+
+    def __init__(self, cluster_count, cluster_cores):
+        self.temps = []
+        self.initial_time = 0
+        self.end_time = 0
+
+
 class SystemMetrics:
     current_metrics = None
 
@@ -255,7 +250,8 @@ class SystemMetrics:
         self.gpu_freq = self.get_GPU_freq()
         self.gpu_util = self.get_GPU_util()
         self.sys_util = SystemUtilization(self.core_count)
-        self.temps = []
+        self.sys_temps = SystemTemps(2, 4) #TODO remove magic numbers
+        self.unprocessed_temps = []
         self.save_to_file(filename)
 
         SystemMetrics.current_metrics = self
@@ -337,47 +333,42 @@ class SystemMetrics:
         return temp
 
     # Core of -1 is GPU
-    def get_temp(self, time, core):
+    def get_temp(self, ts, core):
         # If time is before first temp recording then default to fire temp recording
         # TODO index error checking
         try:
-            if time < self.temps[0].time:
+            if ts <= self.sys_temps.temps[0].time:
                 if core == -1:
-                    return self.temps[0].gpu
+                    return self.sys_temps.temps[0].gpu
                 elif core <= 3:
-                    return self.get_average_cpu_temp(self.temps[0])
+                    return self.sys_temps.temps[0].little
                 else:
-                    return self.temps[0].cpus[core % 4]
-            elif time > self.temps[-1].time:
+                    return self.sys_temps.temps[0].big[core % 4]
+            elif ts >= self.sys_temps.temps[-1].time:
                 if core == -1:
-                    return self.temps[-1].gpu
+                    return self.sys_temps.temps[-1].gpu
                 elif core <= 3:
-                    return self.get_average_cpu_temp(self.temps[-1])
+                    return self.sys_temps.temps[-1].little
                 else:
-                    return self.temps[-1].cpus[core % 4]
+                    return self.sys_temps.temps[-1].big[core % 4]
             else:
-                for x, entry in enumerate(self.temps[:-1]):
-                    if (time >= entry.time) and (time < self.temps[x + 1].time):
-                        if core == -1:
-                            return entry.gpu
-                        elif core <= 3:
-                            return self.get_average_cpu_temp(entry)
-                        else:
-                            return entry.cpus[core % 4]
+                if core == -1:
+                    return self.sys_temps.temps[ts - self.sys_temps.initial_time].gpu
+                elif core <= 3:
+                    return self.sys_temps.temps[ts - self.sys_temps.initial_time].little
+                else:
+                    return self.sys_temps.temps[ts - self.sys_temps.initial_time].big[core % 4]
         except Exception:
             sys.exit(1)
 
-    def save_temps(self):
-        with open("/tmp/temps.csv", "w+") as f:
-            for x in self.temps:
-                f.write(str(x.time) + ", " + str(x.cpus[0]) + ", " + str(x.cpus[1]) + ", "
-                        + str(x.cpus[2]) + ", " + str(x.cpus[3]) + ", " + str(x.gpu) + "\n")
-            f.close()
+    def compile_temps_table(self):
+        self.sys_temps.initial_time = self.unprocessed_temps[0].time
+        self.sys_temps.end_time = self.unprocessed_temps[-1].time
 
-    def read_temps(self):
-        with open("/tmp/temps.csv", "r") as f:
-            data = csv.reader(f)
-            for x in data:
-                self.temps.append(TempLogEntry(int(x[0]), int(x[1]), int(x[2]), int(x[3]),
-                                               int(x[4]), int(x[5])))
-            f.close()
+        for i, event in enumerate(self.unprocessed_temps[:-1]):
+            for t in range(self.unprocessed_temps[i].time - self.sys_temps.initial_time,
+                           self.unprocessed_temps[i+1].time - self.sys_temps.initial_time):
+                self.sys_temps.temps.append(event)
+
+        # append final temp event as this will be for all times > than last event
+        self.sys_temps.temps.append(self.unprocessed_temps[-1])

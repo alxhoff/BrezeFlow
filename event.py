@@ -5,7 +5,7 @@ from aenum import Enum
 from pydispatch import dispatcher
 
 from adbinterface import *
-from metrics import SystemMetrics
+from metrics import *
 
 PL_PID = 'PID'
 PL_PID_PNAME = 'PNAME'
@@ -106,6 +106,18 @@ class EventMaliUtil(Event):
         Event.__init__(self, pid, ts, cpu, "mali util")
         self.util = util
         self.freq = freq
+
+
+class EventTempInfo(Event):
+
+    def __init__(self, ts, cpu, big0, big1, big2, big3, gpu):
+        Event.__init__(self, 0, ts, cpu, "temp")
+        self.big0 = big0
+        self.big1 = big1
+        self.big2 = big2
+        self.big3 = big3
+        self.little = (big0 + big1 + big2 + big3) / 4.0
+        self.gpu = gpu
 
 
 """ When calculating the power required for a task one needs to know the utilization
@@ -776,6 +788,7 @@ class ProcessTree:
         # They show us which process was slept and which was woken. Showing the
         # previous task's state
         elif isinstance(event, EventSchedSwitch):
+            start_time = time.time()
 
             # task being switched out
             # if task of interest
@@ -821,6 +834,7 @@ class ProcessTree:
                         return
 
                 process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
+            print ("Sched switch event processed in %s seconds" % (time.time() - start_time))
 
             return
 
@@ -844,6 +858,10 @@ class ProcessTree:
         elif isinstance(event, EventIdle):
             self.metrics.sys_util.core_utils[event.cpu].add_idle_event(event)
             return
+
+        elif isinstance(event, EventTempInfo):
+            self.metrics.unprocessed_temps.append(TempLogEntry(event.time, event.big0, event.big1,
+                event.big2, event.big3, event.little, event.gpu))
 
         # Binder transactions show IPCs between tasks.
         # As a binder transaction represents the blocking of the client task

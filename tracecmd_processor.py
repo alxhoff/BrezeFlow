@@ -1,5 +1,6 @@
 from tracecmd import *
 from traceprocessor import *
+from metrics import TempLogEntry
 
 class EventCounts:
 
@@ -133,11 +134,12 @@ class TracecmdProcessor:
         elif event.name == "exynos_temp":
             self.event_count.temp += 1
 
-            big0 = event.num_field("t0")
-            big1 = event.num_field("t1")
-            big2 = event.num_field("t2")
-            big3 = event.num_field("t3")
-            little = (big0 + big1 + big2 + big3)/4
-            GPU = event.num_field("t4")
+            big0 = event.num_field("t0") / 1000
+            big1 = event.num_field("t1") / 1000
+            big2 = event.num_field("t2") / 1000
+            big3 = event.num_field("t3") / 1000
+            little = (big0 + big1 + big2 + big3) / 4.0
+            GPU = event.num_field("t4") / 1000
 
-            #TODO
+            self.processed_events.append(EventTempInfo(event.ts / 1000, big0,
+                                            big1, big2, big3, little, GPU))
