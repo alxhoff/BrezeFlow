@@ -163,10 +163,10 @@ class TraceProcessor:
 
         self.process_trace(tracer.metrics, multi, draw, filename=f, test=test)
 
-    def process_tracecmd(self, metrics, multi, draw, TCProcessor, test):
-        self.process_trace(metrics, multi, draw, tracecmd=TCProcessor, test=test)
+    def process_tracecmd(self, metrics, multi, draw, TCProcessor, test, subgraph):
+        self.process_trace(metrics, multi, draw, tracecmd=TCProcessor, test=test, subgraph=subgraph)
 
-    def process_trace(self, metrics, multi, draw, tracecmd=None, filename=None, test=None):
+    def process_trace(self, metrics, multi, draw, tracecmd=None, filename=None, test=None, subgraph=False):
         process_start_time = time.time()
         print "Processing trace"
 
@@ -218,7 +218,7 @@ class TraceProcessor:
         length = len(processed_events)
         while i < length:
             if isinstance(processed_events[i], EventIdle) or isinstance(processed_events[i], EventTempInfo):
-                process_tree.handle_event(processed_events[i])
+                process_tree.handle_event(processed_events[i], subgraph)
                 del processed_events[i]
                 length -= 1
             elif processed_events[i] is None:
@@ -254,11 +254,11 @@ class TraceProcessor:
         if test:
             for x, event in enumerate(processed_events[:300]):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
-                process_tree.handle_event(event)
+                process_tree.handle_event(event, subgraph)
         else:
             for x, event in enumerate(processed_events):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
-                process_tree.handle_event(event)
+                process_tree.handle_event(event, subgraph)
         print ("All events handled in %s seconds" % (time.time() - start_time))
 
         start_time = time.time()

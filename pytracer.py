@@ -1,6 +1,5 @@
 import argparse
 import re
-import time
 import os
 
 from tracecmd_processor import TracecmdProcessor
@@ -35,6 +34,8 @@ parser.add_argument("-c", "--tracecmd", type=str,
                     help="Opts to parse the give tracecmd binary over regex parsing ftrace logs(faster)")
 parser.add_argument("-te", "--test", action='store_true',
                      help="Tests only a few hundred events to speed up testing")
+parser.add_argument("-sub", "--subgraph", action='store_true',
+                    help="Enable the drawing of node subgraphs")
 
 args = parser.parse_args()
 
@@ -250,7 +251,7 @@ def main():
                     os.path.join(os.path.dirname(os.path.realpath(__file__)),args.tracecmd))
             TCProcessor = TracecmdProcessor(args.tracecmd)
             TCProcessor.print_event_count()
-            tp.process_tracecmd(sys_metrics, args.multi, args.graph, TCProcessor, args.test)
+            tp.process_tracecmd(sys_metrics, args.multi, args.graph, TCProcessor, args.test, args.subgraph)
         else:
             print "Loading trace data from file and processing"
             tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi, args.graph, args.test)

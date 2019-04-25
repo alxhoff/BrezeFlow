@@ -201,7 +201,7 @@ class TaskNode:
         except TypeError:
             print "Type error"
 
-    def add_job(self, event, binder_send=False):
+    def add_job(self, event, binder_send=False, subgraph=False):
 
         # First event
         if not self.events:
@@ -262,27 +262,28 @@ class TaskNode:
         self.events.append(event)
 
         # add event node to task sub-graph
-        if isinstance(event, EventSchedSwitch):
-            self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
-                                             " CPU: " + str(event.cpu) + "\n" + str(event.pid)
-                                             + " ==> " + str(event.next_pid)
-                                             + "\nPrev state: " + str(event.prev_state)
-                                             + "\n" + event.name + " --> " + event.next_name + "\n"
-                                             + str(event.__class__.__name__),
-                                fillcolor='bisque1', style='filled', shape='box')
-        elif isinstance(event, EventBinderCall) and binder_send is False:
-            self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
-                                             " CPU: " + str(event.cpu) + "\n" + str(event.pid)
-                                             + " ==> " + str(event.dest_pid)
-                                             + "\n" + str(event.name)
-                                             + "\n" + str(event.__class__.__name__),
-                                fillcolor='aquamarine1', style='filled', shape='box')
+        if subgraph:
+            if isinstance(event, EventSchedSwitch):
+                self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
+                                                 " CPU: " + str(event.cpu) + "\n" + str(event.pid)
+                                                 + " ==> " + str(event.next_pid)
+                                                 + "\nPrev state: " + str(event.prev_state)
+                                                 + "\n" + event.name + " --> " + event.next_name + "\n"
+                                                 + str(event.__class__.__name__),
+                                    fillcolor='bisque1', style='filled', shape='box')
+            elif isinstance(event, EventBinderCall) and binder_send is False:
+                self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
+                                                 " CPU: " + str(event.cpu) + "\n" + str(event.pid)
+                                                 + " ==> " + str(event.dest_pid)
+                                                 + "\n" + str(event.name)
+                                                 + "\n" + str(event.__class__.__name__),
+                                    fillcolor='aquamarine1', style='filled', shape='box')
 
-        # create graph edge if not the first job
-        if len(self.events) >= 2 and binder_send is False:
-            if self.events[-2] == self.events[-1]:
-                print "wait here"
-            self.graph.add_edge(self.events[-2], self.events[-1], color='violet', dir='forward')
+            # create graph edge if not the first job
+            if len(self.events) >= 2 and binder_send is False:
+                if self.events[-2] == self.events[-1]:
+                    print "wait here"
+                self.graph.add_edge(self.events[-2], self.events[-1], color='violet', dir='forward')
 
     def finished(self):
         self.finish_time = self.events[-1].time
@@ -544,7 +545,7 @@ class ProcessBranch:
         #     except Exception:
         #         pass
 
-    def add_job(self, event, event_type=JobType.UNKNOWN):
+    def add_job(self, event, event_type=JobType.UNKNOWN, subgraph=False):
 
         # CPU association
         if self.cpu is None:
@@ -555,7 +556,7 @@ class ProcessBranch:
         if not self.tasks:
 
             self.tasks.append(TaskNode(self.graph, self.pid))
-            self.tasks[-1].add_job(event)
+            self.tasks[-1].add_job(event, subgraph=subgraph)
 
             # task could be finishing
             if event_type == JobType.SCHED_SWITCH_OUT and \
@@ -627,11 +628,12 @@ class ProcessBranch:
                                 fillcolor='darkolivegreen3',
                                 style='filled,bold,rounded', shape='box')
 
-            # Jobs sub-graph
-            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
-                                dir='forward')
-            self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red',
-                                dir='back')
+            if subgraph:
+                # Jobs sub-graph
+                self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
+                                    dir='forward')
+                self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red',
+                                    dir='back')
             return
 
         elif event_type == JobType.BINDER_SEND:
@@ -785,7 +787,7 @@ class ProcessTree:
             for x, second in enumerate(energy_timeline):
                 writer.writerow([str(x), str(second)])
 
-    def handle_event(self, event):
+    def handle_event(self, event, subgraph):
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs
         if isinstance(event, EventWakeup):
@@ -801,7 +803,7 @@ class ProcessTree:
             if event.pid != 0:
                 try:
                     process_branch = self.process_branches[event.pid]
-                    process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT)
+                    process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
                 except KeyError:
                     pass
 
