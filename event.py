@@ -563,8 +563,6 @@ class ProcessBranch:
                     event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
                 self.active = False
                 self.tasks[-1].finished()
-
-                # TODO ADD NODE HERE
                 return
 
             self.active = True
