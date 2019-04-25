@@ -808,34 +808,29 @@ class ProcessTree:
             # start_time = time.time()
 
             # task being switched out
-            # if task of interest
-            # index = self.pidtracer.get_PID_string_index(event.pid)
             if event.pid != 0:
                 try:
                     process_branch = self.process_branches[event.pid]
                     process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT)
                 except KeyError:
-                    # print "PID Key %d not found in tracked PIDs" % event.pid
                     pass
 
             # task being switched in
-            # index = self.pidtracer.get_PID_string_index(event.next_pid)
             if event.next_pid != 0:
                 try:
                     process_branch = self.process_branches[event.next_pid]
 
+                    binder_response = False
                     # if switched in because of binder
                     for x, task in enumerate(self.pending_binder_tasks):
                         if event.next_pid == task.dest_pid:
+                            binder_response = True
+
                             # edge from prev task to binder thread
                             self.graph.add_edge(
                                 # original process branch that started transaction
-                                # self.process_branches[ \
-                                #     self.pidtracer.get_PID_string_index(task.from_pid)].tasks[-1],
                                 self.process_branches[task.from_pid].tasks[-1],
                                 # this branch as it is being woken
-                                # self.process_branches[ \
-                                #     self.pidtracer.get_PID_string_index(task.binder_thread)].tasks[-1],
                                 self.process_branches[task.binder_thread].tasks[-1],
                                 color='palevioletred3', dir='forward', style='bold')
 
@@ -844,22 +839,18 @@ class ProcessTree:
                             # edge from binder thread to next task
                             self.graph.add_edge(
                                 # original process branch that started transaction
-                                # self.process_branches[ \
-                                #     self.pidtracer.get_PID_string_index(task.binder_thread)].tasks[-1],
                                 self.process_branches[task.binder_thread].tasks[-1],
                                 # this branch as it is being woken
-                                # self.process_branches[ \
-                                #     self.pidtracer.get_PID_string_index(task.dest_pid)].tasks[-1],
                                 self.process_branches[task.dest_pid].tasks[-1],
                                 color='yellow3', dir='forward')
 
                             # remove binder task that is now complete
                             del self.pending_binder_tasks[x]
 
-                    process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
+                    if not binder_response:
+                        process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
 
                 except KeyError:
-                    # print "PID Key %d not found in tracked PIDs" % event.next_pid
                     pass
 
             # print ("Sched switch event processed in %s seconds" % (time.time() - start_time))
@@ -901,19 +892,13 @@ class ProcessTree:
         elif isinstance(event, EventBinderCall):
 
             # From client process to binder thread
-            # if event.pid in self.pidtracer.allAppPIDStrings or \
-            #         event.pid in self.pidtracer.allSystemPIDStrings:
             if event.pid in self.pidtracer.app_pids or \
                 event.pid in self.pidtracer.system_pids:
 
                 # TODO sometimes binder transactions are sent to binder threads without a target
                 #  process. I am unsure what purpose this serves
-                # if event.dest_pid in self.pidtracer.allBinderPIDStrings:
                 if event.dest_pid in self.pidtracer.binder_pids:
                     return
-
-                # process_branch = \
-                #     self.process_branches[self.pidtracer.get_PID_string_index(event.pid)]
 
                 # Push binder event on to pending list so that when the second
                 # half of the transaction is performed the events can be merged.
@@ -927,13 +912,10 @@ class ProcessTree:
 
 
             # from binder thread to target server process
-            # elif event.pid in self.pidtracer.allBinderPIDStrings:
             elif event.pid in self.pidtracer.binder_pids:
 
                 # get event from binder transactions list and merge
                 if self.pending_binder_transactions:
-                    # process_branch = \
-                    #     self.process_branches[self.pidtracer.get_PID_string_index(event.pid)]
                     process_branch = \
                         self.process_branches[event.pid]
                     for x, transaction in \
