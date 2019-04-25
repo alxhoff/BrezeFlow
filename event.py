@@ -405,8 +405,8 @@ class ProcessBranch:
         self.active = False
         self.graph = graph
         self.pidtracer = pidtracer
-        self.CPU = None
-        self.CPUs = cpus
+        self.cpu = None
+        self.cpus = cpus
         self.gpu = gpu
         self.connect_to_gpu_events()
         self.energy = 0  # calculated upon request at the end between given intervals
@@ -476,12 +476,15 @@ class ProcessBranch:
         return task_stats
 
     def connect_to_cpu_event(self, cpu):
-        dispatcher.connect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
-                           sender=dispatcher.Any)
+        try:
+            dispatcher.connect(self.handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
+                               sender=dispatcher.Any)
+        except Exception:
+            print "wait here"
 
     def disconnect_from_cpu_event(self, cpu):
         try:
-            dispatcher.disconnect(self.handle_cpu_freq_change, signal=self.CPUs[cpu].signal_freq,
+            dispatcher.disconnect(self.handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
                                   sender=dispatcher.Any)
         except Exception:
             return
@@ -491,24 +494,24 @@ class ProcessBranch:
                            sender=dispatcher.Any)
 
     def get_cur_cpu_freq(self):
-        return self.CPUs[self.CPU].freq
+        return self.cpus[self.cpu].freq
 
     def get_cur_cpu_prev_freq(self):
-        return self.CPUs[self.CPU].prev_freq
+        return self.cpus[self.cpu].prev_freq
 
     def get_cur_cpu_last_freq_switch(self):
-        if self.CPUs[self.CPU].events:
-            return self.CPUs[self.CPU].events[-1].time
+        if self.cpus[self.cpu].events:
+            return self.cpus[self.cpu].events[-1].time
         else:
             return None
 
     def handle_cpu_freq_change(self):
         if self.tasks:
             try:
-                self.tasks[-1].add_cpu_gpu_event(self.CPUs[self.CPU].events[-1].time,
-                                                 self.CPU,
-                                                 self.CPUs[self.CPU].prev_freq,
-                                                 self.CPUs[self.CPU].prev_util,
+                self.tasks[-1].add_cpu_gpu_event(self.cpus[self.cpu].events[-1].time,
+                                                 self.cpu,
+                                                 self.cpus[self.cpu].prev_freq,
+                                                 self.cpus[self.cpu].prev_util,
                                                  self.gpu.freq,
                                                  self.gpu.util)
             except Exception:
@@ -518,17 +521,17 @@ class ProcessBranch:
         # If the new CPU freq is different create change event for later calculations
         if self.tasks:
             try:
-                if self.CPUs[event.cpu].freq != self.CPUs[self.CPU].freq:
+                if self.cpus[event.cpu].freq != self.cpus[self.cpu].freq:
                     self.tasks[-1].add_cpu_gpu_event(event.time,
-                                                     self.CPU,
-                                                     self.CPUs[self.CPU].freq,
-                                                     self.CPUs[self.CPU].util,
+                                                     self.cpu,
+                                                     self.cpus[self.cpu].freq,
+                                                     self.cpus[self.cpu].util,
                                                      self.gpu.freq,
                                                      self.gpu.util)
             except Exception:
                 pass
 
-        self.CPU = event.cpu
+        self.cpu = event.cpu
 
     def handle_gpu_change(self):
         return
@@ -547,9 +550,9 @@ class ProcessBranch:
     def add_job(self, event, event_type=JobType.UNKNOWN):
 
         # CPU association
-        if self.CPU is None:
-            self.CPU = event.cpu
-            self.connect_to_cpu_event(self.CPU)
+        if self.cpu is None:
+            self.cpu = event.cpu
+            self.connect_to_cpu_event(self.cpu)
 
         # first job/task for PID branch
         if not self.tasks:
@@ -572,14 +575,14 @@ class ProcessBranch:
 
         if event_type == JobType.SCHED_SWITCH_IN:
             # If the CPU has changed
-            if event.cpu != self.CPU:
+            if event.cpu != self.cpu:
                 # Update current task's cycle count in case new CPU has different speed
                 self.handle_cpu_num_change(event)
 
                 # Change event signal for freq change
-                self.disconnect_from_cpu_event(self.CPU)
-                self.CPU = event.cpu
-                self.connect_to_cpu_event(self.CPU)
+                self.disconnect_from_cpu_event(self.cpu)
+                self.cpu = event.cpu
+                self.connect_to_cpu_event(self.cpu)
 
         # New task STARTING
         if event_type == JobType.SCHED_SWITCH_IN and self.active is False:
@@ -600,9 +603,12 @@ class ProcessBranch:
             return
 
         # Current task FINISHING
+        # elif event_type == JobType.SCHED_SWITCH_OUT and \
+        #         event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value and \
+        #         event.pid not in self.pidtracer.allBinderPIDStrings:
         elif event_type == JobType.SCHED_SWITCH_OUT and \
-                event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value and \
-                event.pid not in self.pidtracer.allBinderPIDStrings:
+             event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value and \
+             event.pid not in self.pidtracer.binder_pids:
 
             self.tasks[-1].add_job(event)
             self.tasks[-1].finished()
@@ -674,7 +680,8 @@ class PendingBinderTransaction:
 
     def __init__(self, event, pidtracer):
         self.parent_pid = event.dest_pid
-        if event.dest_pid in pidtracer.allBinderPIDStrings:
+        # if event.dest_pid in pidtracer.allBinderPIDStrings:
+        if event.dest_pid in pidtracer.binder_pids:
             self.child_pids = event.dest_pid
         else:
             self.child_pids = pidtracer.find_child_binder_threads(event.dest_pid)
@@ -694,30 +701,36 @@ class PendingBinderTask:
 class ProcessTree:
 
     def __init__(self, pidtracer, metrics):
-        logging.basicConfig(filename="pytracer.log",
-                            format='%(asctime)s %(levelname)s:%(message)s',
-                            level=logging.DEBUG)
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug("Process tree created")
 
         self.metrics = metrics
         self.graph = nx.DiGraph()
         self.pidtracer = pidtracer
 
-        self.cpus = []
-        self.process_branches = []
+        self.process_branches = dict()
         self.pending_binder_transactions = []
         self.pending_binder_tasks = []
 
+        self.cpus = []
+        self.create_cpu_branches()
         self.gpu = GPUBranch(self.metrics.gpu_freq, self.metrics.gpu_util, self.graph)
 
-        for pid in self.pidtracer.allPID:
-            self.process_branches.append(ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
-                                                       self.pidtracer, self.cpus, self.gpu))
+        self.create_pid_branches()
 
+    def create_cpu_branches(self):
         for x in range(0, self.metrics.core_count):
             self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x],
                                        self.metrics.core_utils[x], self.graph))
+
+    def create_pid_branches(self):
+        for i, pid in self.pidtracer.app_pids.iteritems():
+            self.process_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
+                                                       self.pidtracer, self.cpus, self.gpu)
+        for i, pid in self.pidtracer.system_pids.iteritems():
+            self.process_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
+                                                       self.pidtracer, self.cpus, self.gpu)
+        for i, pid in self.pidtracer.binder_pids.iteritems():
+            self.process_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
+                                                       self.pidtracer, self.cpus, self.gpu)
 
     def finish_tree(self, finish_time, filename):
         with open(filename + "_results.csv", "w+") as f:
@@ -726,7 +739,7 @@ class ProcessTree:
             # Start and end time
             start_time = 0
             end_time = 0
-            for branch in self.process_branches:
+            for x, branch in self.process_branches.iteritems():
                 if branch.tasks:
                     if branch.tasks[0].start_time < start_time or start_time == 0:
                         start_time = branch.tasks[0].start_time
@@ -749,7 +762,8 @@ class ProcessTree:
 
             total_energy += gpu_energy
 
-            for x in range(len(self.process_branches) - 1, -1, -1):
+            for x in list(self.process_branches.keys()):
+            # for x in range(len(self.process_branches) - 1, -1, -1):
                 branch = self.process_branches[x]
                 # Remove empty PID branches
                 if branch.tasks == []:
@@ -770,9 +784,9 @@ class ProcessTree:
             # Go through each branch and calculate the values energy values for each second
             energy_timeline = [0.0] * int(duration + 1)
 
-            for branch in self.process_branches:
-                for x in range(len(energy_timeline)):
-                    energy_timeline[x] += branch.get_second_energy(x, start_time)
+            for x, branch in self.process_branches.iteritems():
+                for i in range(len(energy_timeline)):
+                    energy_timeline[i] += branch.get_second_energy(i, start_time)
 
             writer.writerow(["Sec", "Energy"])
             for x, second in enumerate(energy_timeline):
@@ -788,53 +802,64 @@ class ProcessTree:
         # They show us which process was slept and which was woken. Showing the
         # previous task's state
         elif isinstance(event, EventSchedSwitch):
-            start_time = time.time()
+            # start_time = time.time()
 
             # task being switched out
             # if task of interest
-            index = self.pidtracer.get_PID_string_index(event.pid)
-            if index is not None and index != 0:
-                process_branch = self.process_branches[index]
-                process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT)
-                self.logger.debug("Sched switch in event added as job")
-                return
+            # index = self.pidtracer.get_PID_string_index(event.pid)
+            if event.pid != 0:
+                try:
+                    process_branch = self.process_branches[event.pid]
+                    process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT)
+                except KeyError:
+                    # print "PID Key %d not found in tracked PIDs" % event.pid
+                    pass
 
             # task being switched in
-            index = self.pidtracer.get_PID_string_index(event.next_pid)
-            if index is not None and index != 0:
-                process_branch = self.process_branches[index]
+            # index = self.pidtracer.get_PID_string_index(event.next_pid)
+            if event.next_pid != 0:
+                try:
+                    process_branch = self.process_branches[event.next_pid]
 
-                # if switched in because of binder
-                for x, task in enumerate(self.pending_binder_tasks):
-                    if event.next_pid == task.dest_pid:
-                        # edge from prev task to binder thread
-                        self.graph.add_edge(
-                            # original process branch that started transaction
-                            self.process_branches[ \
-                                self.pidtracer.get_PID_string_index(task.from_pid)].tasks[-1],
-                            # this branch as it is being woken
-                            self.process_branches[ \
-                                self.pidtracer.get_PID_string_index(task.binder_thread)].tasks[-1],
-                            color='palevioletred3', dir='forward', style='bold')
+                    # if switched in because of binder
+                    for x, task in enumerate(self.pending_binder_tasks):
+                        if event.next_pid == task.dest_pid:
+                            # edge from prev task to binder thread
+                            self.graph.add_edge(
+                                # original process branch that started transaction
+                                # self.process_branches[ \
+                                #     self.pidtracer.get_PID_string_index(task.from_pid)].tasks[-1],
+                                self.process_branches[task.from_pid].tasks[-1],
+                                # this branch as it is being woken
+                                # self.process_branches[ \
+                                #     self.pidtracer.get_PID_string_index(task.binder_thread)].tasks[-1],
+                                self.process_branches[task.binder_thread].tasks[-1],
+                                color='palevioletred3', dir='forward', style='bold')
 
-                        process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
+                            process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
 
-                        # edge from binder thread to next task
-                        self.graph.add_edge(
-                            # original process branch that started transaction
-                            self.process_branches[ \
-                                self.pidtracer.get_PID_string_index(task.binder_thread)].tasks[-1],
-                            # this branch as it is being woken
-                            self.process_branches[ \
-                                self.pidtracer.get_PID_string_index(task.dest_pid)].tasks[-1],
-                            color='yellow3', dir='forward')
+                            # edge from binder thread to next task
+                            self.graph.add_edge(
+                                # original process branch that started transaction
+                                # self.process_branches[ \
+                                #     self.pidtracer.get_PID_string_index(task.binder_thread)].tasks[-1],
+                                self.process_branches[task.binder_thread].tasks[-1],
+                                # this branch as it is being woken
+                                # self.process_branches[ \
+                                #     self.pidtracer.get_PID_string_index(task.dest_pid)].tasks[-1],
+                                self.process_branches[task.dest_pid].tasks[-1],
+                                color='yellow3', dir='forward')
 
-                        # remove binder task that is now complete
-                        del self.pending_binder_tasks[x]
-                        return
+                            # remove binder task that is now complete
+                            del self.pending_binder_tasks[x]
 
-                process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
-            print ("Sched switch event processed in %s seconds" % (time.time() - start_time))
+                    process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
+
+                except KeyError:
+                    # print "PID Key %d not found in tracked PIDs" % event.next_pid
+                    pass
+
+            # print ("Sched switch event processed in %s seconds" % (time.time() - start_time))
 
             return
 
@@ -873,16 +898,19 @@ class ProcessTree:
         elif isinstance(event, EventBinderCall):
 
             # From client process to binder thread
-            if event.pid in self.pidtracer.allAppPIDStrings or \
-                    event.pid in self.pidtracer.allSystemPIDStrings:
+            # if event.pid in self.pidtracer.allAppPIDStrings or \
+            #         event.pid in self.pidtracer.allSystemPIDStrings:
+            if event.pid in self.pidtracer.app_pids or \
+                event.pid in self.pidtracer.system_pids:
 
                 # TODO sometimes binder transactions are sent to binder threads without a target
                 #  process. I am unsure what purpose this serves
-                if event.dest_pid in self.pidtracer.allBinderPIDStrings:
+                # if event.dest_pid in self.pidtracer.allBinderPIDStrings:
+                if event.dest_pid in self.pidtracer.binder_pids:
                     return
 
-                process_branch = \
-                    self.process_branches[self.pidtracer.get_PID_string_index(event.pid)]
+                # process_branch = \
+                #     self.process_branches[self.pidtracer.get_PID_string_index(event.pid)]
 
                 # Push binder event on to pending list so that when the second
                 # half of the transaction is performed the events can be merged.
@@ -894,16 +922,17 @@ class ProcessTree:
                 # create binder send job in client thread tree (current tree)
                 # process_branch.add_job(event, event_type=JobType.BINDER_SEND)
 
-                self.logger.debug("Binder event from: " + str(event.pid) +
-                                  " to " + str(event.dest_pid))
 
             # from binder thread to target server process
-            elif event.pid in self.pidtracer.allBinderPIDStrings:
+            # elif event.pid in self.pidtracer.allBinderPIDStrings:
+            elif event.pid in self.pidtracer.binder_pids:
 
                 # get event from binder transactions list and merge
                 if self.pending_binder_transactions:
+                    # process_branch = \
+                    #     self.process_branches[self.pidtracer.get_PID_string_index(event.pid)]
                     process_branch = \
-                        self.process_branches[self.pidtracer.get_PID_string_index(event.pid)]
+                        self.process_branches[event.pid]
                     for x, transaction in \
                             enumerate(self.pending_binder_transactions):
 
@@ -923,7 +952,3 @@ class ProcessTree:
 
                             # remove completed transaction
                             del self.pending_binder_transactions[x]
-                            return
-            return
-        else:
-            self.logger.debug("Unknown event")

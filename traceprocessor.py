@@ -161,7 +161,7 @@ class TraceProcessor:
 
         output_workbook.close()
 
-    def process_trace_file(self, filename, metrics, multi, draw):
+    def process_trace_file(self, filename, metrics, multi, draw, test):
         try:
             f = open(filename, "r")
             self.logger.debug("Tracer " + filename + " opened for \
@@ -173,9 +173,9 @@ class TraceProcessor:
         # read temps from file
         SystemMetrics.current_metrics.read_temps()
 
-        self.process_trace(metrics, multi, draw, filename=f)
+        self.process_trace(metrics, multi, draw, filename=f, test=test)
 
-    def process_tracer(self, tracer, multi, draw):
+    def process_tracer(self, tracer, multi, draw, test):
         # open trace
         try:
             f = open(tracer.filename, "r")
@@ -185,18 +185,18 @@ class TraceProcessor:
             self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
 
-        self.process_trace(tracer.metrics, multi, draw, filename=f)
+        self.process_trace(tracer.metrics, multi, draw, filename=f, test=test)
 
-    def process_tracecmd(self, metrics, multi, draw, TCProcessor):
-        self.process_trace(metrics, multi, draw, tracecmd=TCProcessor)
+    def process_tracecmd(self, metrics, multi, draw, TCProcessor, test):
+        self.process_trace(metrics, multi, draw, tracecmd=TCProcessor, test=test)
 
 
-    def process_trace(self, metrics, multi, draw, tracecmd=None, filename=None):
+    def process_trace(self, metrics, multi, draw, tracecmd=None, filename=None, test=None):
         process_start_time = time.time()
         print "Processing trace"
 
         start_time = time.time()
-        pids = self.PIDt.allPIDStrings[1:]
+        pidt = self.PIDt
 
         if tracecmd is not None:
             processed_events = tracecmd.processed_events
@@ -214,14 +214,14 @@ class TraceProcessor:
 
             if not multi:
                 for line in raw_lines[11:]:
-                    processed_events.append(process_raw_line(pids, line))
+                    processed_events.append(process_raw_line(pidt, line))
 
                     print "Processed " + str(lines_processed) + "/" + str(line_count) + "\r",
                     lines_processed += 1
             else:
                 print "Running regex parsing on " + str(multip.cpu_count()) + " CPUs"
                 poolv = multip.Pool(multip.cpu_count())
-                processed_events = [poolv.apply(process_raw_line, args=(pids, line)) for line in raw_lines[11:]]
+                processed_events = [poolv.apply(process_raw_line, args=(pidt, line)) for line in raw_lines[11:]]
                 poolv.close()
                 poolv.join()
 
@@ -277,9 +277,14 @@ class TraceProcessor:
 
         start_time = time.time()
         print "Processing events"
-        for x, event in enumerate(processed_events):
-            print str(x) + "/" + str(num_events) + " " + str(round(float(x)/num_events * 100, 2)) + "%\r",
-            process_tree.handle_event(event)
+        if test:
+            for x, event in enumerate(processed_events[:300]):
+                print str(x) + "/" + str(num_events) + " " + str(round(float(x)/num_events * 100, 2)) + "%\r",
+                process_tree.handle_event(event)
+        else:
+            for x, event in enumerate(processed_events):
+                print str(x) + "/" + str(num_events) + " " + str(round(float(x)/num_events * 100, 2)) + "%\r",
+                process_tree.handle_event(event)
         print ("All events handled in %s seconds" % (time.time() - start_time))
 
         start_time = time.time()
@@ -302,7 +307,7 @@ def keep_PID_line(pids, line):
     return False
 
 
-def process_raw_line(pids, line):
+def process_raw_line(pidt, line):
     regex_line = re.findall(": ([a-z_]+): ", line)
 
     # if regex_line[0] == "sched_wakeup" in line:
@@ -313,7 +318,7 @@ def process_raw_line(pids, line):
 
     try:
         if regex_line[0] == "sched_switch" in line:
-            return process_sched_switch(line, pids)
+            return process_sched_switch(line, pidt)
 
         elif regex_line[0] == "cpu_idle" in line:
             return process_sched_idle(line)
@@ -322,7 +327,7 @@ def process_raw_line(pids, line):
             return process_cpu_metric(line)
 
         elif regex_line[0] == "binder_transaction" in line:
-            return process_binder_transaction(line, pids)
+            return process_binder_transaction(line, pidt)
 
         elif regex_line[0] == "mali_utilization_stats" in line:
             return process_mali_util(line)
@@ -342,7 +347,7 @@ def process_sched_wakeup(line):
     return EventWakeup(pid, ts, cpu, name)
 
 
-def process_sched_switch(line, pids):
+def process_sched_switch(line, pidt):
     regex_line = re.findall(
         "^ *(.+?)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+).+prev_state=([RSDx]{1})[+]? ==> next_comm=.+ next_pid=(\d+)",
         line)
@@ -354,7 +359,7 @@ def process_sched_switch(line, pids):
     cpu = int(regex_line[0][2])
     ts = int(float(regex_line[0][3]) * 1000000)
 
-    if pid in pids or next_pid in pids:
+    if pidt.is_relevant_pid(pid) or pidt.is_relevant_pid(next_pid):
         return EventSchedSwitch(pid, ts, cpu, name, prev_state, next_pid)
     else:
         return None
@@ -385,7 +390,7 @@ def process_cpu_metric(line):
     return EventFreqChange(pid, ts, cpu, freq, util, target_cpu)
 
 
-def process_binder_transaction(line, pids):
+def process_binder_transaction(line, pidt):
     regex_line = re.findall(
         "^ *(.*)-(\d+) +\[(\d{3})\] .{4} +(\d+.\d+): binder_transaction: transaction=\d+ dest_node=\d+ dest_proc=(\d+) dest_thread=(\d+) reply=(\d) flags=(0x[0-9a-f]+) code=(0x[0-9a-f]+)",
         line)
@@ -401,7 +406,7 @@ def process_binder_transaction(line, pids):
     flags = int(regex_line[0][7], 16)
     code = int(regex_line[0][8], 16)
 
-    if pid in pids or to_proc in pids:
+    if pidt.is_relevant_pid(pid) or pidt.is_relevant_pid(to_proc):
         return EventBinderCall(pid, ts, cpu, name, reply, to_proc, flags, code)
     else:
         return None

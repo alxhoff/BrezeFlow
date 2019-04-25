@@ -20,45 +20,39 @@ class PIDtracer:
 
         self.adb_device = adb_device
         self.name = name
-        self.mainPID = self.find_main_PID()
-        self.allAppPID = []
-        self.allAppPID.append(PID(0, "idle_proc", "idle_thread"))  # idle process
-        self.allSystemPID = []
-        self.allBinderPID = []
+        self.mainPID = self.find_main_pid()
+        self.app_pids = dict()
+        self.app_pids[0] = PID(0, "idle_proc", "idle_thread")
+        # self.app_pids.append(PID(0, "idle_proc", "idle_thread"))  # idle process
+        self.system_pids = dict()
+        self.binder_pids = dict()
+
         self.find_all_PID()
-        self.allAppPIDStrings = self.get_app_PID_strings()
-        self.allSystemPIDStrings = self.get_system_PID_strings()
-        self.allBinderPIDStrings = self.get_binder_PID_strings()
-        self.allPIDStrings = self.allAppPIDStrings + self.allSystemPIDStrings + self.allBinderPIDStrings
-        self.allPID = self.allAppPID + self.allSystemPID + self.allBinderPID
+
+        # self.allAppPIDStrings = self.get_app_PID_strings()
+        # self.allSystemPIDStrings = self.get_system_PID_strings()
+        # self.allBinderPIDStrings = self.get_binder_PID_strings()
+        # self.allPIDStrings = self.allAppPIDStrings + self.allSystemPIDStrings + self.allBinderPIDStrings
+        # self.allPID = self.allAppPID + self.allSystemPID + self.allBinderPID
 
     def __del__(self):
         self.logger.debug("PID tracer closed")
 
-    def get_app_PID_strings(self):
-        strings = []
-        for x, pid in enumerate(self.allAppPID):
-            strings.append(pid.pid)
-        return strings
+    def is_relevant_pid(self, pid):
+        if pid in self.app_pids:
+            return True
+        if pid in self.system_pids:
+            return True
+        if pid in self.binder_pids:
+            return True
+        return False
+    #
+    # def get_PID_string_index(self, pid_string):
+    #     for x, pid in enumerate(self.allPID):
+    #         if pid.pid == pid_string:
+    #             return x
 
-    def get_system_PID_strings(self):
-        strings = []
-        for x, pid in enumerate(self.allSystemPID):
-            strings.append(pid.pid)
-        return strings
-
-    def get_binder_PID_strings(self):
-        strings = []
-        for x, pid in enumerate(self.allBinderPID):
-            strings.append(pid.pid)
-        return strings
-
-    def get_PID_string_index(self, pid_string):
-        for x, pid in enumerate(self.allPID):
-            if pid.pid == pid_string:
-                return x
-
-    def find_main_PID(self):
+    def find_main_pid(self):
 
         res = self.adb_device.run_command("ps | grep " + self.name)
         if res == "":
@@ -71,7 +65,7 @@ class PIDtracer:
 
         return PID(pid, pname, "main")
 
-    def find_system_server_PIDs(self):
+    def find_system_server_pids(self):
         # Get all processes except the system_server itself
         res = self.adb_device.run_command("busybox ps -T | grep /system/bin")
         res = res.splitlines()
@@ -94,17 +88,15 @@ class PIDtracer:
                 tname = regex_line[0][2]
                 pname = regex_line[0][3]
 
-            self.allSystemPID.append(PID(pid, pname, tname))
+            self.system_pids[pid] = PID(pid, pname, tname)
+            # self.allSystemPID.append(PID(pid, pname, tname))
 
-    def find_binder_PIDs(self):
+    def find_binder_pids(self):
         # Get all processes except the system_server itself
         res = self.adb_device.run_command("busybox ps -T | grep {Binder:")
         res = res.splitlines()
 
         for line in res:
-            # skip non binder threads
-            if not re.search("(Binder)", line):
-                continue
             if line.isspace():
                 continue
             # remove grep process
@@ -116,9 +108,9 @@ class PIDtracer:
             tname = regex_find[0][1]
             pname = regex_find[0][3]
 
-            self.allBinderPID.append(PID(pid, pname, tname))
-            self.logger.debug("Found binder thread " + tname[0] + " with PID: " \
-                              + str(pid))
+
+            self.binder_pids[pid] = PID(pid, pname, tname)
+            # self.allBinderPID.append(PID(pid, pname, tname))
 
             # Check that parent threads are in system server threads. This catches threads
             # such as the media codec which is commonly used but is not a system service
@@ -126,12 +118,12 @@ class PIDtracer:
             parent_pid = int(regex_find[0][2])
             # process will be first line as it's PID will be lower than child threads and as
             # such will be higher is list
-            if not any(proc.pid == parent_pid for proc in self.allSystemPID):
+            if not any(proc == parent_pid for proc in self.system_pids.keys()):
                 parent_thread = self.adb_device.run_command("busybox ps -T | grep " + str(parent_pid))
                 parent_thread = parent_thread.splitlines()
-                for line in parent_thread:
-                    if "grep" not in line:
-                        regex_find = re.findall("(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", line)
+                for l in parent_thread:
+                    if "grep" not in l:
+                        regex_find = re.findall("(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", l)
                         pid = int(regex_find[0][0])
                         pname = regex_find[0][3]
                         if not regex_find[0][2]:
@@ -139,9 +131,9 @@ class PIDtracer:
                         else:
                             tname = regex_find[0][2]
 
-                        self.allSystemPID.append(PID(pid, pname, tname))
-                        self.logger.debug("Found system thread " + tname[0] + " with PID: " \
-                                          + str(pid))
+                        self.system_pids[pid] = PID(pid, pname, tname)
+                        # self.allSystemPID.append(PID(pid, pname, tname))
+
 
     def find_child_binder_threads(self, PID):
 
@@ -155,28 +147,31 @@ class PIDtracer:
             child_PIDs.append(int(re.findall(" *(\d+)", line)[0]))
         return child_PIDs
 
-    def find_all_app_PID(self):
+    def find_all_app_pids(self):
 
         res = self.adb_device.run_command("busybox ps -T | grep " + self.name)
         res = res.splitlines()
 
         for line in res:
+            if re.search("(Binder)", line):
+                continue
             if line.isspace():
                 continue
             # remove grep process
             if re.search("(grep)", line):
                 continue
 
-            regex_line = re.findall("(\d+) \d+ +\d+:\d+ {(.+)} (.+)", line)
+            regex_line = re.findall("(\d+) \d+ +\d+:\d* {(.+)} (.+)", line)
 
             pid = int(regex_line[0][0])
             tname = regex_line[0][1]
             pname = regex_line[0][2]
 
-            self.allAppPID.append(PID(pid, pname, tname))
+            self.app_pids[pid] = PID(pid, pname, tname)
+            # self.allAppPID.append(PID(pid, pname, tname))
 
     def find_all_PID(self):
-        self.find_main_PID
-        self.find_all_app_PID()
-        self.find_system_server_PIDs()
-        self.find_binder_PIDs()
+        self.find_main_pid
+        self.find_all_app_pids()
+        self.find_system_server_pids()
+        self.find_binder_pids()

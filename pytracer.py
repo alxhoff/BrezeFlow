@@ -33,6 +33,8 @@ parser.add_argument("-u", "--manual-stop", action='store_true',
                     help="If set then tracing will need to be stopped manually")
 parser.add_argument("-c", "--tracecmd", type=str,
                     help="Opts to parse the give tracecmd binary over regex parsing ftrace logs(faster)")
+parser.add_argument("-te", "--test", action='store_true',
+                     help="Tests only a few hundred events to speed up testing")
 
 args = parser.parse_args()
 
@@ -248,10 +250,10 @@ def main():
                     os.path.join(os.path.dirname(os.path.realpath(__file__)),args.tracecmd))
             TCProcessor = TracecmdProcessor(args.tracecmd)
             TCProcessor.print_event_count()
-            tp.process_tracecmd(sys_metrics, args.multi, args.graph, TCProcessor)
+            tp.process_tracecmd(sys_metrics, args.multi, args.graph, TCProcessor, args.test)
         else:
             print "Loading trace data from file and processing"
-            tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi, args.graph)
+            tp.process_trace_file(args.filename + "_tracer.trace", sys_metrics, args.multi, args.graph, args.test)
     else:
         print "Creating tracer and running"
         tracer = Tracer(adb,
@@ -263,7 +265,7 @@ def main():
         tracer.runTracer(args.manual_stop)
         if args.trace is False:
             "Processing trace"
-            tp.process_tracer(tracer, args.multi, args.graph)
+            tp.process_tracer(tracer, args.multi, args.graph, args.test)
         else:
             print "Skipping processing of trace"
 
