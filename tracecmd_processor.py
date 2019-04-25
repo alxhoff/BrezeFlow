@@ -80,9 +80,11 @@ class TracecmdProcessor:
             elif prev_state_int == 512:
                 prev_state = 'P'
 
+            name = event.str_field("prev_comm")
             next_pid = event.num_field("next_pid")
+            next_name = event.str_field("next_comm")
             self.processed_events.append(EventSchedSwitch(event.pid, event.ts / 1000,
-                                event.cpu, event.name, prev_state, next_pid))
+                                event.cpu, name, prev_state, next_pid, next_name))
         elif event.name == "cpu_idle":
             self.event_count.cpu_idle += 1
 

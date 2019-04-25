@@ -53,10 +53,11 @@ class Event:
 
 class EventSchedSwitch(Event):
 
-    def __init__(self, pid, ts, cpu, name, prev_state, next_pid):
+    def __init__(self, pid, ts, cpu, name, prev_state, next_pid, next_name):
         Event.__init__(self, pid, ts, cpu, name)
         self.prev_state = prev_state
         self.next_pid = next_pid
+        self.next_name = next_name
 
 
 class EventFreqChange(Event):
@@ -270,7 +271,7 @@ class TaskNode:
                 " CPU: " + str(event.cpu) + "\n" + str(event.pid)
                 + " ==> " + str(event.next_pid)
                 + "\nPrev state: " + str(event.prev_state)
-                + "\n" + str(event.name) + "\n"
+                + "\n" + event.name + " --> " + event.next_name + "\n"
                 + str(event.__class__.__name__),
                 fillcolor='bisque1', style='filled', shape='box')
         elif isinstance(event, EventBinderCall) and binder_send is False:
@@ -283,6 +284,8 @@ class TaskNode:
 
         # create graph edge if not the first job
         if len(self.events) >= 2 and binder_send is False:
+            if self.events[-2] == self.events[-1]:
+                print "wait here"
             self.graph.add_edge(self.events[-2], self.events[-1], color='violet', dir='forward')
 
     def finished(self):
