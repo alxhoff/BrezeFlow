@@ -588,7 +588,7 @@ class ProcessBranch:
             # create new task
             self.tasks.append(TaskNode(self.graph, self.pid))
             # add current event
-            self.tasks[-1].add_job(event)
+            self.tasks[-1].add_job(event, subgraph=subgraph)
 
             # set task to running
             self.active = True
@@ -605,7 +605,7 @@ class ProcessBranch:
                 event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value and \
                 event.pid not in self.pidtracer.binder_pids:
 
-            self.tasks[-1].add_job(event)
+            self.tasks[-1].add_job(event, subgraph=subgraph)
             self.tasks[-1].finished()
             self.active = False
 
@@ -660,7 +660,7 @@ class ProcessBranch:
             return
 
         # all other job types just need to get added to the task
-        self.tasks[-1].add_job(event)
+        self.tasks[-1].add_job(event, subgraph=subgraph)
 
 
 """ Binder transactions are sometimes directed to the parent binder thread of a
@@ -826,7 +826,7 @@ class ProcessTree:
                                 self.process_branches[task.binder_thread].tasks[-1],
                                 color='palevioletred3', dir='forward', style='bold')
 
-                            process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
+                            process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                             # edge from binder thread to next task
                             self.graph.add_edge(
@@ -840,7 +840,7 @@ class ProcessTree:
                             del self.pending_binder_tasks[x]
 
                     if not binder_response:
-                        process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN)
+                        process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                 except KeyError:
                     pass
