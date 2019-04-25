@@ -1,6 +1,6 @@
 from tracecmd import *
 from traceprocessor import *
-from metrics import TempLogEntry
+
 
 class EventCounts:
 
@@ -84,13 +84,13 @@ class TracecmdProcessor:
             next_pid = event.num_field("next_pid")
             next_name = event.str_field("next_comm")
             self.processed_events.append(EventSchedSwitch(event.pid, event.ts / 1000,
-                                event.cpu, name, prev_state, next_pid, next_name))
+                                                          event.cpu, name, prev_state, next_pid, next_name))
         elif event.name == "cpu_idle":
             self.event_count.cpu_idle += 1
 
             state = event.num_field("state")
             self.processed_events.append(EventIdle(event.ts / 1000, event.cpu, event.name,
-                                state))
+                                                   state))
         elif event.name == "update_cpu_metric":
             self.event_count.update_cpu_metric += 1
             print "wait here"
@@ -100,7 +100,7 @@ class TracecmdProcessor:
             CPU = event.num_field("cpu")
             freq = event.num_field("freq") * 1000
             self.processed_events.append(EventFreqChange(event.pid, event.ts / 1000,
-                        event.cpu, freq, 0, CPU))
+                                                         event.cpu, freq, 0, CPU))
 
         elif event.name == "binder_transaction":
             self.event_count.binder_transaction += 1
@@ -113,17 +113,7 @@ class TracecmdProcessor:
                 to_proc = event.num_field("to_proc")
 
             self.processed_events.append(EventBinderCall(event.pid, event.ts / 1000,
-                                event.cpu, event.name, reply, to_proc, flags, code))
-        elif event.name == "mali_utilization_stats":
-            return
-            # self.event_count.mali_utilization_stats += 1
-            #
-            # util = event.num_field("util")
-            # freq = event.num_field("norm_freq")
-            # if freq is None:
-            #     print "wait here"
-            # self.processed_events.append(EventMaliUtil(event.pid, event.ts / 1000, event.cpu,
-            #                     util, freq))
+                                                         event.cpu, event.name, reply, to_proc, flags, code))
         elif event.name == "mali":
             self.event_count.mali += 1
 
@@ -144,4 +134,4 @@ class TracecmdProcessor:
             GPU = event.num_field("t4") / 1000
 
             self.processed_events.append(EventTempInfo(event.ts / 1000, big0,
-                                            big1, big2, big3, little, GPU))
+                                                       big1, big2, big3, little, GPU))

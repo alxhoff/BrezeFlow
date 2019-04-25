@@ -6,6 +6,7 @@ from enum import Enum
 
 from xu3_profile import XU3RegressionConstants
 
+
 class TempLogEntry:
 
     def __init__(self, ts, big0, big1, big2, big3, little, gpu):
@@ -250,7 +251,7 @@ class SystemMetrics:
         self.gpu_freq = self.get_GPU_freq()
         self.gpu_util = self.get_GPU_util()
         self.sys_util = SystemUtilization(self.core_count)
-        self.sys_temps = SystemTemps(2, 4) #TODO remove magic numbers
+        self.sys_temps = SystemTemps(2, 4)  # TODO remove magic numbers
         self.unprocessed_temps = []
         self.save_to_file(filename)
 
@@ -335,7 +336,6 @@ class SystemMetrics:
     # Core of -1 is GPU
     def get_temp(self, ts, core):
         # If time is before first temp recording then default to fire temp recording
-        # TODO index error checking
         try:
             if ts <= self.sys_temps.temps[0].time:
                 if core == -1:
@@ -359,6 +359,7 @@ class SystemMetrics:
                 else:
                     return self.sys_temps.temps[ts - self.sys_temps.initial_time].big[core % 4]
         except Exception:
+            print "Temperature cound not be retrieved for time %d" % ts
             sys.exit(1)
 
     def compile_temps_table(self):
@@ -367,7 +368,7 @@ class SystemMetrics:
 
         for i, event in enumerate(self.unprocessed_temps[:-1]):
             for t in range(self.unprocessed_temps[i].time - self.sys_temps.initial_time,
-                           self.unprocessed_temps[i+1].time - self.sys_temps.initial_time):
+                           self.unprocessed_temps[i + 1].time - self.sys_temps.initial_time):
                 self.sys_temps.temps.append(event)
 
         # append final temp event as this will be for all times > than last event

@@ -1,20 +1,15 @@
 import multiprocessing as multip
 import re
-import sys
-import time
 
 import xlsxwriter
 
 from event import *
 from grapher import *
 
+
 class TraceProcessor:
 
     def __init__(self, PIDt, filename):
-        logging.basicConfig(filename="pytracer.log",
-                            format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug("Trace processor created")
         self.PIDt = PIDt
         self.filename = filename
 
@@ -30,7 +25,6 @@ class TraceProcessor:
 
         f = open(output_filename, 'w')
         f.writelines(filtered)
-        self.logger.debug("Written filtered lines to: " + output_filename)
         f.close()
 
     def write_to_xlsx(self, processed_events, filename):
@@ -58,7 +52,6 @@ class TraceProcessor:
 
         idle_state_col = 12
 
-        wake_pid_col = 13
         wake_event_col = 14
 
         output_worksheet.write_string(0, time_col, "Time")
@@ -89,8 +82,6 @@ class TraceProcessor:
                                               cpu_col, event.cpu)
                 output_worksheet.write_string(start_row,
                                               wake_event_col, "X")
-                self.logger.debug("Wakeup event added to row: " +
-                                  str(event.time - start_time + 1))
                 start_row += 1
 
             elif isinstance(event, EventSchedSwitch):
@@ -106,9 +97,6 @@ class TraceProcessor:
                                               prev_state_col, event.prev_state)
                 output_worksheet.write_number(start_row,
                                               next_pid_col, event.next_pid)
-
-                self.logger.debug("Switch event added to row: " +
-                                  str(event.time - start_time + 1))
                 start_row += 1
 
             elif isinstance(event, EventFreqChange):
@@ -122,8 +110,6 @@ class TraceProcessor:
                                               freq_load_col, event.util)
                 output_worksheet.write_number(start_row,
                                               cpu_col, event.cpu)
-                self.logger.debug("Freq event added to row: " +
-                                  str(event.time - start_time + 1))
                 start_row += 1
 
             elif isinstance(event, EventIdle):
@@ -135,8 +121,6 @@ class TraceProcessor:
                                               cpu_col, event.cpu)
                 output_worksheet.write_number(start_row,
                                               idle_state_col, event.state)
-                self.logger.debug("Idle event added to row: " +
-                                  str(event.time - start_time + 1))
                 start_row += 1
             elif isinstance(event, EventBinderCall):
                 output_worksheet.write_number(start_row,
@@ -156,18 +140,13 @@ class TraceProcessor:
                 output_worksheet.write_number(start_row,
                                               binder_code_col, event.code)
                 start_row += 1
-            else:
-                self.logger.debug("Unknown event: " + str(event))
 
         output_workbook.close()
 
     def process_trace_file(self, filename, metrics, multi, draw, test):
         try:
             f = open(filename, "r")
-            self.logger.debug("Tracer " + filename + " opened for \
-                    processing ")
         except IOError:
-            self.logger.error("Could not open trace file" + filename)
             sys.exit("Tracer " + filename + " unable to be opened for processing")
 
         # read temps from file
@@ -179,17 +158,13 @@ class TraceProcessor:
         # open trace
         try:
             f = open(tracer.filename, "r")
-            self.logger.debug("Tracer " + tracer.filename + " opened for \
-                    processing ")
         except IOError:
-            self.logger.error("Could not open trace file" + tracer.filename)
             sys.exit("Tracer " + tracer.filename + " unable to be opened for processing")
 
         self.process_trace(tracer.metrics, multi, draw, filename=f, test=test)
 
     def process_tracecmd(self, metrics, multi, draw, TCProcessor, test):
         self.process_trace(metrics, multi, draw, tracecmd=TCProcessor, test=test)
-
 
     def process_trace(self, metrics, multi, draw, tracecmd=None, filename=None, test=None):
         process_start_time = time.time()
@@ -225,8 +200,7 @@ class TraceProcessor:
                 poolv.close()
                 poolv.join()
 
-        if processed_events == []:
-            self.logger.debug("Processing trace failed")
+        if not processed_events:
             sys.exit("Processing trace failed")
 
         print ("Regexing trace took %s seconds" % (time.time() - start_time))
@@ -279,11 +253,11 @@ class TraceProcessor:
         print "Processing events"
         if test:
             for x, event in enumerate(processed_events[:300]):
-                print str(x) + "/" + str(num_events) + " " + str(round(float(x)/num_events * 100, 2)) + "%\r",
+                print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
                 process_tree.handle_event(event)
         else:
             for x, event in enumerate(processed_events):
-                print str(x) + "/" + str(num_events) + " " + str(round(float(x)/num_events * 100, 2)) + "%\r",
+                print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
                 process_tree.handle_event(event)
         print ("All events handled in %s seconds" % (time.time() - start_time))
 
@@ -309,12 +283,6 @@ def keep_PID_line(pids, line):
 
 def process_raw_line(pidt, line):
     regex_line = re.findall(": ([a-z_]+): ", line)
-
-    # if regex_line[0] == "sched_wakeup" in line:
-    #     # TODO customized regex
-    #     if not keep_PID_line(pids, line):
-    #         return None
-    #     return process_sched_wakeup(line)
 
     try:
         if regex_line[0] == "sched_switch" in line:
