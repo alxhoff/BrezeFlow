@@ -21,21 +21,21 @@ class Core:
 class GovStatus:
 
     def GetCores(self):
-        cpus = self.adbIface.run_command(
+        cpus = self.adbIface.command(
                 "ls /sys/devices/system/cpu | busybox grep -E 'cpu[0-9]+'")
         cpus = cpus.splitlines()
         self.core_count = len(cpus)
         for x in cpus:
             self.SetCoreOn(x)
-            core_freq = int(self.adbIface.run_command(
+            core_freq = int(self.adbIface.command(
                     "cat /sys/devices/system/cpu/" + x + "/cpufreq/cpuinfo_cur_freq"))
-            core_type = int(self.adbIface.run_command(
+            core_type = int(self.adbIface.command(
                     "cat /sys/devices/system/cpu/" + x + "/topology/physical_package_id"))
             if core_type is 0:
-                freqs = self.adbIface.run_command(
+                freqs = self.adbIface.command(
                     "cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/cpu_freq_table").splitlines()[0].split()
             else:
-                freqs = self.adbIface.run_command(
+                freqs = self.adbIface.command(
                     "cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/kfc_freq_table").splitlines()[0].split()
             self.cores.append(Core(x, core_freq, freqs, 1, core_type))
 
@@ -51,17 +51,17 @@ class GovStatus:
                 self.SetCoreOn(self.cores[x].name)
                 command = "echo " + str(f) + " > /sys/devices/system/cpu/" \
                     + self.cores[x].name + "/cpufreq/scaling_min_freq"
-                self.adbIface.run_command(command)
+                self.adbIface.command(command)
                 command = "echo " + str(f) + " > /sys/devices/system/cpu/" \
                     + self.cores[x].name + "/cpufreq/scaling_max_freq"
-                self.adbIface.run_command(command)
+                self.adbIface.command(command)
 
     def SetCoreOn(self, core):
-        self.adbIface.run_command(
+        self.adbIface.command(
                 "echo 1 > /sys/devices/system/cpu/" + core + "/online")
 
     def SetCoreOff(self, core):
-        self.adbIface.run_command(
+        self.adbIface.command(
                 "echo 0 > /sys/devices/system/cpu/" + core + "/online")
 
     def DisconnectADB(self):
@@ -75,9 +75,9 @@ class GovStatus:
 
     def __init__(self):
         self.adbIface = adbInterface();
-        self.adbIface.run_command(
+        self.adbIface.command(
                 "echo interactive > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
-        self.adbIface.run_command(
+        self.adbIface.command(
                 "echo interactive > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor")
         self.cores = []
         self.GetCores()

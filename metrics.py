@@ -291,14 +291,14 @@ class SystemMetrics:
                     self.gpu_util = int(row[0])
 
     def get_core_count(self):
-        return int(self.adb.run_command("nproc"))
+        return int(self.adb.command("nproc"))
 
     def get_core_freqs(self):
         frequencies = []
         for core in range(self.core_count):
             frequencies.append(
-                int(self.adb.run_command("cat /sys/devices/system/cpu/cpu"
-                                         + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
+                int(self.adb.command("cat /sys/devices/system/cpu/cpu"
+                                     + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
         return frequencies
 
     def get_core_utils(self):
@@ -307,10 +307,10 @@ class SystemMetrics:
         return loads
 
     def get_GPU_freq(self):
-        return int(self.adb.run_command("cat /sys/class/misc/mali0/device/clock"))
+        return int(self.adb.command("cat /sys/class/misc/mali0/device/clock"))
 
     def get_GPU_util(self):
-        return int(self.adb.run_command("cat /sys/class/misc/mali0/device/utilization"))
+        return int(self.adb.command("cat /sys/class/misc/mali0/device/utilization"))
 
     def get_CPU_core_freq(self, core):
         return self.core_freqs[core]

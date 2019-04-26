@@ -43,7 +43,7 @@ class PIDtracer:
 
     def find_main_pid(self):
 
-        res = self.adb_device.run_command("ps | grep " + self.name)
+        res = self.adb_device.command("ps | grep " + self.name)
         if res == "":
             self.logger.error("No process running matching given process name")
             sys.exit('Need valid application name')
@@ -56,7 +56,7 @@ class PIDtracer:
 
     def find_system_server_pids(self):
         # Get all processes except the system_server itself
-        res = self.adb_device.run_command("busybox ps -T | grep /system/bin")
+        res = self.adb_device.command("busybox ps -T | grep /system/bin")
         res = res.splitlines()
 
         for line in res:
@@ -79,7 +79,7 @@ class PIDtracer:
 
     def find_binder_pids(self):
         # Get all processes except the system_server itself
-        res = self.adb_device.run_command("busybox ps -T | grep {Binder:")
+        res = self.adb_device.command("busybox ps -T | grep {Binder:")
         res = res.splitlines()
 
         for line in res:
@@ -101,7 +101,7 @@ class PIDtracer:
             # process will be first line as it's PID will be lower than child threads and as
             # such will be higher is list
             if not any(proc == parent_pid for proc in self.system_pids.keys()):
-                parent_thread = self.adb_device.run_command("busybox ps -T | grep " + str(parent_pid))
+                parent_thread = self.adb_device.command("busybox ps -T | grep " + str(parent_pid))
                 parent_thread = parent_thread.splitlines()
                 for l in parent_thread:
                     if "grep" not in l:
@@ -117,7 +117,7 @@ class PIDtracer:
 
     def find_child_binder_threads(self, PID):
 
-        res = self.adb_device.run_command("busybox ps -T | grep Binder | grep " + str(PID))
+        res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(PID))
         res = res.splitlines()
 
         child_pids = []
@@ -129,7 +129,7 @@ class PIDtracer:
 
     def find_all_app_pids(self):
 
-        res = self.adb_device.run_command("busybox ps -T | grep " + self.name)
+        res = self.adb_device.command("busybox ps -T | grep " + self.name)
         res = res.splitlines()
 
         for line in res:

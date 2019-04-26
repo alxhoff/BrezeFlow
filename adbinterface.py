@@ -31,23 +31,23 @@ class adbInterface:
         self.device.Close()
         self.logger.debug("ADB interface closed")
 
-    def run_command(self, command):
+    def command(self, command):
         self.logger.debug(command)
         return self.device.Shell(command)
 
-    def write_to_file(self, filename, contents):
+    def write_file(self, filename, contents):
         command = 'echo ' + contents + ' > ' + filename
         self.device.Shell(command)
 
     def clear_file(self, filename):
-        self.write_to_file(filename, "")
+        self.write_file(filename, "")
         self.logger.debug("File " + filename + " cleared")
 
-    def append_to_file(self, filename, contents):
+    def append_file(self, filename, contents):
         command = 'echo ' + contents + ' >> ' + filename
         self.device.Shell(command)
 
-    def read_from_file(self, filename):
+    def read_file(self, filename):
         return self.device.Pull(filename)
 
     def pull_file(self, target_file, dest_filename):
