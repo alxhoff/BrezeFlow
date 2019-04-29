@@ -6,6 +6,9 @@ __pycache__/
 
 #logs and traces
 *.log
+*.dat
+*.xdot
+*.csv#
 *.trace*
 *.csv
 

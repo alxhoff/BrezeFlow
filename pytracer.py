@@ -1,6 +1,6 @@
 import argparse
 import os
-
+import re
 from adbinterface import *
 from metrics import *
 from pidtrace import PIDtracer
@@ -18,10 +18,6 @@ parser.add_argument("-f", "--filename", type=str, default="output",
                     help="Specify the name of the output trace file")
 parser.add_argument("-e", "--events", required=True, type=str,
                     help="Events that are to be traced")
-parser.add_argument("-p", "--processor", action='store_true',
-                    help="If the tool should just process and not trace")
-parser.add_argument("-t", "--trace", action='store_true',
-                    help="Only traces, does not process trace")
 parser.add_argument("-s", "--skip-clear", action='store_true',
                     help="Skip clearing trace settings")
 parser.add_argument("-g", "--draw", action='store_true',
@@ -50,6 +46,7 @@ class Tracer:
         self.trace_type = trace_type
         self.functions = functions
         self.events = events
+        self.start_time = 0
         self.duration = duration
 
     def setTracing(self, on=True):
@@ -59,6 +56,10 @@ class Tracer:
             self.adb.write_file(self.ftrace_path + "tracing_on", "0")
 
     def traceForTime(self, duration, manual):
+        # Get timestamp when test started
+        sys_time = self.adb.command("cat /proc/uptime")
+        self.start_time = int(float(re.findall("(\d+.\d{2})", sys_time)[0]) * 1000000)
+
         start_time = time.time()
         self.setTracing(True)
         while (time.time() - start_time) < duration:
@@ -148,32 +149,30 @@ def main():
     tp = TraceProcessor(pidtracer, args.filename)
     sys_metrics = SystemMetrics(adb, args.filename)
 
-    if args.processor is not True:
-        print "Creating tracer and running"
+    print "Creating tracer and running"
 
-        tracer = Tracer(adb,
-                        args.filename,
-                        metrics=sys_metrics,
-                        events=args.events.split(','),
-                        duration=args.duration
-                        )
-        # Start syslogger
-        sys_logger = SysLogger(adb)
-        sys_logger.start()
-        tracer.runTracer(args.manual_stop)
-        sys_logger.stop()
-        tracer.getTraceResults()
+    tracer = Tracer(adb,
+                    args.filename,
+                    metrics=sys_metrics,
+                    events=args.events.split(','),
+                    duration=args.duration
+                    )
+    # Start syslogger
+    sys_logger = SysLogger(adb)
+    sys_logger.start()
+    tracer.runTracer(args.manual_stop)
+    sys_logger.stop()
+    tracer.getTraceResults()
 
-    if args.trace is not True:
-        print "Loading tracecmd data and processing"
+    print "Loading tracecmd data and processing"
 
-        sys_metrics.load_from_file(args.filename)
+    sys_metrics.load_from_file(args.filename)
 
-        dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.app + ".dat")
+    dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.app + ".dat")
 
-        TCProcessor = TracecmdProcessor(dat_path)
-        TCProcessor.print_event_count()
-        tp.process_trace(sys_metrics, args.draw, TCProcessor, args.test, args.subgraph)
+    TCProcessor = TracecmdProcessor(dat_path)
+    TCProcessor.print_event_count()
+    tp.process_trace(sys_metrics, TCProcessor, tracer.start_time, args.draw, args.test, args.subgraph)
 
 
 if __name__ == '__main__':

@@ -172,7 +172,7 @@ class GPUUtilizationTable(UtilizationTable):
         energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
         return energy
 
-    def calc_GPU_power(self, start_time, finish_time):
+    def calc_GPU_power(self): #, start_time, finish_time):
 
         energy = 0
 
@@ -233,7 +233,7 @@ class SystemUtilization:
 
 class SystemTemps:
 
-    def __init__(self, cluster_count, cluster_cores):
+    def __init__(self):
         self.temps = []
         self.initial_time = 0
         self.end_time = 0
@@ -251,7 +251,7 @@ class SystemMetrics:
         self.gpu_freq = self.get_GPU_freq()
         self.gpu_util = self.get_GPU_util()
         self.sys_util = SystemUtilization(self.core_count)
-        self.sys_temps = SystemTemps(2, 4)  # TODO remove magic numbers
+        self.sys_temps = SystemTemps()  # TODO remove magic numbers
         self.unprocessed_temps = []
         self.save_to_file(filename)
 
@@ -359,7 +359,7 @@ class SystemMetrics:
                 else:
                     return self.sys_temps.temps[ts - self.sys_temps.initial_time].big[core % 4]
         except Exception:
-            print "Temperature cound not be retrieved for time %d" % ts
+            print "Temperature could not be retrieved for time %d" % ts
             sys.exit(1)
 
     def compile_temps_table(self):

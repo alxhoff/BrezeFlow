@@ -8,7 +8,8 @@ class TraceProcessor:
         self.pidt = pidt
         self.filename = filename
 
-    def process_trace(self, metrics, draw, tracecmd=None, test=None, subgraph=False):
+    def process_trace(self, metrics, tracecmd, duration, draw=None, test=None, subgraph=False):
+
         process_start_time = time.time()
         print "Processing trace"
 
@@ -19,6 +20,8 @@ class TraceProcessor:
 
         # generate pointers to most recent nodes for each PID (branch heads)
         process_tree = ProcessTree(self.pidt, metrics)
+        trace_start_time = processed_events[0].time
+        trace_finish_time = trace_start_time + duration * 1000000
 
         # Create CPU core utilization trees first
         start_time = time.time()
@@ -27,7 +30,8 @@ class TraceProcessor:
         length = len(processed_events)
         while i < length:
             if isinstance(processed_events[i], EventIdle) or isinstance(processed_events[i], EventTempInfo):
-                process_tree.handle_event(processed_events[i], subgraph)
+                #TODO HERE
+                process_tree.handle_event(processed_events[i], subgraph, trace_start_time, trace_finish_time)
                 del processed_events[i]
                 length -= 1
             elif processed_events[i] is None:
@@ -63,11 +67,11 @@ class TraceProcessor:
         if test:
             for x, event in enumerate(processed_events[:300]):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
-                process_tree.handle_event(event, subgraph)
+                process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time)
         else:
             for x, event in enumerate(processed_events):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
-                process_tree.handle_event(event, subgraph)
+                process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time)
         print ("All events handled in %s seconds" % (time.time() - start_time))
 
         start_time = time.time()

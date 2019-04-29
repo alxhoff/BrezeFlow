@@ -748,10 +748,10 @@ class ProcessTree:
             writer.writerow([PL_PID, PL_PID_PNAME, PL_PID_TNAME, PL_TASK_COUNT,
                              PL_ENERGY, PL_DURATION])
 
-            total_energy = 0;
+            total_energy = 0
 
             # Calculate GPU energy
-            gpu_energy = self.metrics.sys_util.gpu_utils.calc_GPU_power(0, 0)
+            gpu_energy = self.metrics.sys_util.gpu_utils.calc_GPU_power()
             writer.writerow(["GPU", gpu_energy])
 
             total_energy += gpu_energy
@@ -772,7 +772,10 @@ class ProcessTree:
                                  branch.energy, branch.duration])
             writer.writerow([])
             writer.writerow(["Total Energy", total_energy])
-            writer.writerow(["Average wattage", total_energy / duration])
+            try:
+                writer.writerow(["Average wattage", total_energy / duration])
+            except ZeroDivisionError:
+                print "No events were recorded!"
 
             # Go through each branch and calculate the values energy values for each second
             energy_timeline = [0.0] * int(duration + 1)
@@ -785,7 +788,12 @@ class ProcessTree:
             for x, second in enumerate(energy_timeline):
                 writer.writerow([str(x), str(second)])
 
-    def handle_event(self, event, subgraph):
+    def handle_event(self, event, subgraph, start_time, finish_time):
+
+        # Ignore events that do not fall in the time window of interest
+        if event.time < start_time or event.time > finish_time:
+            return
+
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs
         if isinstance(event, EventWakeup):
