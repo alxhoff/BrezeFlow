@@ -7,9 +7,9 @@ class Grapher:
         self.pt = process_tree
 
     def draw_graph(self):
-        A = nx.nx_agraph.to_agraph(self.pt.graph)
-        A.graph_attr['splines'] = 'polyline'
-        A.graph_attr['packmode'] = 'node'
-        A.graph_attr['margin'] = 2
+        a_graph = nx.nx_agraph.to_agraph(self.pt.graph)
+        a_graph.graph_attr['splines'] = 'polyline'
+        a_graph.graph_attr['packmode'] = 'node'
+        a_graph.graph_attr['margin'] = 2
 
-        A.draw("/home/alxhoff/Downloads/test.xdot", format='xdot', prog='dot')
+        a_graph.draw("/home/alxhoff/Downloads/test.xdot", format='xdot', prog='dot')

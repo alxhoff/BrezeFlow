@@ -33,14 +33,19 @@ args = parser.parse_args()
 class Tracer:
     tracing_path = '/d/tracing/'
 
-    def __init__(self, adb_device, name, functions=[], events=[],
+    def __init__(self, adb_device, name, functions=None, events=None,
                  trace_type="nop", duration=1, metrics=None):
+
+        if functions is None:
+            functions = []
+        if events is None:
+            events = []
 
         self.metrics = metrics
         self.adb = adb_device
         self.name = name
         self.filename = os.path.dirname(os.path.realpath(__file__)) + '/' \
-                        + name + "_tracer.trace"
+            + name + "_tracer.trace"
         self.trace_type = trace_type
         self.functions = functions
         self.events = events
@@ -67,7 +72,7 @@ class Tracer:
     def _trace_for_time(self, duration):
         # Get timestamp when test started
         sys_time = self.adb.command("cat /proc/uptime")
-        self.start_time = int(float(re.findall("(\d+.\d{2})", sys_time)[0]) * 1000000)
+        self.start_time = int(float(re.findall(r"(\d+.\d{2})", sys_time)[0]) * 1000000)
 
         start_time = time.time()
         self._enable_tracing(True)
@@ -84,7 +89,7 @@ class Tracer:
         return self.adb.read_file(self.tracing_path + "available_events")
 
     def _set_available_events(self, events):
-        if events == []:
+        if events is None:
             return
 
         avail_events = self._get_available_events()

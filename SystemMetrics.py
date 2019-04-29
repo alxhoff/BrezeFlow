@@ -70,9 +70,9 @@ class CPUUtilizationTable(UtilizationTable):
                     self.utils[x + event.start_time] = util
         return
 
-    def get_util(self, time):
+    def get_util(self, ts):
 
-        event_time = time - self.initial_time - 1
+        event_time = ts - self.initial_time - 1
 
         try:
             return self.utils[event_time]
@@ -154,8 +154,8 @@ class GPUUtilizationTable(UtilizationTable):
         UtilizationTable.__init__(self)
         self.current_util = 0
 
-    def init(self, time, util):
-        self.initial_time = time
+    def init(self, ts, util):
+        self.initial_time = ts
         self.current_util = util
 
     def add_mali_event(self, event):
@@ -166,16 +166,16 @@ class GPUUtilizationTable(UtilizationTable):
         self.current_util = event.util
         self.last_event_time = event.time - self.initial_time
 
-    def get_GPU_cycle_energy(self, freq, util, temp):
-        EP = SystemMetrics.current_metrics.energy_profile
+    def get_gpu_cycle_energy(self, freq, util, temp):
+        energy_profile = SystemMetrics.current_metrics.energy_profile
         try:
-            voltage = EP.GPU_voltages[freq]
-        except Exception:
+            voltage = energy_profile.GPU_voltages[freq]
+        except IndexError:
             print "Attempted to get GPU voltage with invalid freq"
             sys.exit(1)
-        a1 = EP.GPU_reg_const["a1"]
-        a2 = EP.GPU_reg_const["a2"]
-        a3 = EP.GPU_reg_const["a3"]
+        a1 = energy_profile.GPU_reg_const["a1"]
+        a2 = energy_profile.GPU_reg_const["a2"]
+        a3 = energy_profile.GPU_reg_const["a3"]
         energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
         return energy
 
@@ -215,7 +215,7 @@ class GPUUtilizationTable(UtilizationTable):
 
         for x, event in enumerate(self.events):
             temp = SystemMetrics.current_metrics.get_temp(event.start_time, -1)
-            cycle_energy = self.get_GPU_cycle_energy(event.freq, event.util, temp) / event.freq
+            cycle_energy = self.get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
             cycles = event.duration * 0.000000001 * event.freq
             energy += cycle_energy * cycles
 
@@ -247,8 +247,8 @@ class SystemMetrics:
         self.core_count = self._get_core_count()
         self.core_freqs = self._get_core_freqs()
         self.core_utils = self._get_core_utils()
-        self.gpu_freq = self._get_GPU_freq()
-        self.gpu_util = self._get_GPU_util()
+        self.gpu_freq = self._get_gpu_freq()
+        self.gpu_util = self._get_gpu_util()
         self.sys_util = SystemUtilization(self.core_count)
         self.sys_temps = SystemTemps()  # TODO remove magic numbers
         self.unprocessed_temps = []
@@ -280,7 +280,7 @@ class SystemMetrics:
                     return self.sys_temps.temps[ts - self.sys_temps.initial_time].little
                 else:
                     return self.sys_temps.temps[ts - self.sys_temps.initial_time].big[core % 4]
-        except Exception:
+        except IndexError:
             print "Temperature could not be retrieved for time %d" % ts
             sys.exit(1)
 
@@ -312,14 +312,14 @@ class SystemMetrics:
         loads = [0] * self.core_count
         return loads
 
-    def _get_GPU_freq(self):
+    def _get_gpu_freq(self):
         return int(self.adb.command("cat /sys/class/misc/mali0/device/clock"))
 
-    def _get_GPU_util(self):
+    def _get_gpu_util(self):
         return int(self.adb.command("cat /sys/class/misc/mali0/device/utilization"))
 
-    def _get_CPU_core_freq(self, core):
+    def get_cpu_core_freq(self, core):
         return self.core_freqs[core]
 
-    def _get_GPU_core_freq(self):
+    def _get_gpu_core_freq(self):
         return self.gpu_freq

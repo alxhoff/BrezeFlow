@@ -46,7 +46,7 @@ class TraceProcessor:
         # TODO does it matter if the first event is a mali event?
         metrics.sys_util.gpu_utils.init(processed_events[0].time, metrics.gpu_util)
 
-        # compile cluster utilizations
+        # Compile cluster utilizations
         start_time = time.time()
         print "Compiling cluster util tables"
         for x, cluster in enumerate(metrics.sys_util.cluster_utils):

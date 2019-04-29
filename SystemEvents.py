@@ -212,7 +212,7 @@ class TaskNode:
                     del self.power_freq_events[:]
                 # remaining cycles
                 if event.time != self.calc_time:
-                    cpu_speed = SystemMetrics.current_metrics._get_CPU_core_freq(event.cpu)
+                    cpu_speed = SystemMetrics.current_metrics.get_cpu_core_freq(event.cpu)
 
                     new_cycles = int((event.time - self.calc_time) * 0.000000001 * cpu_speed)
                     self.util = SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)
@@ -237,16 +237,16 @@ class TaskNode:
         # add event node to task sub-graph
         if subgraph:
             if isinstance(event, EventSchedSwitch):
-                self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
-                                                 " CPU: " + str(event.cpu) + "\n" + str(event.pid)
+                self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:]
+                                                 + " CPU: " + str(event.cpu) + "\n" + str(event.pid)
                                                  + " ==> " + str(event.next_pid)
                                                  + "\nPrev state: " + str(event.prev_state)
                                                  + "\n" + event.name + " --> " + event.next_name + "\n"
                                                  + str(event.__class__.__name__),
                                     fillcolor='bisque1', style='filled', shape='box')
             elif isinstance(event, EventBinderCall) and binder_send is False:
-                self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
-                                                 " CPU: " + str(event.cpu) + "\n" + str(event.pid)
+                self.graph.add_node(event, label=str(event.time)[:-6] + "." + str(event.time)[-6:]
+                                                 + " CPU: " + str(event.cpu) + "\n" + str(event.pid)
                                                  + " ==> " + str(event.dest_pid)
                                                  + "\n" + str(event.name)
                                                  + "\n" + str(event.__class__.__name__),
@@ -256,10 +256,10 @@ class TaskNode:
             if len(self.events) >= 2 and binder_send is False:
                 self.graph.add_edge(self.events[-2], self.events[-1], color='violet', dir='forward')
 
-    def _finished(self):
+    def finish(self):
         self.finish_time = self.events[-1].time
 
-    def _add_cpu_gpu_event(self, ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util):
+    def add_cpu_gpu_event(self, ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util):
         self.power_freq_events.append(FreqPowerEvent(ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util))
 
     def _get_CPU_per_second_energy(self, cpu, freq, util, temp):
@@ -269,7 +269,7 @@ class TaskNode:
             if cpu in range(4):
                 try:
                     voltage = energy_profile.little_voltages[freq]
-                except Exception:
+                except IndexError:
                     print str(cpu)
                 a1 = energy_profile.little_reg_const["a1"]
                 a2 = energy_profile.little_reg_const["a2"]
@@ -279,7 +279,7 @@ class TaskNode:
             else:
                 try:
                     voltage = energy_profile.big_voltages[freq]
-                except Exception:
+                except IndexError:
                     print str(cpu)
                 a1 = energy_profile.big_reg_const["a1"]
                 a2 = energy_profile.big_reg_const["a2"]
@@ -452,7 +452,7 @@ class ProcessBranch:
                     task_stats.duration += task.duration
         return task_stats
 
-    def _sum_task_stats(self, start_time, finish_time):
+    def sum_task_stats(self, start_time, finish_time):
         task_stats = EnergyDuration()
         if start_time == 0:
             # sum all events
@@ -477,14 +477,14 @@ class ProcessBranch:
         try:
             dispatcher.connect(self._handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
                                sender=dispatcher.Any)
-        except Exception:
+        except IndexError:
             print "CPUs not init'd"
 
     def _disconnect_from_cpu_event(self, cpu):
         try:
             dispatcher.disconnect(self._handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
                                   sender=dispatcher.Any)
-        except Exception:
+        except IndexError:
             return
 
     def _connect_to_gpu_events(self):
@@ -494,13 +494,13 @@ class ProcessBranch:
     def _handle_cpu_freq_change(self):
         if self.tasks:
             try:
-                self.tasks[-1]._add_cpu_gpu_event(self.cpus[self.cpu].events[-1].time,
-                                                  self.cpu,
-                                                  self.cpus[self.cpu].prev_freq,
-                                                  self.cpus[self.cpu].prev_util,
-                                                  self.gpu.freq,
-                                                  self.gpu.util)
-            except Exception:
+                self.tasks[-1].add_cpu_gpu_event(self.cpus[self.cpu].events[-1].time,
+                                                 self.cpu,
+                                                 self.cpus[self.cpu].prev_freq,
+                                                 self.cpus[self.cpu].prev_util,
+                                                 self.gpu.freq,
+                                                 self.gpu.util)
+            except IndexError:
                 pass
 
     def _handle_cpu_num_change(self, event):
@@ -508,13 +508,13 @@ class ProcessBranch:
         if self.tasks:
             try:
                 if self.cpus[event.cpu].freq != self.cpus[self.cpu].freq:
-                    self.tasks[-1]._add_cpu_gpu_event(event.time,
-                                                      self.cpu,
-                                                      self.cpus[self.cpu].freq,
-                                                      self.cpus[self.cpu].util,
-                                                      self.gpu.freq,
-                                                      self.gpu.util)
-            except Exception:
+                    self.tasks[-1].add_cpu_gpu_event(event.time,
+                                                     self.cpu,
+                                                     self.cpus[self.cpu].freq,
+                                                     self.cpus[self.cpu].util,
+                                                     self.gpu.freq,
+                                                     self.gpu.util)
+            except IndexError:
                 pass
 
         self.cpu = event.cpu
@@ -550,7 +550,7 @@ class ProcessBranch:
             if event_type == JobType.SCHED_SWITCH_OUT and \
                     event.prev_state == ThreadState.INTERRUPTIBLE_SLEEP_S.value:
                 self.active = False
-                self.tasks[-1]._finished()
+                self.tasks[-1].finish()
                 return
 
             self.active = True
@@ -592,7 +592,7 @@ class ProcessBranch:
                 event.pid not in self.pidtracer.binder_pids:
 
             self.tasks[-1].add_job(event, subgraph=subgraph)
-            self.tasks[-1]._finished()
+            self.tasks[-1].finish()
             self.active = False
 
             self.graph.add_node(self.tasks[-1],
@@ -630,18 +630,17 @@ class ProcessBranch:
         elif event_type == JobType.BINDER_RECV:
 
             self.tasks[-1].add_job(event)
-            self.tasks[-1]._finished()
+            self.tasks[-1].finish()
 
             self.graph.add_node(self.tasks[-1],
-                                label=
-                                str(self.tasks[-1].events[0].time)[:-6]
-                                + "." + str(self.tasks[-1].events[0].time)[-6:]
-                                + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
-                                + "." + str(self.tasks[-1].events[-1].time)[-6:]
-                                + "\npid: " + str(event.pid)
-                                + "  dest PID: " + str(event.dest_pid)
-                                + "\n" + str(event.name)
-                                + "\n" + str(self.tasks[-1].__class__.__name__),
+                                label=str(self.tasks[-1].events[0].time)[:-6]
+                                      + "." + str(self.tasks[-1].events[0].time)[-6:]
+                                      + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
+                                      + "." + str(self.tasks[-1].events[-1].time)[-6:]
+                                      + "\npid: " + str(event.pid)
+                                      + "  dest PID: " + str(event.dest_pid)
+                                      + "\n" + str(event.name)
+                                      + "\n" + str(self.tasks[-1].__class__.__name__),
                                 fillcolor='coral', style='filled,bold', shape='box')
             return
 
@@ -750,7 +749,7 @@ class ProcessTree:
                 if branch.tasks == []:
                     del self.process_branches[x]
                     continue
-                branch_stats = branch._sum_task_stats(start_time, finish_time)
+                branch_stats = branch.sum_task_stats(start_time, finish_time)
                 branch.energy = branch_stats.energy
                 total_energy += branch.energy
                 branch.duration = branch_stats.duration
@@ -914,8 +913,7 @@ class ProcessTree:
                             process_branch.add_job(event, event_type=JobType.BINDER_RECV)
 
                             # add pending task
-                            self.pending_binder_tasks.append \
-                                (PendingBinderTask(transaction.send_event, event))
+                            self.pending_binder_tasks.append(PendingBinderTask(transaction.send_event, event))
 
                             # remove completed transaction
                             del self.pending_binder_transactions[x]

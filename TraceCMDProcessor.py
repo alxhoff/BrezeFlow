@@ -91,10 +91,10 @@ class TracecmdProcessor:
         elif event.name == "cpu_freq":
             self.event_count.cpu_freq += 1
 
-            cpu = event.num_field("cpu")
+            target_cpu = event.num_field("cpu")
             freq = event.num_field("freq") * 1000
             self.processed_events.append(EventFreqChange(event.pid, event.ts / 1000,
-                                                         event.cpu, freq, 0, cpu))
+                                                         event.cpu, freq, 0, target_cpu))
 
         elif event.name == "binder_transaction":
             self.event_count.binder_transaction += 1

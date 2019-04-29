@@ -24,16 +24,16 @@ class PIDTool:
 
         self._find_all_pid()
 
-    def find_child_binder_threads(self, PID):
+    def find_child_binder_threads(self, pid):
 
-        res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(PID))
+        res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(pid))
         res = res.splitlines()
 
         child_pids = []
         for line in res:
             if line.isspace():
                 continue
-            child_pids.append(int(re.findall(" *(\d+)", line)[0]))
+            child_pids.append(int(re.findall(r" *(\d+)", line)[0]))
         return child_pids
 
     def is_relevant_pid(self, pid):
@@ -51,7 +51,7 @@ class PIDTool:
         if res == "":
             sys.exit('Need valid application name')
 
-        regex_line = re.findall(" +(\d+) +\d+ +\d+ .+ ([^ ]+)$", res)
+        regex_line = re.findall(r" +(\d+) +\d+ +\d+ .+ ([^ ]+)$", res)
         pid = int(regex_line[0][0])
         pname = regex_line[0][1]
 
@@ -70,7 +70,7 @@ class PIDTool:
             if re.search("(grep)", line):
                 continue
 
-            regex_line = re.findall("(\d+) \d+ +\d+:\d+ ?({(.*)})? (.+)", line)
+            regex_line = re.findall(r"(\d+) \d+ +\d+:\d+ ?({(.*)})? (.+)", line)
             pid = int(regex_line[0][0])
             if regex_line[0][1] == "":
                 tname = pname = regex_line[0][3]
@@ -91,7 +91,7 @@ class PIDTool:
             if re.search("(grep)", line):
                 continue
 
-            regex_line = re.findall("(\d+) \d+ +\d+:\d+ {(Binder:(\d+)_.+)} (.+)", line)
+            regex_line = re.findall(r"(\d+) \d+ +\d+:\d+ {(Binder:(\d+)_.+)} (.+)", line)
             pid = int(regex_line[0][0])
             tname = regex_line[0][1]
             pname = regex_line[0][3]
@@ -108,7 +108,7 @@ class PIDTool:
                 parent_thread = parent_thread.splitlines()
                 for l in parent_thread:
                     if "grep" not in l:
-                        regex_line = re.findall("(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", l)
+                        regex_line = re.findall(r"(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", l)
                         pid = int(regex_line[0][0])
                         pname = regex_line[0][3]
                         if not regex_line[0][2]:
@@ -132,7 +132,7 @@ class PIDTool:
             if re.search("(grep)", line):
                 continue
 
-            regex_line = re.findall("(\d+) \d+ +\d+:\d* {(.+)} (.+)", line)
+            regex_line = re.findall(r"(\d+) \d+ +\d+:\d* {(.+)} (.+)", line)
 
             pid = int(regex_line[0][0])
             tname = regex_line[0][1]
@@ -141,7 +141,7 @@ class PIDTool:
             self.app_pids[pid] = PID(pid, pname, tname)
 
     def _find_all_pid(self):
-        self._find_main_pid
+        self._find_main_pid()
         self._find_all_app_pids()
         self._find_system_server_pids()
         self._find_binder_pids()
