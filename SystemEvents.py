@@ -738,7 +738,7 @@ class ProcessTree:
             total_energy = 0
 
             # Calculate GPU energy
-            gpu_energy = self.metrics.sys_util.gpu_utils.calc_GPU_power()
+            gpu_energy = self.metrics.sys_util.gpu_utils.calc_gpu_power()
             writer.writerow(["GPU", gpu_energy])
 
             total_energy += gpu_energy

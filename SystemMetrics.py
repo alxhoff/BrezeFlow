@@ -81,8 +81,6 @@ class CPUUtilizationTable(UtilizationTable):
 
     def add_idle_event(self, event):
         # First event
-        # TODO once the first event is found, account for the period before it (since beginnign)
-        #  that was probably the inverse state to it's current state
         if self.initial_time is 0:
             self.initial_time = event.time
             if event.state == 4294967295:
@@ -148,6 +146,19 @@ class TotalUtilizationTable(UtilizationTable):
         return
 
 
+def get_gpu_cycle_energy(freq, util, temp):
+    energy_profile = SystemMetrics.current_metrics.energy_profile
+    try:
+        voltage = energy_profile.GPU_voltages[freq]
+    except IndexError:
+        print "Attempted to get GPU voltage with invalid freq"
+        sys.exit(1)
+    a1 = energy_profile.GPU_reg_const["a1"]
+    a2 = energy_profile.GPU_reg_const["a2"]
+    a3 = energy_profile.GPU_reg_const["a3"]
+    energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
+    return energy
+
 class GPUUtilizationTable(UtilizationTable):
 
     def __init__(self):
@@ -166,20 +177,7 @@ class GPUUtilizationTable(UtilizationTable):
         self.current_util = event.util
         self.last_event_time = event.time - self.initial_time
 
-    def get_gpu_cycle_energy(self, freq, util, temp):
-        energy_profile = SystemMetrics.current_metrics.energy_profile
-        try:
-            voltage = energy_profile.GPU_voltages[freq]
-        except IndexError:
-            print "Attempted to get GPU voltage with invalid freq"
-            sys.exit(1)
-        a1 = energy_profile.GPU_reg_const["a1"]
-        a2 = energy_profile.GPU_reg_const["a2"]
-        a3 = energy_profile.GPU_reg_const["a3"]
-        energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
-        return energy
-
-    def calc_GPU_power(self):  # , start_time, finish_time):
+    def calc_gpu_power(self):  # , start_time, finish_time):
 
         energy = 0
 
@@ -215,7 +213,7 @@ class GPUUtilizationTable(UtilizationTable):
 
         for x, event in enumerate(self.events):
             temp = SystemMetrics.current_metrics.get_temp(event.start_time, -1)
-            cycle_energy = self.get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
+            cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
             cycles = event.duration * 0.000000001 * event.freq
             energy += cycle_energy * cycles
 
@@ -250,7 +248,7 @@ class SystemMetrics:
         self.gpu_freq = self._get_gpu_freq()
         self.gpu_util = self._get_gpu_util()
         self.sys_util = SystemUtilization(self.core_count)
-        self.sys_temps = SystemTemps()  # TODO remove magic numbers
+        self.sys_temps = SystemTemps()
         self.unprocessed_temps = []
 
         SystemMetrics.current_metrics = self

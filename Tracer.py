@@ -12,11 +12,11 @@ from TraceProcessor import TraceProcessor
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-a", "--app", required=True, type=str,
+parser.add_argument("-a", "--app", required=True,
                     help="Specifies the name of the game to be traced")
 parser.add_argument("-d", "--duration", required=True, type=float,
                     help="The duration to trace")
-parser.add_argument("-e", "--events", required=True, type=str,
+parser.add_argument("-e", "--events", required=True,
                     help="Events that are to be traced")
 parser.add_argument("-s", "--skip-clear", action='store_true',
                     help="Skip clearing trace settings")
