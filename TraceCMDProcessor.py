@@ -1,5 +1,5 @@
+from SystemEvents import *
 from tracecmd import *
-from TraceProcessor import *
 
 
 class EventCounts:
@@ -10,7 +10,6 @@ class EventCounts:
         self.update_cpu_metric = 0
         self.cpu_freq = 0
         self.binder_transaction = 0
-        self.mali_utilization_stats = 0
         self.mali = 0
         self.temp = 0
 
@@ -26,14 +25,7 @@ class TracecmdProcessor:
             sys.exit(1)
 
         self.event_count = EventCounts()
-        self.processed_trace = self.process_trace()
-
-    def process_trace(self):
-        event = self.trace.read_next_event()
-        self.handle_event(event)
-        while event:
-            event = self.trace.read_next_event()
-            self.handle_event(event)
+        self._process_trace()
 
     def print_event_count(self):
         print "Total events: " + str(self.event_count.sched_switch + self.event_count.cpu_idle
@@ -42,14 +34,19 @@ class TracecmdProcessor:
                                      self.event_count.mali)
         print "Sched switch: " + str(self.event_count.sched_switch)
         print "CPU idle: " + str(self.event_count.cpu_idle)
-        print "Update CPU metric: " + str(self.event_count.update_cpu_metric)
         print "CPU freq: " + str(self.event_count.cpu_freq)
         print "Binder transactions: " + str(self.event_count.binder_transaction)
-        print "Mali util: " + str(self.event_count.mali_utilization_stats)
         print "Mali: " + str(self.event_count.mali)
         print "Temp: " + str(self.event_count.temp)
 
-    def handle_event(self, event):
+    def _process_trace(self):
+        event = self.trace.read_next_event()
+        self._handle_event(event)
+        while event:
+            event = self.trace.read_next_event()
+            self._handle_event(event)
+
+    def _handle_event(self, event):
 
         if not event:
             return
@@ -91,15 +88,14 @@ class TracecmdProcessor:
             state = event.num_field("state")
             self.processed_events.append(EventIdle(event.ts / 1000, event.cpu, event.name,
                                                    state))
-        elif event.name == "update_cpu_metric":
-            self.event_count.update_cpu_metric += 1
+
         elif event.name == "cpu_freq":
             self.event_count.cpu_freq += 1
 
-            CPU = event.num_field("cpu")
+            cpu = event.num_field("cpu")
             freq = event.num_field("freq") * 1000
             self.processed_events.append(EventFreqChange(event.pid, event.ts / 1000,
-                                                         event.cpu, freq, 0, CPU))
+                                                         event.cpu, freq, 0, cpu))
 
         elif event.name == "binder_transaction":
             self.event_count.binder_transaction += 1
@@ -131,7 +127,7 @@ class TracecmdProcessor:
             big2 = event.num_field("t2") / 1000
             big3 = event.num_field("t3") / 1000
             little = (big0 + big1 + big2 + big3) / 4.0
-            GPU = event.num_field("t4") / 1000
+            gpu = event.num_field("t4") / 1000
 
             self.processed_events.append(EventTempInfo(event.ts / 1000, big0,
-                                                       big1, big2, big3, little, GPU))
+                                                       big1, big2, big3, little, gpu))

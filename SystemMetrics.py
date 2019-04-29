@@ -1,10 +1,14 @@
-import csv
 import sys
 import time
 
 from enum import Enum
 
 from xu3_profile import XU3RegressionConstants
+
+
+class IdleState(Enum):
+    is_idle = 0
+    is_not_idle = 1
 
 
 class TempLogEntry:
@@ -16,9 +20,12 @@ class TempLogEntry:
         self.gpu = gpu
 
 
-class IdleState(Enum):
-    is_idle = 0
-    is_not_idle = 1
+class SystemTemps:
+
+    def __init__(self):
+        self.temps = []
+        self.initial_time = 0
+        self.end_time = 0
 
 
 class UtilizationSlice:
@@ -172,7 +179,7 @@ class GPUUtilizationTable(UtilizationTable):
         energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
         return energy
 
-    def calc_GPU_power(self): #, start_time, finish_time):
+    def calc_GPU_power(self):  # , start_time, finish_time):
 
         energy = 0
 
@@ -220,10 +227,10 @@ class SystemUtilization:
     def __init__(self, core_count):
         self.core_utils = []
         self.cluster_utils = []
-        self.init_tables(core_count)
+        self._init_tables(core_count)
         self.gpu_utils = GPUUtilizationTable()
 
-    def init_tables(self, core_count):
+    def _init_tables(self, core_count):
         for x in range(core_count):
             self.core_utils.append(CPUUtilizationTable(x))
         # TODO remove magic number
@@ -231,107 +238,22 @@ class SystemUtilization:
             self.cluster_utils.append(TotalUtilizationTable())
 
 
-class SystemTemps:
-
-    def __init__(self):
-        self.temps = []
-        self.initial_time = 0
-        self.end_time = 0
-
-
 class SystemMetrics:
     current_metrics = None
 
-    def __init__(self, adb, filename):
+    def __init__(self, adb):
         self.adb = adb
         self.energy_profile = XU3RegressionConstants()
-        self.core_count = self.get_core_count()
-        self.core_freqs = self.get_core_freqs()
-        self.core_utils = self.get_core_utils()
-        self.gpu_freq = self.get_GPU_freq()
-        self.gpu_util = self.get_GPU_util()
+        self.core_count = self._get_core_count()
+        self.core_freqs = self._get_core_freqs()
+        self.core_utils = self._get_core_utils()
+        self.gpu_freq = self._get_GPU_freq()
+        self.gpu_util = self._get_GPU_util()
         self.sys_util = SystemUtilization(self.core_count)
         self.sys_temps = SystemTemps()  # TODO remove magic numbers
         self.unprocessed_temps = []
-        self.save_to_file(filename)
 
         SystemMetrics.current_metrics = self
-
-    def save_to_file(self, filename):
-        with open("/tmp/" + filename + "_metrics.csv", "w+") as f:
-            writer = csv.writer(f, delimiter=',')
-            writer.writerow([self.core_count])
-            core_freqs = []
-            core_utils = []
-            for i in range(self.core_count):
-                core_freqs.append(str(self.core_freqs[i]))
-                core_utils.append(str(self.core_utils[i]))
-            writer.writerow(core_freqs)
-            writer.writerow(core_utils)
-            writer.writerow([self.gpu_freq])
-            writer.writerow([self.gpu_util])
-
-    def load_from_file(self, filename):
-        with open("/tmp/" + filename + "_metrics.csv", "r") as f:
-            data = csv.reader(f)
-            self.core_freqs = []
-            self.core_utils = []
-            for x, row in enumerate(data):
-                if x == 0:
-                    self.core_count = int(row[0])
-                elif x == 1:
-                    for i in range(self.core_count):
-                        self.core_freqs.append(int(row[i]))
-                elif x == 2:
-                    for i in range(self.core_count):
-                        self.core_utils.append(int(row[i]))
-                elif x == 3:
-                    self.gpu_freq = int(row[0])
-                elif x == 4:
-                    self.gpu_util = int(row[0])
-
-    def get_core_count(self):
-        return int(self.adb.command("nproc"))
-
-    def get_core_freqs(self):
-        frequencies = []
-        for core in range(self.core_count):
-            frequencies.append(
-                int(self.adb.command("cat /sys/devices/system/cpu/cpu"
-                                     + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
-        return frequencies
-
-    def get_core_utils(self):
-        # TODO
-        loads = [0] * self.core_count
-        return loads
-
-    def get_GPU_freq(self):
-        return int(self.adb.command("cat /sys/class/misc/mali0/device/clock"))
-
-    def get_GPU_util(self):
-        return int(self.adb.command("cat /sys/class/misc/mali0/device/utilization"))
-
-    def get_CPU_core_freq(self, core):
-        return self.core_freqs[core]
-
-    def get_GPU_core_freq(self):
-        return self.gpu_freq
-
-    def write_core_freqs_to_file(self, filename):
-        with open(filename, "w+") as f:
-            data = f.read()
-            for x in range(self.core_count):
-                f.write(str(x) + " " + str(self.core_freqs[x]) + "\n" + data)
-            f.close()
-
-    def get_average_cpu_temp(self, entry):
-        temp = 0
-        for i in range(4):
-            temp += entry.cpus[i]
-        temp /= 4.0
-
-        return temp
 
     # Core of -1 is GPU
     def get_temp(self, ts, core):
@@ -373,3 +295,31 @@ class SystemMetrics:
 
         # append final temp event as this will be for all times > than last event
         self.sys_temps.temps.append(self.unprocessed_temps[-1])
+
+    def _get_core_count(self):
+        return int(self.adb.command("nproc"))
+
+    def _get_core_freqs(self):
+        frequencies = []
+        for core in range(self.core_count):
+            frequencies.append(
+                int(self.adb.command("cat /sys/devices/system/cpu/cpu"
+                                     + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
+        return frequencies
+
+    def _get_core_utils(self):
+        # TODO
+        loads = [0] * self.core_count
+        return loads
+
+    def _get_GPU_freq(self):
+        return int(self.adb.command("cat /sys/class/misc/mali0/device/clock"))
+
+    def _get_GPU_util(self):
+        return int(self.adb.command("cat /sys/class/misc/mali0/device/utilization"))
+
+    def _get_CPU_core_freq(self, core):
+        return self.core_freqs[core]
+
+    def _get_GPU_core_freq(self):
+        return self.gpu_freq

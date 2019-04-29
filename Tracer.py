@@ -1,12 +1,13 @@
 import argparse
 import os
 import re
-from ADBInterface import *
-from SystemMetrics import *
-from PIDTools import PIDtracer
+
+from ADBInterface import ADBInterface
+from PIDTools import PIDTool
+from SysLoggerInterface import SysLogger
+from SystemMetrics import SystemMetrics
 from TraceCMDProcessor import TracecmdProcessor
 from TraceProcessor import TraceProcessor
-from SysLoggerInterface import SysLogger
 
 parser = argparse.ArgumentParser()
 
@@ -14,16 +15,12 @@ parser.add_argument("-a", "--app", required=True, type=str,
                     help="Specifies the name of the game to be traced")
 parser.add_argument("-d", "--duration", required=True, type=float,
                     help="The duration to trace")
-parser.add_argument("-f", "--filename", type=str, default="output",
-                    help="Specify the name of the output trace file")
 parser.add_argument("-e", "--events", required=True, type=str,
                     help="Events that are to be traced")
 parser.add_argument("-s", "--skip-clear", action='store_true',
                     help="Skip clearing trace settings")
 parser.add_argument("-g", "--draw", action='store_true',
                     help="Enables the drawing of the generated graph")
-parser.add_argument("-u", "--manual-stop", action='store_true',
-                    help="If set then tracing will need to be stopped manually")
 parser.add_argument("-te", "--test", action='store_true',
                     help="Tests only a few hundred events to speed up testing")
 parser.add_argument("-sub", "--subgraph", action='store_true',
@@ -33,7 +30,7 @@ args = parser.parse_args()
 
 
 class Tracer:
-    ftrace_path = '/d/tracing/'
+    tracing_path = '/d/tracing/'
 
     def __init__(self, adb_device, name, functions=[], events=[],
                  trace_type="nop", duration=1, metrics=None):
@@ -49,130 +46,126 @@ class Tracer:
         self.start_time = 0
         self.duration = duration
 
-    def setTracing(self, on=True):
-        if on is True:
-            self.adb.write_file(self.ftrace_path + "tracing_on", "1")
-        else:
-            self.adb.write_file(self.ftrace_path + "tracing_on", "0")
+    def run_tracer(self):
 
-    def traceForTime(self, duration, manual):
+        if not args.skip_clear:
+            self._clear_tracer()
+            self.adb.clear_file(self.tracing_path + "set_event")
+        self._set_available_events(self.events)
+
+        self._set_available_tracer(self.trace_type)
+
+        self._trace_for_time(self.duration)
+
+    def _enable_tracing(self, on=True):
+        if on is True:
+            self.adb.write_file(self.tracing_path + "tracing_on", "1")
+        else:
+            self.adb.write_file(self.tracing_path + "tracing_on", "0")
+
+    def _trace_for_time(self, duration):
         # Get timestamp when test started
         sys_time = self.adb.command("cat /proc/uptime")
         self.start_time = int(float(re.findall("(\d+.\d{2})", sys_time)[0]) * 1000000)
 
         start_time = time.time()
-        self.setTracing(True)
+        self._enable_tracing(True)
         while (time.time() - start_time) < duration:
             pass
 
-        if not manual:
-            self.setTracing(False)
+        self._enable_tracing(False)
 
-    def getTraceResults(self):
+    def get_trace_results(self):
         self.adb.pull_file("/data/local/tmp/trace.dat", self.name + ".dat")
-        # out_file = open(self.filename, "w+")
-        # out_file.write(self.adb_device.read_from_file(self.ftrace_path + "trace"))
-        # out_file.close()
+        self.adb.pull_file("/d/tracing/trace", self.name + ".trace")
 
-    def _getAvailableEvents(self):
-        return self.adb.read_file(self.ftrace_path + "available_events")
+    def _get_available_events(self):
+        return self.adb.read_file(self.tracing_path + "available_events")
 
-    def setAvailableEvent(self, events):
+    def _set_available_events(self, events):
         if events == []:
             return
 
-        avail_events = self._getAvailableEvents()
+        avail_events = self._get_available_events()
 
         if isinstance(events, list):
             for f in range(0, len(events)):
                 if events[f] in avail_events:
-                    self.adb.append_file(self.ftrace_path + "set_event",
+                    self.adb.append_file(self.tracing_path + "set_event",
                                          events[f])
         else:
             if events in avail_events:
-                self.adb.append_file(self.ftrace_path + "set_event", events)
+                self.adb.append_file(self.tracing_path + "set_event", events)
 
-    def setEventFilter(self, event, filter_expression):
+    def _set_event_filter(self, event, filter_expression):
         event_dir = self.adb.command(
-            "find " + self.ftrace_path + "/events -name " + event)
+            "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return
 
-        self.adb.append_file(self.ftrace_path + event_dir + "/filter",
+        self.adb.append_file(self.tracing_path + event_dir + "/filter",
                              filter_expression)
 
-    def clearEventFilter(self, event):
+    def _clear_event_filter(self, event):
         event_dir = self.adb.command(
-            "find " + self.ftrace_path + "/events -name " + event)
+            "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return
 
-        self.adb.clear_file(self.ftrace_path + event_dir + "/filter")
+        self.adb.clear_file(self.tracing_path + event_dir + "/filter")
 
-    def getEventFormat(self, event):
+    def _get_event_format(self, event):
         event_dir = self.adb.command(
-            "find " + self.ftrace_path + "/events -name " + event)
+            "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return ""
 
-        return self.adb.read_file(self.ftrace_path
+        return self.adb.read_file(self.tracing_path
                                   + event_dir + "/format")
 
-    def getAvailableTracer(self):
-        return self.adb.read_file(self.ftrace_path + "available_tracers")
+    def _get_available_tracer(self):
+        return self.adb.read_file(self.tracing_path + "available_tracers")
 
-    def setAvailableTracer(self, tracer):
-        available_tracers = self.getAvailableTracer()
+    def _set_available_tracer(self, tracer):
+        available_tracers = self._get_available_tracer()
         if tracer in available_tracers:
-            self.adb.write_file(self.ftrace_path
+            self.adb.write_file(self.tracing_path
                                 + "current_tracer", tracer)
 
-    def clearTracer(self):
-        self.adb.write_file(self.ftrace_path + "current_tracer", "nop")
-        self.adb.clear_file(self.ftrace_path + "trace")
-
-    def runTracer(self, manual):
-
-        if not args.skip_clear:
-            self.clearTracer()
-            self.adb.clear_file(self.ftrace_path + "set_event")
-        self.setAvailableEvent(self.events)
-
-        self.setAvailableTracer(self.trace_type)
-
-        self.traceForTime(self.duration, manual)
+    def _clear_tracer(self):
+        self.adb.write_file(self.tracing_path + "current_tracer", "nop")
+        self.adb.clear_file(self.tracing_path + "trace")
 
 
 def main():
-    adb = adbInterface()
-    pidtracer = PIDtracer(adb, args.app)
-    tp = TraceProcessor(pidtracer, args.filename)
-    sys_metrics = SystemMetrics(adb, args.filename)
+    adb = ADBInterface()
+    pid_tool = PIDTool(adb, args.app)
+    race_processor = TraceProcessor(pid_tool, args.app)
+    sys_metrics = SystemMetrics(adb)
 
     print "Creating tracer and running"
 
     tracer = Tracer(adb,
-                    args.filename,
+                    args.app,
                     metrics=sys_metrics,
                     events=args.events.split(','),
                     duration=args.duration
                     )
+
     # Start syslogger
     sys_logger = SysLogger(adb)
     sys_logger.start()
-    tracer.runTracer(args.manual_stop)
+    tracer.run_tracer()
     sys_logger.stop()
-    tracer.getTraceResults()
+    tracer.get_trace_results()
 
     print "Loading tracecmd data and processing"
 
-    sys_metrics.load_from_file(args.filename)
-
     dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.app + ".dat")
 
-    TCProcessor = TracecmdProcessor(dat_path)
-    TCProcessor.print_event_count()
-    tp.process_trace(sys_metrics, TCProcessor, tracer.start_time, args.draw, args.test, args.subgraph)
+    tc_processor = TracecmdProcessor(dat_path)
+    tc_processor.print_event_count()
+    race_processor.process_trace(sys_metrics, tc_processor, tracer.start_time, args.draw, args.test, args.subgraph)
 
 
 if __name__ == '__main__':

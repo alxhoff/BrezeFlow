@@ -15,10 +15,6 @@ class SysLogger:
         self.adb = adb
         self.status = SysLoggerStatus.INIT
 
-    def _setup(self):
-        self.adb.command("./data/local/tmp/sys_logger.sh setup")
-        self.status = SysLoggerStatus.SETUP
-
     def start(self):
         self._setup()
         self.adb.command("./data/local/tmp/sys_logger.sh start")
@@ -28,6 +24,10 @@ class SysLogger:
         self.adb.command("./data/local/tmp/sys_logger.sh stop")
         self.status = SysLoggerStatus.STOP
         self._finish()
+
+    def _setup(self):
+        self.adb.command("./data/local/tmp/sys_logger.sh setup")
+        self.status = SysLoggerStatus.SETUP
 
     def _finish(self):
         self.adb.command("./data/local/tmp/sys_logger.sh finish")

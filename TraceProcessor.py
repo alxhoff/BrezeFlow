@@ -81,7 +81,7 @@ class TraceProcessor:
         if draw:
             start_time = time.time()
             draw_graph = Grapher(process_tree)
-            draw_graph.drawGraph()
+            draw_graph.draw_graph()
             print ("Graph drawn in %s seconds" % (time.time() - start_time))
 
         print ("Processing finished in %s seconds" % (time.time() - process_start_time))

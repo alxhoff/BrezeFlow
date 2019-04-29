@@ -1,5 +1,5 @@
 #Alex Hoffman 2019
-from ADBInterface import adbInterface
+from ADBInterface import ADBInterface
 from enum import Enum
 
 class core_type(Enum):
@@ -71,10 +71,10 @@ class GovStatus:
         try:
             self.adbIface
         except AttributeError:
-            self.adbIface = adbInterface()
+            self.adbIface = ADBInterface()
 
     def __init__(self):
-        self.adbIface = adbInterface();
+        self.adbIface = ADBInterface();
         self.adbIface.command(
                 "echo interactive > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
         self.adbIface.command(
