@@ -30,7 +30,6 @@ class TraceProcessor:
         length = len(processed_events)
         while i < length:
             if isinstance(processed_events[i], EventIdle) or isinstance(processed_events[i], EventTempInfo):
-                #TODO HERE
                 process_tree.handle_event(processed_events[i], subgraph, trace_start_time, trace_finish_time)
                 del processed_events[i]
                 length -= 1

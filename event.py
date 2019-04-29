@@ -281,8 +281,6 @@ class TaskNode:
 
             # create graph edge if not the first job
             if len(self.events) >= 2 and binder_send is False:
-                if self.events[-2] == self.events[-1]:
-                    print "wait here"
                 self.graph.add_edge(self.events[-2], self.events[-1], color='violet', dir='forward')
 
     def finished(self):
@@ -478,7 +476,7 @@ class ProcessBranch:
             dispatcher.connect(self.handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
                                sender=dispatcher.Any)
         except Exception:
-            print "wait here"
+            print "CPUs not init'd"
 
     def disconnect_from_cpu_event(self, cpu):
         try:

@@ -93,7 +93,6 @@ class TracecmdProcessor:
                                                    state))
         elif event.name == "update_cpu_metric":
             self.event_count.update_cpu_metric += 1
-            print "wait here"
         elif event.name == "cpu_freq":
             self.event_count.cpu_freq += 1
 
@@ -114,6 +113,7 @@ class TracecmdProcessor:
 
             self.processed_events.append(EventBinderCall(event.pid, event.ts / 1000,
                                                          event.cpu, event.name, reply, to_proc, flags, code))
+
         elif event.name == "mali":
             self.event_count.mali += 1
 
@@ -122,7 +122,7 @@ class TracecmdProcessor:
 
             self.processed_events.append(EventMaliUtil(event.pid, event.ts / 1000, event.cpu,
                                                        util, freq))
-            # print "wait here"
+
         elif event.name == "exynos_temp":
             self.event_count.temp += 1
 
