@@ -3,7 +3,7 @@ import time
 
 from enum import Enum
 
-from xu3_profile import XU3RegressionConstants
+from XU3EnergyProfile import XU3RegressionConstants
 
 
 class IdleState(Enum):

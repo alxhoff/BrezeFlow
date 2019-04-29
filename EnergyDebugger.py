@@ -7,7 +7,7 @@ from ADBInterface import ADBInterface
 from PIDTools import PIDTool
 from SysLoggerInterface import SysLogger
 from SystemMetrics import SystemMetrics
-from TraceCMDProcessor import TracecmdProcessor
+from TraceCMDParser import TracecmdProcessor
 from TraceProcessor import TraceProcessor
 
 parser = argparse.ArgumentParser()
