@@ -1,7 +1,7 @@
 import networkx as nx
 from pydispatch import dispatcher
 
-from metrics import *
+from SystemMetrics import *
 
 PL_PID = 'PID'
 PL_PID_PNAME = 'PNAME'

@@ -1,5 +1,5 @@
 #Alex Hoffman 2019
-from adbinterface import adbInterface
+from ADBInterface import adbInterface
 from enum import Enum
 
 class core_type(Enum):

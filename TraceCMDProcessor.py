@@ -1,5 +1,5 @@
 from tracecmd import *
-from traceprocessor import *
+from TraceProcessor import *
 
 
 class EventCounts:

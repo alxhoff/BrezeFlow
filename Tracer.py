@@ -1,12 +1,12 @@
 import argparse
 import os
 import re
-from adbinterface import *
-from metrics import *
-from pidtrace import PIDtracer
-from tracecmd_processor import TracecmdProcessor
-from traceprocessor import TraceProcessor
-from sys_logger_interface import SysLogger
+from ADBInterface import *
+from SystemMetrics import *
+from PIDTools import PIDtracer
+from TraceCMDProcessor import TracecmdProcessor
+from TraceProcessor import TraceProcessor
+from SysLoggerInterface import SysLogger
 
 parser = argparse.ArgumentParser()
 

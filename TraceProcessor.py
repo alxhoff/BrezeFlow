@@ -1,5 +1,5 @@
-from event import *
-from grapher import *
+from SystemEvents import *
+from Grapher import *
 
 
 class TraceProcessor:
