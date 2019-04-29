@@ -30,8 +30,7 @@ class TracecmdProcessor:
     def print_event_count(self):
         print "Total events: " + str(self.event_count.sched_switch + self.event_count.cpu_idle
                                      + self.event_count.sched_switch + self.event_count.binder_transaction +
-                                     self.event_count.mali_utilization_stats + self.event_count.cpu_freq +
-                                     self.event_count.mali)
+                                     + self.event_count.cpu_freq + self.event_count.mali)
         print "Sched switch: " + str(self.event_count.sched_switch)
         print "CPU idle: " + str(self.event_count.cpu_idle)
         print "CPU freq: " + str(self.event_count.cpu_freq)

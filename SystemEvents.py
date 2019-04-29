@@ -325,7 +325,7 @@ class CPUBranch:
                 self.prev_util = self.util
             self.util = event.util
 
-            self.send_change_event()
+            self._send_change_event()
 
         self.graph.add_node(self.events[-1],
                             label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
@@ -337,8 +337,8 @@ class CPUBranch:
         if len(self.events) >= 2:
             self.graph.add_edge(self.events[-2], self.events[-1], style='bold')
 
-        def _send_change_event(self):
-            dispatcher.send(signal=self.signal_freq, sender=dispatcher.Any)
+    def _send_change_event(self):
+        dispatcher.send(signal=self.signal_freq, sender=dispatcher.Any)
 
 
 class GPUBranch:

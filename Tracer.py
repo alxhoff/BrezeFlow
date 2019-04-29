@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+import time
 
 from ADBInterface import ADBInterface
 from PIDTools import PIDTool
@@ -38,7 +39,7 @@ class Tracer:
         self.metrics = metrics
         self.adb = adb_device
         self.name = name
-        self.filename = op.dirname(op.realpath(__file__)) + '/' \
+        self.filename = os.path.dirname(os.path.realpath(__file__)) + '/' \
                         + name + "_tracer.trace"
         self.trace_type = trace_type
         self.functions = functions
@@ -143,7 +144,7 @@ def main():
     race_processor = TraceProcessor(pid_tool, args.app)
     sys_metrics = SystemMetrics(adb)
 
-    print "Creating tracer and running"
+    print "Creating tracer, starting sys_logger and running trace"
 
     tracer = Tracer(adb,
                     args.app,
@@ -152,7 +153,6 @@ def main():
                     duration=args.duration
                     )
 
-    # Start syslogger
     sys_logger = SysLogger(adb)
     sys_logger.start()
     tracer.run_tracer()

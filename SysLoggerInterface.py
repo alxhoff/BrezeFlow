@@ -16,6 +16,7 @@ class SysLogger:
         self.status = SysLoggerStatus.INIT
 
     def start(self):
+        self.stop()
         self._setup()
         self.adb.command("./data/local/tmp/sys_logger.sh start")
         self.status = SysLoggerStatus.START
