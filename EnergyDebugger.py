@@ -170,7 +170,7 @@ def main():
 
     tc_processor = TracecmdProcessor(dat_path)
     tc_processor.print_event_count()
-    race_processor.process_trace(sys_metrics, tc_processor, tracer.start_time, args.draw, args.test, args.subgraph)
+    race_processor.process_trace(sys_metrics, tc_processor, args.duration, args.draw, args.test, args.subgraph)
 
 
 if __name__ == '__main__':

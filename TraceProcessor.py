@@ -21,7 +21,7 @@ class TraceProcessor:
         # generate pointers to most recent nodes for each PID (branch heads)
         process_tree = ProcessTree(self.pidt, metrics)
         trace_start_time = processed_events[0].time
-        trace_finish_time = trace_start_time + duration * 1000000
+        trace_finish_time = trace_start_time + int(duration) * 1000000
 
         # Create CPU core utilization trees first
         start_time = time.time()
@@ -44,7 +44,7 @@ class TraceProcessor:
         # set initial time as first event in log as mali util is able to be found via sysfs
         # and as such available from the start and must not be calculated
         # TODO does it matter if the first event is a mali event?
-        metrics.sys_util.gpu_utils.init(processed_events[0].time, metrics.gpu_util)
+        metrics.sys_util.gpu_utils.init(trace_start_time, trace_finish_time, metrics.gpu_util)
 
         # Compile cluster utilizations
         start_time = time.time()

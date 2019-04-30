@@ -47,7 +47,7 @@ class CPUUtilizationSlice(UtilizationSlice):
 class UtilizationTable:
 
     def __init__(self):
-        self.initial_time = 0
+        self.start_time = 0
         self.last_event_time = 0
         self.core_state = 0
         self.events = []
@@ -72,7 +72,7 @@ class CPUUtilizationTable(UtilizationTable):
 
     def get_util(self, ts):
 
-        event_time = ts - self.initial_time - 1
+        event_time = ts - self.start_time - 1
 
         try:
             return self.utils[event_time]
@@ -81,8 +81,8 @@ class CPUUtilizationTable(UtilizationTable):
 
     def add_idle_event(self, event):
         # First event
-        if self.initial_time is 0:
-            self.initial_time = event.time
+        if self.start_time is 0:
+            self.start_time = event.time
             if event.state == 4294967295:
                 self.core_state = IdleState.is_not_idle
             else:
@@ -90,10 +90,10 @@ class CPUUtilizationTable(UtilizationTable):
             return
         else:
             self.events.append(CPUUtilizationSlice(
-                self.last_event_time, event.time - self.initial_time,
+                self.last_event_time, event.time - self.start_time,
                 SystemMetrics.current_metrics.core_freqs[event.cpu], state=self.core_state))
 
-        self.last_event_time = event.time - self.initial_time
+        self.last_event_time = event.time - self.start_time
         self.calc_util_last_event()
 
         if event.state == 4294967295:
@@ -125,22 +125,22 @@ class TotalUtilizationTable(UtilizationTable):
 
     def compile_table(self, cores):
 
-        self.initial_time = min(core.initial_time for core in cores)
+        self.start_time = min(core.start_time for core in cores)
         self.end_time = 0
         start_time = time.time()
 
         # get the starting and finishing time of the events on each core
         for core in cores:
             if len(core.events) != 0:
-                if (self.initial_time + core.events[-1].start_time + core.events[-1].duration) > self.end_time:
-                    self.end_time = self.initial_time + core.events[-1].start_time + core.events[-1].duration
+                if (self.start_time + core.events[-1].start_time + core.events[-1].duration) > self.end_time:
+                    self.end_time = self.start_time + core.events[-1].start_time + core.events[-1].duration
         print ("Start and finish times took %s seconds" % (time.time() - start_time))
 
         start_time = time.time()
 
         # Compile util lookup tables for each core
         for core in cores:
-            core.compile_lookup(self.initial_time, self.end_time)
+            core.compile_lookup(self.start_time, self.end_time)
         print ("Lookup tables took %s seconds" % (time.time() - start_time))
 
         return
@@ -164,18 +164,20 @@ class GPUUtilizationTable(UtilizationTable):
     def __init__(self):
         UtilizationTable.__init__(self)
         self.current_util = 0
+        self.finish_time = 0
 
-    def init(self, ts, util):
-        self.initial_time = ts
+    def init(self, start_time, finish_time, util):
+        self.start_time = start_time
+        self.finish_time = finish_time
         self.current_util = util
 
     def add_mali_event(self, event):
         self.events.append(CPUUtilizationSlice(
-            self.last_event_time, event.time - self.initial_time,
+            self.last_event_time, event.time - self.start_time,
             freq=event.freq, util=self.current_util))
 
         self.current_util = event.util
-        self.last_event_time = event.time - self.initial_time
+        self.last_event_time = event.time - self.start_time
 
     def calc_gpu_power(self):  # , start_time, finish_time):
 

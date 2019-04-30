@@ -479,6 +479,7 @@ class ProcessBranch:
                                sender=dispatcher.Any)
         except IndexError:
             print "CPUs not init'd"
+            sys.exit(1)
 
     def _disconnect_from_cpu_event(self, cpu):
         try:
