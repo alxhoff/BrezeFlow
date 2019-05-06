@@ -75,7 +75,7 @@ class TraceProcessor:
 
         start_time = time.time()
         print "Finishing process tree"
-        process_tree.finish_tree(0, self.filename)
+        process_tree.finish_tree(self.filename)
         print ("Finished tree in %s seconds" % (time.time() - start_time))
 
         if draw:

@@ -410,10 +410,12 @@ class ProcessBranch:
         self.energy = 0  # calculated upon request at the end between given intervals
         self.duration = 0
 
-    def get_second_energy(self, second, time_offset):
+    def get_second_energy(self, second, time_offset, finish_time):
         energy = 0.0
         nanosecond_start = time_offset + (second * 1000000)
         nanosecond_finish = nanosecond_start + 1000000
+        if finish_time < nanosecond_finish:
+            nanosecond_finish = finish_time
         # Find task that contains the start of the second of interest
         for task in self.tasks:
             if isinstance(task, EventBinderCall) or isinstance(task, BinderNode):
@@ -437,14 +439,16 @@ class ProcessBranch:
     def _sum_stats_until_finish(self, start_event_index, finish_time):
         task_stats = EnergyDuration()
         if finish_time == 0:
+            # sum all tasks
             for task in self.tasks:
                 task_stats.energy += task.energy
                 task_stats.duration += task.duration
         else:
+            # sum until finish time
             for x, task in enumerate(self.tasks[start_event_index:-1]):
-                if finish_time < self.tasks[x + 1]:
+                if finish_time < self.tasks[x + 1].finish_time:
                     # calculate % of energy to take
-                    percent = ((finish_time - task.time) / task.duration)
+                    percent = ((finish_time - task.start_time) / task.duration)
                     task_stats.energy += percent * task.energy
                     task_stats.duration += percent * task.duration
                 else:
@@ -714,23 +718,23 @@ class ProcessTree:
             self.process_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
                                                      self.pidtracer, self.cpus, self.gpu)
 
-    def finish_tree(self, finish_time, filename):
+    def finish_tree(self, filename):
         with open(filename + "_results.csv", "w+") as f:
             writer = csv.writer(f, delimiter=',')
 
             # Start and end time
             start_time = 0
-            end_time = 0
+            finish_time = 0
             for x, branch in self.process_branches.iteritems():
                 if branch.tasks:
                     if branch.tasks[0].start_time < start_time or start_time == 0:
                         start_time = branch.tasks[0].start_time
-                    if (branch.tasks[-1].start_time + branch.tasks[-1].duration) > end_time or end_time == 0:
-                        end_time = branch.tasks[-1].start_time + branch.tasks[-1].duration
+                    if (branch.tasks[-1].start_time + branch.tasks[-1].duration) > finish_time or finish_time == 0:
+                        finish_time = branch.tasks[-1].start_time + branch.tasks[-1].duration
 
             writer.writerow(["Start", start_time / 1000000.0])
-            writer.writerow(["Finish", end_time / 1000000.0])
-            duration = (end_time - start_time) * 0.000001
+            writer.writerow(["Finish", finish_time / 1000000.0])
+            duration = (finish_time - start_time) * 0.000001
             writer.writerow(["Duration", duration])
 
             writer.writerow([PL_PID, PL_PID_PNAME, PL_PID_TNAME, PL_TASK_COUNT,
@@ -739,7 +743,7 @@ class ProcessTree:
             total_energy = 0
 
             # Calculate GPU energy
-            gpu_energy = self.metrics.sys_util.gpu_utils.calc_gpu_power()
+            gpu_energy = self.metrics.sys_util.gpu_utils.calc_gpu_power(start_time, finish_time)
             writer.writerow(["GPU", gpu_energy])
 
             total_energy += gpu_energy
@@ -770,7 +774,7 @@ class ProcessTree:
 
             for x, branch in self.process_branches.iteritems():
                 for i in range(len(energy_timeline)):
-                    energy_timeline[i] += branch.get_second_energy(i, start_time)
+                    energy_timeline[i] += branch.get_second_energy(i, start_time, finish_time)
 
             writer.writerow(["Sec", "Energy"])
             for x, second in enumerate(energy_timeline):

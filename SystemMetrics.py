@@ -159,6 +159,7 @@ def get_gpu_cycle_energy(freq, util, temp):
     energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
     return energy
 
+
 class GPUUtilizationTable(UtilizationTable):
 
     def __init__(self):
@@ -179,44 +180,50 @@ class GPUUtilizationTable(UtilizationTable):
         self.current_util = event.util
         self.last_event_time = event.time - self.start_time
 
-    def calc_gpu_power(self):  # , start_time, finish_time):
+    def calc_gpu_power(self, start_time, finish_time):
 
         energy = 0
 
-        # if finish_time == 0:
-        #     relative_finish_time = self.events[-1].time + self.events[-1].duration
-        # else:
-        #     relative_finish_time = finish_time - self.initial_time
-        #
-        # if start_time == 0:
-        #     relative_start_time = 0
-        # else:
-        #     relative_start_time = start_time - self.initial_time
+        if finish_time == 0:
+            relative_finish_time = self.events[-1].time + self.events[-1].duration
+        else:
+            relative_finish_time = finish_time - self.start_time
 
-        # # iterate through power events
-        # for x, event in enumerate(self.events):
-        #     # find start event
-        #     if (relative_start_time >= event.start_time) and (relative_start_time < (event.start_time + event.duration)):
-        #         temp = SystemMetrics.current_metrics.get_temp(event.start_time, -1)  # -1 for GPU
-        #         cycle_energy = self.get_GPU_cycle_energy(event.freq, event.util, temp)
-        #         cycles = (event.duration - relative_start_time - event.start_time) * 0.000000001 * event.frequency
-        #     # end case
-        #     elif (relative_finish_time >= event.start_time) and (relative_finish_time < (event.start_time + event.duration)):
-        #         temp = SystemMetrics.current_metrics.get_temp(event.start_time, -1)
-        #         cycle_energy = self.get_GPU_cycle_energy(event.freq, event.util, temp)
-        #         cycles = (event.duration - relative_finish_time - event.start_time) * 0.000000001 * event.frequency
-        #     # middle cases
-        #     elif (relative_start_time < event.start_time) and (relative_finish_time > (event.start_time + event.duration)):
-        #         temp = SystemMetrics.current_metrics.get_temp(event.start_time, -1)
-        #         cycle_energy = self.get_GPU_cycle_energy(event.freq, event.util, temp)
-        #         cycles = event.duration * 0.000000001 * event.frequency
-        #
-        #     energy += cycle_energy * cycles
+        if start_time == 0:
+            relative_start_time = 0
+        else:
+            relative_start_time = start_time - self.start_time
+            if relative_start_time < 0:
+                relative_start_time = 0
 
+        # iterate through power events
         for x, event in enumerate(self.events):
-            temp = SystemMetrics.current_metrics.get_temp(event.start_time, -1)
-            cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
-            cycles = event.duration * 0.000000001 * event.freq
+            temp = 0
+
+            # find start event
+            if (relative_start_time >= event.start_time) and (
+                    relative_start_time < (event.start_time + event.duration)):
+                temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)  # -1 for GPU
+                cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
+                cycles = (event.duration - (relative_start_time - event.start_time)) * 0.000000001 * event.freq
+                assert (cycles > 0), "duration: %d, relative start: %d, start time: %d, freq: %d, cycles: %d" \
+                                     % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
+            # end case
+            elif (relative_finish_time >= event.start_time) and (
+                    relative_finish_time < (event.start_time + event.duration)):
+                temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)
+                cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
+                cycles = (event.duration - (relative_finish_time - event.start_time)) * 0.000000001 * event.freq
+                assert (cycles > 0), "duration: %d, relative finish: %d, start time: %d, freq: %d, cycles: %d" \
+                                     % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
+            # middle cases
+            elif (relative_start_time < event.start_time) and (
+                    relative_finish_time > (event.start_time + event.duration)):
+                temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)
+                cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
+                cycles = event.duration * 0.000000001 * event.freq
+
+            assert (cycle_energy > 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
             energy += cycle_energy * cycles
 
         return energy
