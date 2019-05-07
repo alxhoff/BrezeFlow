@@ -42,7 +42,7 @@ class TraceProcessor:
 
         # Init GPU util tree
         # set initial time as first event in log as mali util is able to be found via sysfs
-        # and as such available from the start and must not be calculated
+        # and as such is available from the start and must not be calculated
         # TODO does it matter if the first event is a mali event?
         metrics.sys_util.gpu_utils.init(trace_start_time, trace_finish_time, metrics.gpu_util)
 

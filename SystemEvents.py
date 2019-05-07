@@ -411,70 +411,36 @@ class ProcessBranch:
         self.duration = 0
 
     def get_second_energy(self, second, time_offset, finish_time):
-        energy = 0.0
+        # energy = 0.0
         nanosecond_start = time_offset + (second * 1000000)
         nanosecond_finish = nanosecond_start + 1000000
         if finish_time < nanosecond_finish:
             nanosecond_finish = finish_time
-        # Find task that contains the start of the second of interest
-        for task in self.tasks:
-            if isinstance(task, EventBinderCall) or isinstance(task, BinderNode):
-                continue
-            # Task that falls at starting point
-            if (task.start_time <= nanosecond_start) and (task.finish_time > nanosecond_start):
-                try:
-                    energy += (task.finish_time - nanosecond_start) / task.duration * task.energy
-                except ZeroDivisionError:
-                    continue
-            # Task that falls at the ending of the second
-            elif (task.start_time <= nanosecond_finish) and (nanosecond_finish < task.finish_time):
-                try:
-                    energy += (nanosecond_finish - task.start_time) / task.duration * task.energy
-                except ZeroDivisionError:
-                    continue
-            elif (task.start_time > nanosecond_start) and (task.finish_time < nanosecond_finish):
-                energy += task.energy
-        return energy
 
-    def _sum_stats_until_finish(self, start_event_index, finish_time):
-        task_stats = EnergyDuration()
-        if finish_time == 0:
-            # sum all tasks
-            for task in self.tasks:
-                task_stats.energy += task.energy
-                task_stats.duration += task.duration
-        else:
-            # sum until finish time
-            for x, task in enumerate(self.tasks[start_event_index:-1]):
-                if finish_time < self.tasks[x + 1].finish_time:
-                    # calculate % of energy to take
-                    percent = ((finish_time - task.start_time) / task.duration)
-                    task_stats.energy += percent * task.energy
-                    task_stats.duration += percent * task.duration
-                else:
-                    task_stats.energy += task.energy
-                    task_stats.duration += task.duration
-        return task_stats
+        return self.sum_task_stats(nanosecond_start, nanosecond_finish).energy
 
     def sum_task_stats(self, start_time, finish_time):
         task_stats = EnergyDuration()
-        if start_time == 0:
-            # sum all events
-            end_stats = self._sum_stats_until_finish(0, finish_time)
-            task_stats.energy += end_stats.energy
-            task_stats.duration += end_stats.duration
-        else:
-            # find first task and get the partial sum
-            for x, task in enumerate(self.tasks):
-                if (start_time > task.start_time) and (start_time < (task.start_time + task.duration)):
-                    percent = (((task.start_time + task.duration) - start_time) / task.duration)
-                    task_stats.energy += percent * task.energy
-                    task_stats.duration += percent * task.duration
-                elif start_time < task.start_time:
-                    end_stats = self._sum_stats_until_finish(x, finish_time)
-                    task_stats.energy += end_stats.energy
-                    task_stats.duration += end_stats.duration
-                    return task_stats
+
+        for task in self.tasks:
+            # Task that falls at starting point
+            if (task.start_time < start_time) and (task.finish_time > start_time):
+                try:
+                    task_stats.energy += ((task.finish_time - start_time) / task.duration * task.energy)
+                    task_stats.duration += (task.finish_time - start_time)
+                except ZeroDivisionError:
+                    continue
+            # Task that falls at the ending of the second
+            elif (task.start_time <= finish_time) and (task.finish_time > finish_time):
+                try:
+                    task_stats.energy += ((finish_time - task.start_time) / task.duration * task.energy)
+                    task_stats.duration += (finish_time - task.start_time)
+                except ZeroDivisionError:
+                    continue
+            elif (task.start_time >= start_time) and (task.finish_time <= finish_time):
+                task_stats.energy += task.energy
+                task_stats.duration += task.duration
+
         return task_stats
 
     def _connect_to_cpu_event(self, cpu):
@@ -748,8 +714,12 @@ class ProcessTree:
 
             total_energy += gpu_energy
 
+            # HERE THIS IS NOT DOING ALL BRANCHES
+
             for x in list(self.process_branches.keys()):
                 branch = self.process_branches[x]
+                if branch.tname == "DispSync":
+                    print "wait here"
                 # Remove empty PID branches
                 if branch.tasks == []:
                     del self.process_branches[x]
@@ -758,6 +728,11 @@ class ProcessTree:
                 branch.energy = branch_stats.energy
                 total_energy += branch.energy
                 branch.duration = branch_stats.duration
+
+                if branch.energy == 0.0:
+                    continue
+
+                print branch.tname + " " + str(branch.energy)
 
                 # Write results to file
                 writer.writerow([branch.pid, branch.pname, branch.tname, str(len(branch.tasks)),
@@ -769,12 +744,19 @@ class ProcessTree:
             except ZeroDivisionError:
                 print "No events were recorded!"
 
+            writer.writerow([])
+            writer.writerow([])
+
             # Go through each branch and calculate the values energy values for each second
             energy_timeline = [0.0] * int(duration + 1)
 
             for x, branch in self.process_branches.iteritems():
                 for i in range(len(energy_timeline)):
-                    energy_timeline[i] += branch.get_second_energy(i, start_time, finish_time)
+                    if branch.tname == "DispSync":
+                        print "wait here"
+                    energy = branch.get_second_energy(i, start_time, finish_time)
+                    writer.writerow([branch.tname, str(energy)])
+                    energy_timeline[i] += energy
 
             writer.writerow(["Sec", "Energy"])
             for x, second in enumerate(energy_timeline):
