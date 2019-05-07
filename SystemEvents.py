@@ -722,8 +722,6 @@ class ProcessTree:
                 if branch.energy == 0.0:
                     continue
 
-                print branch.tname + " " + str(branch.energy)
-
                 # Write results to file
                 writer.writerow([branch.pid, branch.pname, branch.tname, str(len(branch.tasks)),
                                  branch.energy, branch.duration])
@@ -735,7 +733,7 @@ class ProcessTree:
                 print "No events were recorded!"
 
             writer.writerow([])
-            writer.writerow([])
+            writer.writerow(["Energy Timeline"])
 
             # Go through each branch and calculate the values energy values for each second
             energy_timeline = [0.0] * int(duration + 1)
@@ -810,8 +808,6 @@ class ProcessTree:
 
                 except KeyError:
                     pass
-
-            # print ("Sched switch event processed in %s seconds" % (time.time() - start_time))
 
             return
 
