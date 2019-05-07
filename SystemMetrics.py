@@ -199,6 +199,8 @@ class GPUUtilizationTable(UtilizationTable):
         # iterate through power events
         for x, event in enumerate(self.events):
             temp = 0
+            cycles = 0
+            cycle_energy = 0
 
             # find start event
             if (relative_start_time >= event.start_time) and (
@@ -223,7 +225,8 @@ class GPUUtilizationTable(UtilizationTable):
                 cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
                 cycles = event.duration * 0.000000001 * event.freq
 
-            assert (cycle_energy > 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
+            assert (cycle_energy != 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
+            assert (cycles != 0), "Cycles could not be found for GPU"
             energy += cycle_energy * cycles
 
         return energy
