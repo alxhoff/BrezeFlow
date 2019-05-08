@@ -44,13 +44,13 @@ class TraceProcessor:
         # set initial time as first event in log as mali util is able to be found via sysfs
         # and as such is available from the start and must not be calculated
         # TODO does it matter if the first event is a mali event?
-        metrics.sys_util.gpu_utils.init(trace_start_time, trace_finish_time, metrics.gpu_util)
+        metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
 
         # Compile cluster utilizations
         start_time = time.time()
         print "Compiling cluster util tables"
-        for x, cluster in enumerate(metrics.sys_util.cluster_utils):
-            cluster.compile_table(metrics.sys_util.core_utils[x * 4: x * 4 + 4])
+        for x, cluster in enumerate(metrics.sys_util_history.clusters):
+            cluster.compile_table(metrics.sys_util_history.cpu[x * 4: x * 4 + 4])
         print ("Cluster util table generated in %s seconds" % (time.time() - start_time))
 
         start_time = time.time()

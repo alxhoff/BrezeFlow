@@ -91,7 +91,7 @@ class CPUUtilizationTable(UtilizationTable):
         else:
             self.events.append(CPUUtilizationSlice(
                 self.last_event_time, event.time - self.start_time,
-                SystemMetrics.current_metrics.core_freqs[event.cpu], state=self.core_state))
+                SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
 
         self.last_event_time = event.time - self.start_time
         self.calc_util_last_event()
@@ -172,7 +172,7 @@ class GPUUtilizationTable(UtilizationTable):
         self.finish_time = finish_time
         self.current_util = util
 
-    def add_mali_event(self, event):
+    def add_event(self, event):
         self.events.append(CPUUtilizationSlice(
             self.last_event_time, event.time - self.start_time,
             freq=event.freq, util=self.current_util))
@@ -180,7 +180,7 @@ class GPUUtilizationTable(UtilizationTable):
         self.current_util = event.util
         self.last_event_time = event.time - self.start_time
 
-    def calc_gpu_power(self, start_time, finish_time):
+    def get_energy(self, start_time, finish_time):
 
         energy = 0
 
@@ -202,50 +202,63 @@ class GPUUtilizationTable(UtilizationTable):
             cycles = 0
             cycle_energy = 0
 
+            temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)
+            if temp == 0:
+                print "wait here"
+            assert (temp != 0), "GPU temp found to be zero at time %d" % (event.start_time + self.start_time)
+
+            cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
+            assert (cycle_energy != 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
+
             # find start event
             if (relative_start_time >= event.start_time) and (
                     relative_start_time < (event.start_time + event.duration)):
-                temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)  # -1 for GPU
-                cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
                 cycles = (event.duration - (relative_start_time - event.start_time)) * 0.000000001 * event.freq
-                assert (cycles > 0), "duration: %d, relative start: %d, start time: %d, freq: %d, cycles: %d" \
+                assert (cycles != 0), "duration: %d, relative start: %d, start time: %d, freq: %d, cycles: %d" \
                                      % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
             # end case
             elif (relative_finish_time >= event.start_time) and (
                     relative_finish_time < (event.start_time + event.duration)):
-                temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)
-                cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
                 cycles = (event.duration - (relative_finish_time - event.start_time)) * 0.000000001 * event.freq
-                assert (cycles > 0), "duration: %d, relative finish: %d, start time: %d, freq: %d, cycles: %d" \
+                assert (cycles != 0), "duration: %d, relative finish: %d, start time: %d, freq: %d, cycles: %d" \
                                      % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
             # middle cases
             elif (relative_start_time < event.start_time) and (
                     relative_finish_time > (event.start_time + event.duration)):
-                temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)
-                cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
                 cycles = event.duration * 0.000000001 * event.freq
+                assert (cycles != 0), "Cycles could not be found for GPU"
 
-            assert (cycle_energy != 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
-            assert (cycles != 0), "Cycles could not be found for GPU"
+            # Finished the second
+            elif event.start_time >= relative_finish_time:
+                return energy
+
             energy += cycle_energy * cycles
 
         return energy
+
+    def get_second_energy(self, second, start_time, finish_time):
+        nanosecond_start = start_time + (second * 1000000)
+        nanosecond_finish = nanosecond_start + 1000000
+        if finish_time < nanosecond_finish:
+            nanosecond_finish = finish_time
+
+        return self.get_energy(nanosecond_start, nanosecond_finish)
 
 
 class SystemUtilization:
 
     def __init__(self, core_count):
-        self.core_utils = []
-        self.cluster_utils = []
+        self.cpu = []
+        self.clusters = []
+        self.gpu = GPUUtilizationTable()
         self._init_tables(core_count)
-        self.gpu_utils = GPUUtilizationTable()
 
     def _init_tables(self, core_count):
         for x in range(core_count):
-            self.core_utils.append(CPUUtilizationTable(x))
+            self.cpu.append(CPUUtilizationTable(x))
         # TODO remove magic number
         for x in range(2):
-            self.cluster_utils.append(TotalUtilizationTable())
+            self.clusters.append(TotalUtilizationTable())
 
 
 class SystemMetrics:
@@ -255,11 +268,11 @@ class SystemMetrics:
         self.adb = adb
         self.energy_profile = XU3RegressionConstants()
         self.core_count = self._get_core_count()
-        self.core_freqs = self._get_core_freqs()
-        self.core_utils = self._get_core_utils()
-        self.gpu_freq = self._get_gpu_freq()
-        self.gpu_util = self._get_gpu_util()
-        self.sys_util = SystemUtilization(self.core_count)
+        self.current_core_freqs = self._get_core_freqs()
+        self.current_core_utils = self._get_core_utils()
+        self.current_gpu_freq = self._get_gpu_freq()
+        self.current_gpu_util = self._get_gpu_util()
+        self.sys_util_history = SystemUtilization(self.core_count)
         self.sys_temps = SystemTemps()
         self.unprocessed_temps = []
 
@@ -329,7 +342,7 @@ class SystemMetrics:
         return int(self.adb.command("cat /sys/class/misc/mali0/device/utilization"))
 
     def get_cpu_core_freq(self, core):
-        return self.core_freqs[core]
+        return self.current_core_freqs[core]
 
     def _get_gpu_core_freq(self):
-        return self.gpu_freq
+        return self.current_gpu_freq

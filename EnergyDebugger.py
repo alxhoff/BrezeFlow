@@ -146,7 +146,7 @@ class Tracer:
 def main():
     adb = ADBInterface()
     pid_tool = PIDTool(adb, args.app)
-    race_processor = TraceProcessor(pid_tool, args.app)
+    trace_processor = TraceProcessor(pid_tool, args.app)
     sys_metrics = SystemMetrics(adb)
 
     print "Creating tracer, starting sys_logger and running trace"
@@ -170,7 +170,7 @@ def main():
 
     tc_processor = TracecmdProcessor(dat_path)
     tc_processor.print_event_count()
-    race_processor.process_trace(sys_metrics, tc_processor, args.duration, args.draw, args.test, args.subgraph)
+    trace_processor.process_trace(sys_metrics, tc_processor, args.duration, args.draw, args.test, args.subgraph)
 
 
 if __name__ == '__main__':

@@ -177,7 +177,7 @@ class TaskNode:
         self.temp = 0
         self.util = 0
 
-    def add_job(self, event, binder_send=False, subgraph=False):
+    def add_event(self, event, binder_send=False, subgraph=False):
 
         # First event
         if not self.events:
@@ -199,7 +199,7 @@ class TaskNode:
                             continue
                         # calc time is the point until which the cycles were last counted
                         new_cycles = int((pe.time - self.calc_time) * 0.000000001 * pe.cpu_frequency)
-                        self.util = SystemMetrics.current_metrics.sys_util.core_utils[pe.cpu].get_util(pe.time)
+                        self.util = SystemMetrics.current_metrics.sys_util_history.cpu[pe.cpu].get_util(pe.time)
                         self.temp = SystemMetrics.current_metrics.get_temp(pe.time, pe.cpu)
 
                         cycle_energy = self._get_cpu_per_second_energy(pe.cpu, pe.cpu_frequency, self.util,
@@ -215,7 +215,7 @@ class TaskNode:
                     cpu_speed = SystemMetrics.current_metrics.get_cpu_core_freq(event.cpu)
 
                     new_cycles = int((event.time - self.calc_time) * 0.000000001 * cpu_speed)
-                    self.util = SystemMetrics.current_metrics.sys_util.core_utils[event.cpu].get_util(event.time)
+                    self.util = SystemMetrics.current_metrics.sys_util_history.cpu[event.cpu].get_util(event.time)
                     self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
 
                     cycle_energy = self._get_cpu_per_second_energy(event.cpu, cpu_speed, self.util,
@@ -314,7 +314,7 @@ class CPUBranch:
         self.graph = graph
         self.signal_freq = "freq_change" + str(self.cpu_num)
 
-    def add_job(self, event):
+    def add_event(self, event):
 
         self.events.append(event)
 
@@ -356,7 +356,7 @@ class GPUBranch:
         self.events = []
         self.signal_change = "gpu_change"
 
-    def add_job(self, event):
+    def add_event(self, event):
 
         self.events.append(event)
 
@@ -414,37 +414,41 @@ class ProcessBranch:
         self.energy = 0  # calculated upon request at the end between given intervals
         self.duration = 0
 
-    def get_second_energy(self, second, time_offset, finish_time):
-        nanosecond_start = time_offset + (second * 1000000)
+    def get_second_energy(self, second, start_time, finish_time):
+        nanosecond_start = start_time + (second * 1000000)
         nanosecond_finish = nanosecond_start + 1000000
         if finish_time < nanosecond_finish:
             nanosecond_finish = finish_time
 
-        return self.sum_task_stats(nanosecond_start, nanosecond_finish).energy
+        return self.get_tasks_stats(nanosecond_start, nanosecond_finish).energy
 
-    def sum_task_stats(self, start_time, finish_time):
-        task_stats = EnergyDuration()
+    def get_tasks_stats(self, start_time, finish_time):
+        tasks_stats = EnergyDuration()
 
         for task in self.tasks:
             # Task that falls at starting point
             if (task.start_time < start_time) and (task.finish_time > start_time):
                 try:
-                    task_stats.energy += ((task.finish_time - start_time) / task.duration * task.energy)
-                    task_stats.duration += (task.finish_time - start_time)
+                    tasks_stats.energy += ((task.finish_time - start_time) / task.duration * task.energy)
+                    tasks_stats.duration += (task.finish_time - start_time)
                 except ZeroDivisionError:
                     continue
             # Task that falls at the ending of the second
             elif (task.start_time <= finish_time) and (task.finish_time > finish_time):
                 try:
-                    task_stats.energy += ((finish_time - task.start_time) / task.duration * task.energy)
-                    task_stats.duration += (finish_time - task.start_time)
+                    tasks_stats.energy += ((finish_time - task.start_time) / task.duration * task.energy)
+                    tasks_stats.duration += (finish_time - task.start_time)
                 except ZeroDivisionError:
                     continue
+            # Middle events
             elif (task.start_time >= start_time) and (task.finish_time <= finish_time):
-                task_stats.energy += task.energy
-                task_stats.duration += task.duration
+                tasks_stats.energy += task.energy
+                tasks_stats.duration += task.duration
+            # Finished second
+            elif task.start_time >= finish_time:
+                return tasks_stats
 
-        return task_stats
+        return tasks_stats
 
     def _connect_to_cpu_event(self, cpu):
         try:
@@ -496,7 +500,7 @@ class ProcessBranch:
     def _handle_gpu_change(self):
         return
 
-    def add_job(self, event, event_type=JobType.UNKNOWN, subgraph=False):
+    def add_event(self, event, event_type=JobType.UNKNOWN, subgraph=False):
 
         # CPU association
         if self.cpu is None:
@@ -507,7 +511,7 @@ class ProcessBranch:
         if not self.tasks:
 
             self.tasks.append(TaskNode(self.graph, self.pid))
-            self.tasks[-1].add_job(event, subgraph=subgraph)
+            self.tasks[-1].add_event(event, subgraph=subgraph)
 
             # task could be finishing
             if event_type == JobType.SCHED_SWITCH_OUT and \
@@ -537,7 +541,7 @@ class ProcessBranch:
             # create new task
             self.tasks.append(TaskNode(self.graph, self.pid))
             # add current event
-            self.tasks[-1].add_job(event, subgraph=subgraph)
+            self.tasks[-1].add_event(event, subgraph=subgraph)
 
             # set task to running
             self.active = True
@@ -554,7 +558,7 @@ class ProcessBranch:
                 event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S) and \
                 event.pid not in self.pidtracer.binder_pids:
 
-            self.tasks[-1].add_job(event, subgraph=subgraph)
+            self.tasks[-1].add_event(event, subgraph=subgraph)
             self.tasks[-1].finish()
             self.active = False
 
@@ -567,8 +571,8 @@ class ProcessBranch:
                                 + "   Util: " + str(self.tasks[-1].util) + "%"
                                 + "   Temp: " + str(self.tasks[-1].temp)
                                 + "   PID: " + str(event.pid)
-                                + "\nGPU: " + str(SystemMetrics.current_metrics.gpu_freq) + "Hz   "
-                                + str(SystemMetrics.current_metrics.gpu_util) + "% Util"
+                                + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   "
+                                + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util"
                                 + "\nDuration: " + str(self.tasks[-1].duration)
                                 + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
                                 + "\nEnergy: " + str(self.tasks[-1].energy)
@@ -587,12 +591,12 @@ class ProcessBranch:
 
         elif event_type == JobType.BINDER_SEND:
             self.tasks.append(BinderNode(self.graph, self.pid))
-            self.tasks[-1].add_job(event, binder_send=True)
+            self.tasks[-1].add_event(event, binder_send=True)
             return
 
         elif event_type == JobType.BINDER_RECV:
 
-            self.tasks[-1].add_job(event)
+            self.tasks[-1].add_event(event)
             self.tasks[-1].finish()
 
             self.graph.add_node(self.tasks[-1],
@@ -608,7 +612,7 @@ class ProcessBranch:
             return
 
         # all other job types just need to get added to the task
-        self.tasks[-1].add_job(event, subgraph=subgraph)
+        self.tasks[-1].add_event(event, subgraph=subgraph)
 
 
 """ Binder transactions are sometimes directed to the parent binder thread of a
@@ -656,14 +660,14 @@ class ProcessTree:
 
         self.cpus = []
         self._create_cpu_branches()
-        self.gpu = GPUBranch(self.metrics.gpu_freq, self.metrics.gpu_util, self.graph)
+        self.gpu = GPUBranch(self.metrics.current_gpu_freq, self.metrics.current_gpu_util, self.graph)
 
         self._create_pid_branches()
 
     def _create_cpu_branches(self):
         for x in range(0, self.metrics.core_count):
-            self.cpus.append(CPUBranch(x, self.metrics.core_freqs[x],
-                                       self.metrics.core_utils[x], self.graph))
+            self.cpus.append(CPUBranch(x, self.metrics.current_core_freqs[x],
+                                       self.metrics.current_core_utils[x], self.graph))
 
     def _create_pid_branches(self):
         for i, pid in self.pidtracer.app_pids.iteritems():
@@ -701,12 +705,10 @@ class ProcessTree:
             total_energy = 0
 
             # Calculate GPU energy
-            gpu_energy = self.metrics.sys_util.gpu_utils.calc_gpu_power(start_time, finish_time)
+            gpu_energy = self.metrics.sys_util_history.gpu.get_energy(start_time, finish_time)
             writer.writerow(["GPU", gpu_energy])
 
             total_energy += gpu_energy
-
-            # HERE THIS IS NOT DOING ALL BRANCHES
 
             for x in list(self.process_branches.keys()):
                 branch = self.process_branches[x]
@@ -714,7 +716,7 @@ class ProcessTree:
                 if len(branch.tasks) == 0:
                     del self.process_branches[x]
                     continue
-                branch_stats = branch.sum_task_stats(start_time, finish_time)
+                branch_stats = branch.get_tasks_stats(start_time, finish_time)
                 branch.energy = branch_stats.energy
                 total_energy += branch.energy
                 branch.duration = branch_stats.duration
@@ -736,15 +738,20 @@ class ProcessTree:
             writer.writerow(["Energy Timeline"])
 
             # Go through each branch and calculate the values energy values for each second
-            energy_timeline = [0.0] * int(duration + 1)
+            energy_timeline = [[0.0, 0.0] for _ in range(int(duration + 1))]
 
             for x, branch in self.process_branches.iteritems():
-                for i in range(len(energy_timeline)):
-                    energy_timeline[i] += branch.get_second_energy(i, start_time, finish_time)
+                for i, second in enumerate(energy_timeline):
+                    energy = branch.get_second_energy(i, start_time, finish_time)
+                    second[0] += energy
 
-            writer.writerow(["Sec", "Energy"])
+            for i, second in enumerate(energy_timeline):
+                second[1] += \
+                    self.metrics.sys_util_history.gpu.get_second_energy(i, start_time, finish_time)
+
+            writer.writerow(["Sec", "Thread Energy", "GPU Energy", "Total Energy"])
             for x, second in enumerate(energy_timeline):
-                writer.writerow([str(x), str(second)])
+                writer.writerow([str(x), str(second[0]), str(second[1]), str(second[0] + second[1])])
 
     def handle_event(self, event, subgraph, start_time, finish_time):
 
@@ -767,7 +774,7 @@ class ProcessTree:
             if event.pid != 0:
                 try:
                     process_branch = self.process_branches[event.pid]
-                    process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
+                    process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
                 except KeyError:
                     pass
 
@@ -790,7 +797,7 @@ class ProcessTree:
                                 self.process_branches[task.binder_thread].tasks[-1],
                                 color='palevioletred3', dir='forward', style='bold')
 
-                            process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                            process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                             # edge from binder thread to next task
                             self.graph.add_edge(
@@ -804,7 +811,7 @@ class ProcessTree:
                             del self.pending_binder_tasks[x]
 
                     if not binder_response:
-                        process_branch.add_job(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                        process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                 except KeyError:
                     pass
@@ -813,23 +820,23 @@ class ProcessTree:
 
         elif isinstance(event, EventFreqChange):
             for i in range(event.target_cpu, event.target_cpu + 4):
-                self.metrics.core_freqs[i] = event.freq
-                self.metrics.core_utils[i] = event.util
-                self.cpus[i].add_job(event)
+                self.metrics.current_core_freqs[i] = event.freq
+                self.metrics.current_core_utils[i] = event.util
+                self.cpus[i].add_event(event)
             return
 
         elif isinstance(event, EventMaliUtil):
 
-            self.metrics.gpu_freq = event.freq
-            self.metrics.gpu_util = event.util
+            self.metrics.current_gpu_freq = event.freq
+            self.metrics.current_gpu_util = event.util
 
-            self.metrics.sys_util.gpu_utils.add_mali_event(event)
+            self.metrics.sys_util_history.gpu.add_event(event)
 
-            self.gpu.add_job(event)
+            self.gpu.add_event(event)
 
         # Also used in the calculation of system load
         elif isinstance(event, EventIdle):
-            self.metrics.sys_util.core_utils[event.cpu].add_idle_event(event)
+            self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)
             return
 
         elif isinstance(event, EventTempInfo):
@@ -876,10 +883,10 @@ class ProcessTree:
                         if any(pid == event.pid for pid in transaction.child_pids) or \
                                 event.pid == transaction.parent_pid:
                             # Add starting binder event to branch
-                            process_branch.add_job(transaction.send_event, event_type=JobType.BINDER_SEND)
+                            process_branch.add_event(transaction.send_event, event_type=JobType.BINDER_SEND)
 
                             # Add job to the branch of the Binder thread
-                            process_branch.add_job(event, event_type=JobType.BINDER_RECV)
+                            process_branch.add_event(event, event_type=JobType.BINDER_RECV)
 
                             # add pending task
                             self.pending_binder_tasks.append(PendingBinderTask(transaction.send_event, event))
