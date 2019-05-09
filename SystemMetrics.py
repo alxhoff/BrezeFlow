@@ -201,8 +201,7 @@ class GPUUtilizationTable(UtilizationTable):
             cycles = 0
 
             temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)
-            if temp == 0:
-                print "wait here"
+
             assert (temp != 0), "GPU temp found to be zero at time %d" % (event.start_time + self.start_time)
 
             cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
