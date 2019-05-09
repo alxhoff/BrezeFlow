@@ -235,7 +235,7 @@ class TaskNode:
         self.events.append(event)
 
         # add event node to task sub-graph
-        if subgraph:
+        if subgraph and "Binder" not in event.name and "Binder" not in event.next_name:
             if isinstance(event, EventSchedSwitch):
                 self.graph.add_node(event,
                                     label=str(event.time)[:-6] + "." + str(event.time)[-6:]
@@ -331,16 +331,6 @@ class CPUBranch:
 
             self._send_change_event()
 
-        self.graph.add_node(self.events[-1],
-                            label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
-                            + "\nCPU: " + str(event.cpu) + " Util: " + str(event.util)
-                            + "\nFreq: " + str(event.freq)
-                            + "\n" + str(event.__class__.__name__), style='filled', shape='box')
-
-        # These edges simply follow a PID, do not show any IPCs or IPDs
-        if len(self.events) >= 2:
-            self.graph.add_edge(self.events[-2], self.events[-1], style='bold')
-
     def _send_change_event(self):
         dispatcher.send(signal=self.signal_freq, sender=dispatcher.Any)
 
@@ -369,14 +359,6 @@ class GPUBranch:
             else:
                 self.prev_util = self.util
             self.util = event.util
-
-        self.graph.add_node(self.events[-1],
-                            label=str(self.events[-1].time)[:-6] + "." + str(self.events[-1].time)[-6:]
-                            + "\nUtil: " + str(self.events[-1].util)
-                            + "\nFreq: " + str(self.events[-1].freq)
-                            + "\n" + str(self.events[-1].__class__.__name__),
-                            style='filled',
-                            shape='box', fillcolor='magenta')
 
     def _send_change_event(self):
         dispatcher.send(signal=self.signal_change, sender=dispatcher.Any)
