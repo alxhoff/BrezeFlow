@@ -198,9 +198,7 @@ class GPUUtilizationTable(UtilizationTable):
 
         # iterate through power events
         for x, event in enumerate(self.events):
-            temp = 0
             cycles = 0
-            cycle_energy = 0
 
             temp = SystemMetrics.current_metrics.get_temp(event.start_time + self.start_time, -1)
             if temp == 0:
@@ -215,13 +213,13 @@ class GPUUtilizationTable(UtilizationTable):
                     relative_start_time < (event.start_time + event.duration)):
                 cycles = (event.duration - (relative_start_time - event.start_time)) * 0.000000001 * event.freq
                 assert (cycles != 0), "duration: %d, relative start: %d, start time: %d, freq: %d, cycles: %d" \
-                                     % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
+                    % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
             # end case
             elif (relative_finish_time >= event.start_time) and (
                     relative_finish_time < (event.start_time + event.duration)):
                 cycles = (event.duration - (relative_finish_time - event.start_time)) * 0.000000001 * event.freq
                 assert (cycles != 0), "duration: %d, relative finish: %d, start time: %d, freq: %d, cycles: %d" \
-                                     % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
+                    % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
             # middle cases
             elif (relative_start_time < event.start_time) and (
                     relative_finish_time > (event.start_time + event.duration)):
