@@ -24,6 +24,12 @@ class PIDTool:
 
         self._find_all_pid()
 
+    def _find_all_pid(self):
+        self._find_main_pid()
+        self._find_all_app_pids()
+        self._find_system_server_pids()
+        self._find_binder_pids()
+
     def find_child_binder_threads(self, pid):
 
         res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(pid))
@@ -132,16 +138,13 @@ class PIDTool:
             if re.search("(grep)", line):
                 continue
 
-            regex_line = re.findall(r"(\d+) \d+ +\d+:\d* {(.+)} (.+)", line)
+            regex_line = re.findall(r"(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", line)
 
             pid = int(regex_line[0][0])
-            tname = regex_line[0][1]
-            pname = regex_line[0][2]
+            pname = regex_line[0][3]
+            if not regex_line[0][2]:
+                tname = pname
+            else:
+                tname = regex_line[0][2]
 
-            self.app_pids[pid] = PID(pid, pname, tname)
-
-    def _find_all_pid(self):
-        self._find_main_pid()
-        self._find_all_app_pids()
-        self._find_system_server_pids()
-        self._find_binder_pids()
+        self.app_pids[pid] = PID(pid, pname, tname)

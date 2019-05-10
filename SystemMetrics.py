@@ -328,7 +328,6 @@ class SystemMetrics:
         return frequencies
 
     def _get_core_utils(self):
-        # TODO
         loads = [0] * self.core_count
         return loads
 
