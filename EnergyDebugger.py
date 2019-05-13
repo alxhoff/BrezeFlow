@@ -83,7 +83,7 @@ class Tracer:
 
     def get_trace_results(self):
         self.adb.pull_file("/data/local/tmp/trace.dat", self.name + ".dat")
-        self.adb.pull_file("/d/tracing/trace", self.name + ".trace")
+        self.adb.pull_file("/data/local/tmp/trace.report", self.name + ".report")
 
     def _get_available_events(self):
         return self.adb.read_file(self.tracing_path + "available_events")

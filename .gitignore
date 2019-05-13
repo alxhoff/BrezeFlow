@@ -10,6 +10,7 @@ __pycache__/
 *.xdot
 *.csv#
 *.trace*
+*.report
 *.csv
 
 #xlsx files
