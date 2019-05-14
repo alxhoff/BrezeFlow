@@ -16,8 +16,9 @@ class PIDTool:
 
         self.adb_device = adb_device
         self.name = name
-        self.mainPID = self._find_main_pid()
+        main_pid = self._find_main_pid()
         self.app_pids = dict()
+        self.app_pids[main_pid.pid] = main_pid
         self.app_pids[0] = PID(0, "idle_proc", "idle_thread")
         self.system_pids = dict()
         self.binder_pids = dict()
@@ -147,4 +148,4 @@ class PIDTool:
             else:
                 tname = regex_line[0][2]
 
-        self.app_pids[pid] = PID(pid, pname, tname)
+            self.app_pids[pid] = PID(pid, pname, tname)

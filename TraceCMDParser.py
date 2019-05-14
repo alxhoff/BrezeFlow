@@ -102,12 +102,11 @@ class TracecmdProcessor:
             reply = event.num_field("reply")
             flags = event.num_field("flags")
             code = event.num_field("code")
-            to_proc = event.num_field("to_thread")
-            if to_proc == 0:
-                to_proc = event.num_field("to_proc")
+            to_thread = event.num_field("to_thread")
+            to_proc = event.num_field("to_proc")
 
             self.processed_events.append(EventBinderCall(event.pid, event.ts / 1000,
-                                                         event.cpu, event.name, reply, to_proc, flags, code))
+                                                         event.cpu, event.name, reply, to_proc, to_thread, flags, code))
 
         elif event.name == "mali":
             self.event_count.mali += 1
