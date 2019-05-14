@@ -837,6 +837,9 @@ class ProcessTree:
         # handled accordingly
         elif isinstance(event, EventBinderCall):
 
+            if event.transaction == 7182084:
+                print "wait here"
+
             # From non-binder process
             if (event.pid in self.pidtracer.app_pids or
                     event.pid in self.pidtracer.system_pids):
