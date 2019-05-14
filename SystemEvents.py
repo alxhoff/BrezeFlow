@@ -773,9 +773,6 @@ class ProcessTree:
                         if event.next_pid == pending_binder_node.dest_thread:
                             binder_response = True
 
-                            # Switch in new pid which will find pending binder node
-                            self.process_branches[event.next_pid].add_event(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
-
                             # edge from prev task to binder node
                             self.graph.add_edge(
                                 # original process branch that started transaction
@@ -783,6 +780,9 @@ class ProcessTree:
                                 # this branch as it is being woken
                                 self.process_branches[pending_binder_node.binder_thread].tasks[-1],
                                 color='palevioletred3', dir='forward', style='bold')
+
+                            # Switch in new pid which will find pending binder node
+                            self.process_branches[event.next_pid].add_event(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                             # edge from binder node to next task
                             self.graph.add_edge(
