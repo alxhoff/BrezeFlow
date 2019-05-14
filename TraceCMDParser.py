@@ -51,9 +51,10 @@ class TracecmdProcessor:
             return
 
         if event.name == "sched_switch":
+
             self.event_count.sched_switch += 1
 
-            prev_state = 'S'
+            prev_state = 'R'
             prev_state_int = event.num_field("prev_state")
             if prev_state_int == 1:
                 prev_state = 'S'

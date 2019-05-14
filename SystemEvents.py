@@ -781,7 +781,7 @@ class ProcessTree:
                                 self.process_branches[pending_binder_node.binder_thread].tasks[-1],
                                 color='palevioletred3', dir='forward', style='bold')
 
-                            # Switch in new pid which will find pending binder node
+                            # Switch in new pid which will find pending binder node and create a new task node
                             self.process_branches[event.next_pid].add_event(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                             # edge from binder node to next task
@@ -836,9 +836,6 @@ class ProcessTree:
         # are identified by if they send or recv from a binder thread then
         # handled accordingly
         elif isinstance(event, EventBinderCall):
-
-            if event.transaction == 7182084:
-                print "wait here"
 
             # From non-binder process
             if (event.pid in self.pidtracer.app_pids or
