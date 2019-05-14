@@ -85,7 +85,7 @@ class EventIdle(Event):
 
 class EventBinderCall(Event):
 
-    def __init__(self, pid, ts, cpu, name, reply, dest_proc, dest_thread, flags, code):
+    def __init__(self, pid, ts, cpu, name, reply, dest_proc, dest_thread, flags, code, tran_num):
         Event.__init__(self, pid, ts, cpu, name)
         if reply == 0:
             if flags & 0b1:
@@ -101,6 +101,7 @@ class EventBinderCall(Event):
         self.flags = flags
         self.code = code
         self.recv_time = 0
+        self.transaction = tran_num
 
 
 class EventMaliUtil(Event):
@@ -587,8 +588,9 @@ class ProcessBranch:
                                 + "." + str(self.tasks[-1].events[0].time)[-6:]
                                 + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
                                 + "." + str(self.tasks[-1].events[-1].time)[-6:]
-                                + "\npid: " + str(event.pid)
+                                + "\nPID: " + str(event.pid)
                                 + "  dest PID: " + str(event.dest_thread)
+                                + "\nType: " + str(event.trans_type.name)
                                 + "\n" + str(event.name)
                                 + "\n" + str(self.tasks[-1].__class__.__name__),
                                 fillcolor='coral', style='filled,bold', shape='box')
