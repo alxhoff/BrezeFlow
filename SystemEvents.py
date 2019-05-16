@@ -237,7 +237,7 @@ class TaskNode:
         self.events.append(event)
 
         # add event node to task sub-graph
-        if subgraph:# and "Binder" not in event.name and "Binder" not in event.next_name:
+        if subgraph:
             if isinstance(event, EventSchedSwitch):
                 self.graph.add_node(event,
                                     label=str(event.time)[:-6] + "." + str(event.time)[-6:]
@@ -742,9 +742,6 @@ class ProcessTree:
 
     def handle_event(self, event, subgraph, start_time, finish_time):
 
-        if event.time == 8045914041:
-            print 'wait here'
-
         # Ignore events that do not fall in the time window of interest
         if event.time < start_time or event.time > finish_time:
             return
@@ -760,7 +757,7 @@ class ProcessTree:
         elif isinstance(event, EventSchedSwitch):
 
             # task being switched out, ignoring idle task
-            if event.pid != 0:
+            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids:
                 try:
                     process_branch = self.process_branches[event.pid]
                     process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
@@ -768,7 +765,7 @@ class ProcessTree:
                     pass
 
             # task being switched in, again ignoring idle task
-            if event.next_pid != 0:
+            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids:
                 try:
                     binder_response = False
 
@@ -788,7 +785,8 @@ class ProcessTree:
                                 color='palevioletred3', dir='forward', style='bold')
 
                             # Switch in new pid which will find pending binder node and create a new task node
-                            self.process_branches[event.next_pid].add_event(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                            self.process_branches[event.next_pid].add_event(
+                                event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                             # edge from binder node to next task
                             self.graph.add_edge(
@@ -802,7 +800,8 @@ class ProcessTree:
                             del self.completed_binder_calls[x]
 
                     if not binder_response:
-                        self.process_branches[event.next_pid].add_event(event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                        self.process_branches[event.next_pid].add_event(
+                            event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                 except KeyError:
                     pass
@@ -877,7 +876,8 @@ class ProcessTree:
                                 event.pid == transaction.parent_pid:
 
                             # Add starting binder event to branch
-                            self.process_branches[event.pid].add_event(transaction.send_event, event_type=JobType.BINDER_SEND)
+                            self.process_branches[event.pid].add_event(
+                                transaction.send_event, event_type=JobType.BINDER_SEND)
 
                             # Create binder node in graph, event is from binder thread (event.pid == binder pid)
                             self.process_branches[event.pid].add_event(event, event_type=JobType.BINDER_RECV)
