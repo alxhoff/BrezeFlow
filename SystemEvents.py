@@ -237,7 +237,7 @@ class TaskNode:
         self.events.append(event)
 
         # add event node to task sub-graph
-        if subgraph and "Binder" not in event.name and "Binder" not in event.next_name:
+        if subgraph:# and "Binder" not in event.name and "Binder" not in event.next_name:
             if isinstance(event, EventSchedSwitch):
                 self.graph.add_node(event,
                                     label=str(event.time)[:-6] + "." + str(event.time)[-6:]
@@ -508,7 +508,8 @@ class ProcessBranch:
 
             return
 
-        if event_type == JobType.SCHED_SWITCH_IN and self.active is True:
+        if event_type == JobType.SCHED_SWITCH_IN:
+
             # If the CPU has changed
             if event.cpu != self.cpu:
                 # Update current task's cycle count in case new CPU has different speed
@@ -519,23 +520,23 @@ class ProcessBranch:
                 self.cpu = event.cpu
                 self._connect_to_cpu_event(self.cpu)
 
-        # New task STARTING
-        if event_type == JobType.SCHED_SWITCH_IN and self.active is False:
+            # New task STARTING
+            if self.active is False:
 
-            # create new task
-            self.tasks.append(TaskNode(self.graph, self.pid))
-            # add current event
-            self.tasks[-1].add_event(event, subgraph=subgraph)
+                # create new task
+                self.tasks.append(TaskNode(self.graph, self.pid))
+                # add current event
+                self.tasks[-1].add_event(event, subgraph=subgraph)
 
-            # set task to running
-            self.active = True
+                # set task to running
+                self.active = True
 
-            # These edges simply follow a PID, do not show any IPCs or IPDs
-            if len(self.tasks) >= 2:
-                self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen',
-                                    style='dashed')
+                # These edges simply follow a PID, do not show any IPCs or IPDs
+                if len(self.tasks) >= 2:
+                    self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen',
+                                        style='dashed')
 
-            return
+                return
 
         # Current task FINISHING
         elif event_type == JobType.SCHED_SWITCH_OUT and \
@@ -544,6 +545,8 @@ class ProcessBranch:
 
             self.tasks[-1].add_event(event, subgraph=subgraph)
             self.tasks[-1].finish()
+
+            # So that next switch in triggers the creation of a new task
             self.active = False
 
             self.graph.add_node(self.tasks[-1],
@@ -738,6 +741,9 @@ class ProcessTree:
                 writer.writerow([str(x), str(second[0]), str(second[1]), str(second[0] + second[1])])
 
     def handle_event(self, event, subgraph, start_time, finish_time):
+
+        if event.time == 8045914041:
+            print 'wait here'
 
         # Ignore events that do not fall in the time window of interest
         if event.time < start_time or event.time > finish_time:
