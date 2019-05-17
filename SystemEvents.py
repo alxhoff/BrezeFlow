@@ -492,20 +492,14 @@ class ProcessBranch:
             self._connect_to_cpu_event(self.cpu)
 
         # first job/task for PID branch
-        if not self.tasks:
+        if not self.tasks and event_type == JobType.SCHED_SWITCH_OUT and \
+                    event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
 
             self.tasks.append(TaskNode(self.graph, self.pid))
             self.tasks[-1].add_event(event, subgraph=subgraph)
 
-            # task could be finishing
-            if event_type == JobType.SCHED_SWITCH_OUT and \
-                    event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
-                self.active = False
-                self.tasks[-1].finish()
-                return
-
-            self.active = True
-
+            self.active = False
+            self.tasks[-1].finish()
             return
 
         if event_type == JobType.SCHED_SWITCH_IN:
@@ -747,6 +741,9 @@ class ProcessTree:
 
     def handle_event(self, event, subgraph, start_time, finish_time):
 
+        if event.time == 272433504038:
+            print "wait here"
+
         # Ignore events that do not fall in the time window of interest
         if event.time < start_time or event.time > finish_time:
             return
@@ -851,7 +848,13 @@ class ProcessTree:
             if (event.pid in self.pidtracer.app_pids or
                     event.pid in self.pidtracer.system_pids):
 
-                if event.dest_thread in self.pidtracer.binder_pids:
+                child_pids = [] #TODO get these binder threads into binder threads
+                if event.dest_thread == 0:
+                    child_pids = self.pidtracer.find_child_binder_threads(event.dest_proc)
+
+                # If being send to a binder thread
+                if event.dest_thread in self.pidtracer.binder_pids \
+                        or any(pid in child_pids for pid in self.pidtracer.binder_pids):
 
                     # Push binder event on to pending list so that when the second
                     # half of the transaction is performed the events can be merged.
