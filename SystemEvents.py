@@ -594,7 +594,7 @@ class ProcessBranch:
             self.graph.add_node(self.tasks[-1],
                                 label=str(self.tasks[-1].events[0].time)[:-6]
                                 + "." + str(self.tasks[-1].events[0].time)[-6:]
-                                + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
+                                + " ==> " + str(self.tasks[-1].events[-1].time)[:-6]
                                 + "." + str(self.tasks[-1].events[-1].time)[-6:]
                                 + "\nPID: " + str(event.pid)
                                 + "  dest PID: " + str(dest)
