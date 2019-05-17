@@ -765,15 +765,15 @@ class ProcessTree:
                 print "wait here"
 
             # task being switched out, ignoring idle task
-            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids:
+            if event.pid != 0:
                 try:
                     process_branch = self.process_branches[event.pid]
                     process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
                 except KeyError:
-                    pass
+                    pass # PID not of interest to program
 
             # task being switched in, again ignoring idle task
-            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids:
+            if event.next_pid != 0:
                 try:
                     binder_response = False
 

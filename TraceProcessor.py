@@ -21,7 +21,7 @@ class TraceProcessor:
         # generate pointers to most recent nodes for each PID (branch heads)
         process_tree = ProcessTree(self.pidt, metrics)
         trace_start_time = processed_events[0].time
-        trace_finish_time = trace_start_time + int(duration) * 1000000
+        trace_finish_time = int(trace_start_time + float(duration) * 1000000)
 
         # Create CPU core utilization trees first
         start_time = time.time()
