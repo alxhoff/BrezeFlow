@@ -741,9 +741,6 @@ class ProcessTree:
 
     def handle_event(self, event, subgraph, start_time, finish_time):
 
-        if event.time == 272433504038:
-            print "wait here"
-
         # Ignore events that do not fall in the time window of interest
         if event.time < start_time or event.time > finish_time:
             return
