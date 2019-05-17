@@ -586,13 +586,18 @@ class ProcessBranch:
             self.tasks[-1].add_event(event)
             self.tasks[-1].finish()
 
+            if event.dest_thread == 0:
+                dest = event.dest_proc
+            else:
+                dest = event.dest_thread
+
             self.graph.add_node(self.tasks[-1],
                                 label=str(self.tasks[-1].events[0].time)[:-6]
                                 + "." + str(self.tasks[-1].events[0].time)[-6:]
                                 + " ; " + str(self.tasks[-1].events[-1].time)[:-6]
                                 + "." + str(self.tasks[-1].events[-1].time)[-6:]
                                 + "\nPID: " + str(event.pid)
-                                + "  dest PID: " + str(event.dest_thread)
+                                + "  dest PID: " + str(dest)
                                 + "\nType: " + str(event.trans_type.name)
                                 + "\n" + str(event.name)
                                 + "\n" + str(self.tasks[-1].__class__.__name__),
@@ -755,6 +760,9 @@ class ProcessTree:
         # They show us which process was slept and which was woken. Showing the
         # previous task's state
         elif isinstance(event, EventSchedSwitch):
+
+            if event.time == 255771435872:
+                print "wait here"
 
             # task being switched out, ignoring idle task
             if event.pid != 0 and event.pid not in self.pidtracer.binder_pids:
