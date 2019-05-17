@@ -80,13 +80,13 @@ class TracecmdProcessor:
             name = event.str_field("prev_comm")
             next_pid = event.num_field("next_pid")
             next_name = event.str_field("next_comm")
-            self.processed_events.append(EventSchedSwitch(event.pid, event.ts / 1000,
+            self.processed_events.append(EventSchedSwitch(event.pid, int(round(event.ts / 1000.0)),
                                                           event.cpu, name, prev_state, next_pid, next_name))
         elif event.name == "cpu_idle":
             self.event_count.cpu_idle += 1
 
             state = event.num_field("state")
-            self.processed_events.append(EventIdle(event.ts / 1000, event.cpu, event.name,
+            self.processed_events.append(EventIdle(int(round(event.ts / 1000.0)), event.cpu, event.name,
                                                    state))
 
         elif event.name == "cpu_freq":
@@ -94,7 +94,7 @@ class TracecmdProcessor:
 
             target_cpu = event.num_field("cpu")
             freq = event.num_field("freq") * 1000
-            self.processed_events.append(EventFreqChange(event.pid, event.ts / 1000,
+            self.processed_events.append(EventFreqChange(event.pid, int(round(event.ts / 1000.0)),
                                                          event.cpu, freq, 0, target_cpu))
 
         elif event.name == "binder_transaction":
@@ -107,7 +107,7 @@ class TracecmdProcessor:
             to_proc = event.num_field("to_proc")
             trans_num = event.num_field("debug_id")
 
-            self.processed_events.append(EventBinderCall(event.pid, event.ts / 1000,
+            self.processed_events.append(EventBinderCall(event.pid, int(round(event.ts / 1000.0)),
                                                          event.cpu, event.name, reply, to_proc, to_thread, flags, code, trans_num))
 
         elif event.name == "mali":
@@ -116,7 +116,7 @@ class TracecmdProcessor:
             util = event.num_field("load")
             freq = event.num_field("freq") * 1000000
 
-            self.processed_events.append(EventMaliUtil(event.pid, event.ts / 1000, event.cpu,
+            self.processed_events.append(EventMaliUtil(event.pid, int(round(event.ts / 1000.0)), event.cpu,
                                                        util, freq))
 
         elif event.name == "exynos_temp":
@@ -129,5 +129,5 @@ class TracecmdProcessor:
             little = (big0 + big1 + big2 + big3) / 4.0
             gpu = event.num_field("t4") / 1000
 
-            self.processed_events.append(EventTempInfo(event.ts / 1000, big0,
+            self.processed_events.append(EventTempInfo(int(round(event.ts / 1000.0)), big0,
                                                        big1, big2, big3, little, gpu))
