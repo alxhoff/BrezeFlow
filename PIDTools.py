@@ -31,27 +31,6 @@ class PIDTool:
         self._find_system_server_pids()
         self._find_binder_pids()
 
-    def find_child_binder_threads(self, pid):
-
-        res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(pid))
-        res = res.splitlines()
-
-        child_pids = [pid]
-        for line in res:
-            if line.isspace():
-                continue
-            child_pids.append(int(re.findall(r" *(\d+)", line)[0]))
-        return child_pids
-
-    def is_relevant_pid(self, pid):
-        if pid in self.app_pids:
-            return True
-        if pid in self.system_pids:
-            return True
-        if pid in self.binder_pids:
-            return True
-        return False
-
     def _find_main_pid(self):
 
         res = self.adb_device.command("ps | grep " + self.name)
@@ -155,3 +134,24 @@ class PIDTool:
                 tname = regex_line[0][2]
 
             self.app_pids[pid] = PID(pid, pname, tname)
+
+    def find_child_binder_threads(self, pid):
+
+        res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(pid))
+        res = res.splitlines()
+
+        child_pids = []
+        for line in res:
+            if line.isspace():
+                continue
+            child_pids.append(int(re.findall(r" *(\d+)", line)[0]))
+        return child_pids
+
+    def is_relevant_pid(self, pid):
+        if pid in self.app_pids:
+            return True
+        if pid in self.system_pids:
+            return True
+        if pid in self.binder_pids:
+            return True
+        return False
