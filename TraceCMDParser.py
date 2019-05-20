@@ -103,8 +103,10 @@ class TracecmdProcessor:
             reply = event.num_field("reply")
             flags = event.num_field("flags")
             code = event.num_field("code")
-            to_thread = event.num_field("to_thread")
             to_proc = event.num_field("to_proc")
+            to_thread = event.num_field("to_thread")
+            if to_thread == 0:
+                to_thread = to_proc
             trans_num = event.num_field("debug_id")
 
             self.processed_events.append(EventBinderCall(event.pid, int(round(event.ts / 1000.0)),
