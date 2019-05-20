@@ -158,10 +158,10 @@ def main():
                     duration=args.duration
                     )
 
-    # sys_logger = SysLogger(adb)
-    # sys_logger.start()
-    # tracer.run_tracer()
-    # sys_logger.stop()
+    sys_logger = SysLogger(adb)
+    sys_logger.start()
+    tracer.run_tracer()
+    sys_logger.stop()
     tracer.get_trace_results()
 
     print "Loading tracecmd data and processing"

@@ -335,7 +335,7 @@ class TaskNode:
                 energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
                 return energy
         except ValueError:
-            print "invalid frequency"
+            print "Invalid frequency"
         except TypeError:
             print "Type error"
 
@@ -347,6 +347,10 @@ class BinderNode(TaskNode):
 
 
 class CPUBranch:
+    """ Each core of the system has a CPUBranch which stores the previous and current metrics for the core,
+    retaining to frequency values and utilization.
+
+    """
 
     def __init__(self, cpu_number, initial_freq, initial_util, graph):
         self.cpu_num = cpu_number
@@ -359,11 +363,15 @@ class CPUBranch:
         self.signal_freq = "freq_change" + str(self.cpu_num)
 
     def add_event(self, event):
+        """ Adds an event to the stored history of the CPU branch. Also checks if the added event updates the
+        actual metrics of the CPU.
+
+        :param event: Event to be added to the CPU branch's history
+        """
 
         self.events.append(event)
 
-        # Update current frequency
-        if event.freq != self.freq or event.util != self.util:
+        if event.freq != self.freq or event.util != self.util:  # Update current metrics
             self.prev_freq = self.freq
             self.freq = event.freq
 
@@ -583,7 +591,6 @@ class ProcessBranch:
                 if event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
                     self.active = False
                     self.tasks[-1].finish()
-
                 return
 
             elif event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S) and \

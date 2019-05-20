@@ -3,6 +3,8 @@ from tracecmd import *
 
 
 class EventCounts:
+    """ Used simply to track the number of different events that occured throughout the duration of a trace.
+    """
 
     def __init__(self):
         self.sched_switch = 0
@@ -15,6 +17,10 @@ class EventCounts:
 
 
 class TracecmdProcessor:
+    """ Using the tracecmd backend the ftrace events, recorded using tracecmd, are processed sequentially once
+    the trace date has been loaded.
+
+    """
 
     def __init__(self, filename):
         self.processed_events = []
@@ -39,6 +45,10 @@ class TracecmdProcessor:
         print "Temp: " + str(self.event_count.temp)
 
     def _process_trace(self):
+        """ Sequentially process trace events.
+
+        :return:
+        """
         event = self.trace.read_next_event()
         self._handle_event(event)
         while event:
@@ -46,6 +56,11 @@ class TracecmdProcessor:
             self._handle_event(event)
 
     def _handle_event(self, event):
+        """ Create an appropriate Event class child object that is then added to the list of unprocessed
+        python objects.
+
+        :param event: Tracecmd event object to be processed into Event object
+        """
 
         if not event:
             return
