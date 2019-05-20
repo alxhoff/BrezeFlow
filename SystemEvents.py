@@ -218,7 +218,7 @@ class TaskNode:
         # Switching events
         if isinstance(event, EventSchedSwitch):
 
-            if event.pid == self.pid: # Switching out
+            if event.pid == self.pid:  # Switching out
                 if self.calc_time is 0:
                     self.calc_time = event.time
 

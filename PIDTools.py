@@ -5,7 +5,6 @@ import sys
 class PID:
     """ A process identified on a Linux system. Identified by a process and thread name as well as a unique
     identifying numeric ID.
-
     """
 
     def __init__(self, pid, pname, tname):
@@ -17,7 +16,6 @@ class PID:
 class PIDTool:
     """ Probes the target system using ps and grep to extract all relevant threads to bother the target
     application, system services and binder threads.
-
     """
 
     def __init__(self, adb_device, name):
@@ -61,7 +59,7 @@ class PIDTool:
         processes/threads that are responsible for a target application's execution.
 
         System services are found by looking for binaries that originate from the /system/bin directory.
-        
+
         :return:
         """
         # Get all processes except the system_server itself
