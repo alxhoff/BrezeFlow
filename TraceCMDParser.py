@@ -110,7 +110,7 @@ class TracecmdProcessor:
             trans_num = event.num_field("debug_id")
 
             self.processed_events.append(EventBinderCall(event.pid, int(round(event.ts / 1000.0)),
-                                                         event.cpu, event.name, reply, to_proc, to_thread, flags, code, trans_num))
+                                event.cpu, event.name, reply, to_proc, to_thread, flags, code, trans_num))
 
         elif event.name == "mali":
             self.event_count.mali += 1

@@ -36,7 +36,7 @@ class PIDTool:
         res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(pid))
         res = res.splitlines()
 
-        child_pids = []
+        child_pids = [pid]
         for line in res:
             if line.isspace():
                 continue
@@ -114,11 +114,11 @@ class PIDTool:
                 parent_thread = self.adb_device.command("busybox ps -T | grep " + str(parent_pid))
                 parent_thread = parent_thread.splitlines()
                 for l in parent_thread:
-                    if re.search("(Binder)", line):
+                    if re.search("(Binder)", l):
                         continue
                     if line.isspace():
                         continue
-                    if re.search("(grep)", line):
+                    if re.search("(grep)", l):
                         continue
 
                     regex_line = re.findall(r"(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", l)
@@ -129,7 +129,7 @@ class PIDTool:
                     else:
                         tname = regex_line[0][2]
 
-                    self.system_pids[pid] = PID(pid, pname, tname)
+                    self.binder_pids[pid] = PID(pid, pname, tname)
 
     def _find_all_app_pids(self):
 
