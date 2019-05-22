@@ -480,7 +480,8 @@ class ProcessBranch:
             dispatcher.disconnect(self._handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
                                   sender=dispatcher.Any)
         except IndexError:
-            return
+            print "IndexError in disconnecting from cpu"
+            sys.exit(1)
 
     def _handle_cpu_freq_change(self):
         """ Adds a CPU/GPU metric change event to the current branch. This event snapshots the CPU's metrics
@@ -496,7 +497,8 @@ class ProcessBranch:
                                                  self.gpu.freq,
                                                  self.gpu.util)
             except IndexError:
-                pass
+                print "IndexError in handling CPU freq change"
+                sys.exit(1)
 
     def _handle_cpu_num_change(self, event):
         """ Adds a CPU/GPU metric change event to the current branch. This event snapshots the CPU's metrics
@@ -514,9 +516,12 @@ class ProcessBranch:
                                                      self.gpu.freq,
                                                      self.gpu.util)
             except IndexError:
-                pass
+                print "IndexError in handing CPU num change"
+                sys.exit(1)
 
+        self._disconnect_from_cpu_event(self.cpu)
         self.cpu = event.cpu
+        self._connect_to_cpu_event(self.cpu)
 
     def get_second_energy(self, second, start_time, finish_time):
         """ Returns the energy consumed by a process during a given second offset from an initial start time,
@@ -631,9 +636,6 @@ class ProcessBranch:
 
             if event.cpu != self.cpu:  # If the CPU has changed
                 self._handle_cpu_num_change(event)
-                self._disconnect_from_cpu_event(self.cpu)
-                self.cpu = event.cpu
-                self._connect_to_cpu_event(self.cpu)
 
             if self.active is False:  # New task starting
 
@@ -689,8 +691,7 @@ class FirstHalfBinderTransaction:
 
 
 class CompletedBinderTransaction:
-    """
-    A binder transaction is completed in two halves, firstly a transaction is performed to a target
+    """ A binder transaction is completed in two halves, firstly a transaction is performed to a target
     binder process. This binder process allocates the second half of the transaction to one of its
     child threads.
     """
@@ -706,8 +707,7 @@ class CompletedBinderTransaction:
 
 
 class ProcessTree:
-    """
-    A tree of PID branches that represents all of the PIDs that are relevant to the target application
+    """ A tree of PID branches that represents all of the PIDs that are relevant to the target application
     """
 
     def __init__(self, pidtracer, metrics):
@@ -726,16 +726,14 @@ class ProcessTree:
         self._create_pid_branches()
 
     def _create_cpu_branches(self):
-        """
-        Creates a CPU branch for each CPU found in a system
+        """ Creates a CPU branch for each CPU found in a system
         """
         for x in range(0, self.metrics.core_count):
             self.cpus.append(CPUBranch(x, self.metrics.current_core_freqs[x],
                                        self.metrics.current_core_utils[x], self.graph))
 
     def _create_pid_branches(self):
-        """
-        Each PID in the tree creates a branch on which jobs and tasks of that PID are created in a
+        """ Each PID in the tree creates a branch on which jobs and tasks of that PID are created in a
         chronological order such that the branch is a directed (in time) execution history of the
         branch's PID.
         """
@@ -750,8 +748,7 @@ class ProcessTree:
                                                      self.pidtracer, self.cpus, self.gpu)
 
     def finish_tree(self, filename):
-        """
-        After all events have been added to a tree the tree compiles its energy results and
+        """ After all events have been added to a tree the tree compiles its energy results and
         writes them to a CSV file. Summaries of each PID's energy consumption as well as total
         tree energy metrics are provided.
 
@@ -838,6 +835,9 @@ class ProcessTree:
         :param start_time: Time after which events must happens if they are to be processed
         :param finish_time: Time before which events must happens if they are to be processed
         """
+
+        if event.time == 693047169568:
+            print "wait here"
 
         if event.time < start_time or event.time > finish_time:  # Event time window
             return
