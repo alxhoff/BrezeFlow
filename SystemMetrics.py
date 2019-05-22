@@ -7,12 +7,15 @@ from XU3EnergyProfile import XU3RegressionConstants
 
 
 class IdleState(Enum):
+    """ Used by idle trace events to track if a CPU is idle or not.
+    """
     is_idle = 0
     is_not_idle = 1
 
 
 class TempLogEntry:
-
+    """ Stores a snapshot of the system's temperatures at a given timestamp.
+    """
     def __init__(self, ts, big0, big1, big2, big3, little, gpu):
         self.time = ts
         self.big = [big0, big1, big2, big3]
@@ -21,7 +24,7 @@ class TempLogEntry:
 
 
 class SystemTemps:
-
+    
     def __init__(self):
         self.temps = []
         self.initial_time = 0

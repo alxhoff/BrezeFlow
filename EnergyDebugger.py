@@ -128,17 +128,25 @@ class Tracer:
             if events in avail_events:
                 self.adb.append_file(self.tracing_path + "set_event", events)
 
-    def _set_event_filter(self, event, filter_expression):
-        
+    def _set_event_filter(self, event, filter_contents):
+        """ Sets the ftrace event filter for a particular event.
+
+        :param event: The string representation of the event that is to be filtered
+        :param filter_contents: State of the event filter to be set
+        """
         event_dir = self.adb.command(
             "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return
 
         self.adb.append_file(self.tracing_path + event_dir + "/filter",
-                             filter_expression)
+                             filter_contents)
 
     def _clear_event_filter(self, event):
+        """ Clears the ftrace event filter for a particular event.
+
+        :param event: Event whoes filter is to be cleared
+        """
         event_dir = self.adb.command(
             "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
@@ -147,6 +155,11 @@ class Tracer:
         self.adb.clear_file(self.tracing_path + event_dir + "/filter")
 
     def _get_event_format(self, event):
+        """ Retrieves the format string for a particular event.
+
+        :param event: Event whoes format string is to be retrieved
+        :return: String representation of the event's format. Empty string otherwise.
+        """
         event_dir = self.adb.command(
             "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
@@ -156,24 +169,44 @@ class Tracer:
                                   + event_dir + "/format")
 
     def _get_available_tracer(self):
+        """ Gets a list of the available tracers on the target system.
+
+        :return: An unprocessed string of all the available tracers on the target system
+        """
         return self.adb.read_file(self.tracing_path + "available_tracers")
 
     def _set_available_tracer(self, tracer):
+        """ Checks if the desired tracers is valid before setting the given tracer.
+
+        :param tracer: The tracer that is to be set on the target system.
+        """
         available_tracers = self._get_available_tracer()
         if tracer in available_tracers:
             self.adb.write_file(self.tracing_path
                                 + "current_tracer", tracer)
 
     def _clear_tracer(self):
+        """ Resets the current tracer by setting the current tracer to 'nop'.
+        """
         self.adb.write_file(self.tracing_path + "current_tracer", "nop")
         self.adb.clear_file(self.tracing_path + "trace")
 
 
 def main():
+    """ Entry point into the debugging tool.
+    """
+
+    """ Required objects for tracking system metrics and interfacing with a target system, connected
+    via an ADB connection.
+    """
     adb = ADBInterface()
     pid_tool = PIDTool(adb, args.app)
     trace_processor = TraceProcessor(pid_tool, args.app)
     sys_metrics = SystemMetrics(adb)
+
+    """ The tracer object stores the configuration for the ftrace trace that is to be performed on the
+    target system.
+    """
 
     print "Creating tracer, starting sys_logger and running trace"
 
@@ -184,11 +217,21 @@ def main():
                     duration=args.duration
                     )
 
+    """ As the energy debugger depends on the custom trace points implemented in the syslogger module,
+    it must be loaded before tracing begins. It must then be unloaded and finished before the results
+    are pulled from the target system.
+    """
+
     sys_logger = SysLogger(adb)
     sys_logger.start()
     tracer.run_tracer()
     sys_logger.stop()
     tracer.get_trace_results()
+
+    """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
+    processed. Results are generated into a CSV file, saved to the working directory under the same name as the target
+    application with the suffix _results.csv.
+    """
 
     print "Loading tracecmd data and processing"
 
