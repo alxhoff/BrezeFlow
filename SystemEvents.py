@@ -102,7 +102,7 @@ class EventBinderTransaction(Event):
 
     """
 
-    def __init__(self, pid, ts, cpu, name, reply, dest_proc, dest_thread, flags, code, tran_num):
+    def __init__(self, pid, ts, cpu, name, reply, dest_proc, target_pid, flags, code, tran_num):
         Event.__init__(self, pid, ts, cpu, name)
         if reply == 0:
             if flags & 0b1:
@@ -114,7 +114,7 @@ class EventBinderTransaction(Event):
         else:
             self.trans_type = BinderType.UNKNOWN
         self.dest_proc = dest_proc
-        self.dest_thread = dest_thread
+        self.target_pid = target_pid
         self.flags = flags
         self.code = code
         self.recv_time = 0
@@ -662,7 +662,7 @@ class ProcessBranch:
                                 + " ==> " + str(self.tasks[-1].events[-1].time)[:-6]
                                 + "." + str(self.tasks[-1].events[-1].time)[-6:]
                                 + "\nPID: " + str(event.pid)
-                                + "  dest PID: " + str(event.dest_thread)
+                                + "  dest PID: " + str(event.target_pid)
                                 + "\nType: " + str(event.trans_type.name)
                                 + "\n" + str(event.name)
                                 + "\n" + str(self.tasks[-1].__class__.__name__),
@@ -673,7 +673,7 @@ class ProcessBranch:
             self.tasks[-1].add_event(event, subgraph=subgraph)
 
 
-class PendingBinderTransaction:
+class FirstHalfBinderTransaction:
     """ Binder transactions are often directed to the parent binder thread of a
     system service. The exact PID of the child binder thread that will perform the
     transaction is not known when the first half of the transaction is completed.
@@ -688,7 +688,7 @@ class PendingBinderTransaction:
         self.send_event = event
 
 
-class PendingBinderNode:
+class CompletedBinderTransaction:
     """
     A binder transaction is completed in two halves, firstly a transaction is performed to a target
     binder process. This binder process allocates the second half of the transaction to one of its
@@ -696,11 +696,13 @@ class PendingBinderNode:
     """
 
     def __init__(self, first_half_event, second_half_event):
-        self.from_pid = first_half_event.pid
-        self.dest_thread = second_half_event.dest_thread
+        self.caller_pid = first_half_event.pid
+        self.target_pid = second_half_event.target_pid
         self.binder_thread = second_half_event.pid
         self.time = first_half_event.time
         self.duration = second_half_event.time - first_half_event.time
+        self.first_half = first_half_event
+        self.second_half = second_half_event
 
 
 class ProcessTree:
@@ -837,12 +839,6 @@ class ProcessTree:
         :param finish_time: Time before which events must happens if they are to be processed
         """
 
-        if event.time == 690729722576:
-            print "wait here"
-
-        if event.time == 690729722873:
-            print "wait here"
-
         if event.time < start_time or event.time > finish_time:  # Event time window
             return
 
@@ -862,27 +858,30 @@ class ProcessTree:
                     binder_response = False
                     for x, pending_binder_node in reversed(list(enumerate(self.completed_binder_calls))):  # Most recent
                         # If the event being switched in matches the binder node's target
-                        if event.next_pid == pending_binder_node.dest_thread:
+                        if event.next_pid == pending_binder_node.target_pid:
                             binder_response = True
 
-                            # edge from prev task to binder node
-                            self.graph.add_edge(
-                                # original process branch that started transaction
-                                self.process_branches[pending_binder_node.from_pid].tasks[-1],
-                                # this branch as it is being woken
+                            # Add first half binder event to binder branch
+                            self.process_branches[pending_binder_node.binder_thread].add_event(
+                                pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
+
+                            # Add second half binder event to binder branch
+                            self.process_branches[pending_binder_node.binder_thread].add_event(
+                                pending_binder_node.second_half, event_type=JobType.BINDER_RECV)
+
+                            self.graph.add_edge(  # Edge from calling task to binder node
+                                self.process_branches[pending_binder_node.caller_pid].tasks[-1],
                                 self.process_branches[pending_binder_node.binder_thread].tasks[-1],
                                 color='palevioletred3', dir='forward', style='bold')
 
-                            # Switch in new pid which will find pending binder node and create a new task node
+                            # Switch in new pid which will find pending completed binder transaction and create a
+                            # new task node
                             self.process_branches[event.next_pid].add_event(
                                 event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
-                            # edge from binder node to next task
-                            self.graph.add_edge(
-                                # original process branch that started transaction
+                            self.graph.add_edge(  # Edge from binder node to next task
                                 self.process_branches[pending_binder_node.binder_thread].tasks[-1],
-                                # this branch as it is being woken
-                                self.process_branches[pending_binder_node.dest_thread].tasks[-1],
+                                self.process_branches[pending_binder_node.target_pid].tasks[-1],
                                 color='yellow3', dir='forward')
 
                             # remove binder task that is now complete
@@ -902,26 +901,19 @@ class ProcessTree:
 
                     # First half of a binder transaction
                     self.pending_binder_calls.append(
-                        PendingBinderTransaction(event, event.dest_thread, self.pidtracer))
+                        FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
                     return
 
             elif event.pid in self.pidtracer.binder_pids:  # From binder process
 
-                if self.pending_binder_calls:  # First halves pending of binder transactions
-                    # TODO remove exponential search
-                    for x, transaction in reversed(list(enumerate(self.pending_binder_calls))):  # Find most recent first half
+                if self.pending_binder_calls:  # Pending first halves
+                    # Find most recent first half
+                    for x, transaction in reversed(list(enumerate(self.pending_binder_calls))):
 
                         if any(pid == event.pid for pid in transaction.child_pids) or \
                                 event.pid == transaction.parent_pid:  # Find corresponding first half
 
-                            # Add starting binder event to branch
-                            self.process_branches[event.pid].add_event(
-                                transaction.send_event, event_type=JobType.BINDER_SEND)
-
-                            # Create binder node in graph
-                            self.process_branches[event.pid].add_event(event, event_type=JobType.BINDER_RECV)
-
-                            self.completed_binder_calls.append(PendingBinderNode(transaction.send_event, event))
+                            self.completed_binder_calls.append(CompletedBinderTransaction(transaction.send_event, event))
 
                             del self.pending_binder_calls[x]  # Remove completed first half
                 return
