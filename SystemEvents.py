@@ -837,6 +837,12 @@ class ProcessTree:
         :param finish_time: Time before which events must happens if they are to be processed
         """
 
+        if event.time == 690729722576:
+            print "wait here"
+
+        if event.time == 690729722873:
+            print "wait here"
+
         if event.time < start_time or event.time > finish_time:  # Event time window
             return
 
@@ -854,9 +860,7 @@ class ProcessTree:
             if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids:
                 try:
                     binder_response = False
-
-                    for x, pending_binder_node in enumerate(self.completed_binder_calls):  # If first half of
-
+                    for x, pending_binder_node in reversed(list(enumerate(self.completed_binder_calls))):  # Most recent
                         # If the event being switched in matches the binder node's target
                         if event.next_pid == pending_binder_node.dest_thread:
                             binder_response = True
@@ -899,11 +903,13 @@ class ProcessTree:
                     # First half of a binder transaction
                     self.pending_binder_calls.append(
                         PendingBinderTransaction(event, event.dest_thread, self.pidtracer))
+                    return
 
             elif event.pid in self.pidtracer.binder_pids:  # From binder process
 
                 if self.pending_binder_calls:  # First halves pending of binder transactions
-                    for x, transaction in enumerate(self.pending_binder_calls):  # TODO remove exponential search
+                    # TODO remove exponential search
+                    for x, transaction in reversed(list(enumerate(self.pending_binder_calls))):  # Find most recent first half
 
                         if any(pid == event.pid for pid in transaction.child_pids) or \
                                 event.pid == transaction.parent_pid:  # Find corresponding first half
@@ -918,6 +924,7 @@ class ProcessTree:
                             self.completed_binder_calls.append(PendingBinderNode(transaction.send_event, event))
 
                             del self.pending_binder_calls[x]  # Remove completed first half
+                return
 
         elif isinstance(event, EventFreqChange):
             for i in range(event.target_cpu, event.target_cpu + 4):
