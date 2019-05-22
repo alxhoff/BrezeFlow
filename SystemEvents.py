@@ -665,7 +665,7 @@ class ProcessBranch:
                                 + "." + str(self.tasks[-1].events[-1].time)[-6:]
                                 + "\nPID: " + str(event.pid)
                                 + "  dest PID: " + str(event.target_pid)
-                                + "\nType: " + str(event.trans_type.name)
+                                + "\nType: " + str(self.tasks[-1].events[0].trans_type.name)
                                 + "\n" + str(event.name)
                                 + "\n" + str(self.tasks[-1].__class__.__name__),
                                 fillcolor='coral', style='filled,bold', shape='box')
@@ -836,9 +836,6 @@ class ProcessTree:
         :param finish_time: Time before which events must happens if they are to be processed
         """
 
-        if event.time == 693047169568:
-            print "wait here"
-
         if event.time < start_time or event.time > finish_time:  # Event time window
             return
 
@@ -886,6 +883,7 @@ class ProcessTree:
 
                             # remove binder task that is now complete
                             del self.completed_binder_calls[x]
+                            return
 
                     if not binder_response:
                         self.process_branches[event.next_pid].add_event(
@@ -916,6 +914,7 @@ class ProcessTree:
                             self.completed_binder_calls.append(CompletedBinderTransaction(transaction.send_event, event))
 
                             del self.pending_binder_calls[x]  # Remove completed first half
+                            return
                 return
 
         elif isinstance(event, EventFreqChange):
