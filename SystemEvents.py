@@ -940,8 +940,18 @@ class ProcessTree:
             return
 
         elif isinstance(event, EventTempInfo):
-            self.metrics.unprocessed_temps.append(TempLogEntry(event.time, event.big0, event.big1,
-                                                               event.big2, event.big3, event.little, event.gpu))
+            if self.metrics.sys_temps.initial_time == 0:
+                self.metrics.sys_temps.initial_time = event.time
+            self.metrics.sys_temps.end_time = self.metrics.sys_temps.end_time = event.time
+
+            if len(self.metrics.sys_temps.temps) >= 1:
+                for t in range(self.metrics.sys_temps.temps[-1].time - self.metrics.sys_temps.initial_time,
+                               event.time - self.metrics.sys_temps.initial_time):
+                    self.metrics.sys_temps.temps.append(TempLogEntry(event.time, event.big0, event.big1,
+                                                                     event.big2, event.big3, event.little, event.gpu))
+            else:
+                self.metrics.sys_temps.temps.append(TempLogEntry(event.time, event.big0, event.big1,
+                                                                 event.big2, event.big3, event.little, event.gpu))
 
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs

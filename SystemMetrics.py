@@ -24,7 +24,8 @@ class TempLogEntry:
 
 
 class SystemTemps:
-    
+    """ A timeline of system temperature snapshots.
+    """
     def __init__(self):
         self.temps = []
         self.initial_time = 0
@@ -306,18 +307,6 @@ class SystemMetrics:
         except IndexError:
             print "Temperature could not be retrieved for time %d" % ts
             sys.exit(1)
-
-    def compile_temps_table(self):
-        self.sys_temps.initial_time = self.unprocessed_temps[0].time
-        self.sys_temps.end_time = self.unprocessed_temps[-1].time
-
-        for i, event in enumerate(self.unprocessed_temps[:-1]):
-            for t in range(self.unprocessed_temps[i].time - self.sys_temps.initial_time,
-                           self.unprocessed_temps[i + 1].time - self.sys_temps.initial_time):
-                self.sys_temps.temps.append(event)
-
-        # append final temp event as this will be for all times > than last event
-        self.sys_temps.temps.append(self.unprocessed_temps[-1])
 
     def _get_core_count(self):
         return int(self.adb.command("nproc"))

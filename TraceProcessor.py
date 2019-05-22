@@ -53,11 +53,6 @@ class TraceProcessor:
             cluster.compile_table(metrics.sys_util_history.cpu[x * 4: x * 4 + 4])
         print ("Cluster util table generated in %s seconds" % (time.time() - start_time))
 
-        start_time = time.time()
-        print "Compiling temp tables"
-        SystemMetrics.current_metrics.compile_temps_table()
-        print ("Temp table generated in %s seconds" % (time.time() - start_time))
-
         num_events = len(processed_events)
         print "Total events: " + str(num_events)
 
