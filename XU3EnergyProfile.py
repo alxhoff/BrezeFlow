@@ -1,4 +1,20 @@
+#!/usr/bin/env python
+
+__author__ = "Alex Hoffman"
+__copyright__ = "Copyright 2019, Alex Hoffman"
+__credits__ = "Anuj Pathania"
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Alex Hoffman"
+__email__ = "alex.hoffman@tum.de"
+__status__ = "Beta"
+
+
 class XU3RegressionConstants:
+    """ Regression constants found for the Odroid XU3 bigLITTLE board. Per/second energy is found using the
+    following:
+                energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
+    """
 
     def __init__(self):
         self.little_reg_const = {

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import os
 import re
@@ -9,6 +11,14 @@ from SysLoggerInterface import SysLogger
 from SystemMetrics import SystemMetrics
 from TraceCMDParser import TracecmdProcessor
 from TraceProcessor import TraceProcessor
+
+__author__ = "Alex Hoffman"
+__copyright__ = "Copyright 2019, Alex Hoffman"
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Alex Hoffman"
+__email__ = "alex.hoffman@tum.de"
+__status__ = "Beta"
 
 parser = argparse.ArgumentParser()
 

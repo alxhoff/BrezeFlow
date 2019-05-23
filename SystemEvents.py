@@ -1,9 +1,30 @@
+#!/usr/bin/env python
+
+"""
+Tracecmd trace events are wrapped into event objects that can then be handled to construct a task graph of the target
+application.
+
+Necessary trace events, such as sched_switch and binder_transaction events, are parsed from the tracecmd events
+found in the tracecmd .dat file that is pulled from the target system after the trace has been performed.
+These events are all derivatives of the event base class which gives the PID, CPU, name and time stamp of the event.
+Interpolation between these events allows for binder transactions to be reconstructed as well as the IPC dependencies
+between tasks being able to be co-ordinated with the sched_switch events that track when and where a task is running.
+"""
+
 import csv
 
 import networkx as nx
 from pydispatch import dispatcher
 
 from SystemMetrics import *
+
+__author__ = "Alex Hoffman"
+__copyright__ = "Copyright 2019, Alex Hoffman"
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Alex Hoffman"
+__email__ = "alex.hoffman@tum.de"
+__status__ = "Beta"
 
 PL_PID = 'PID'
 PL_PID_PNAME = 'PNAME'
@@ -855,7 +876,6 @@ class ProcessTree:
                     for x, pending_binder_node in reversed(list(enumerate(self.completed_binder_calls))):  # Most recent
                         # If the event being switched in matches the binder node's target
                         if event.next_pid == pending_binder_node.target_pid:
-
                             # Add first half binder event to binder branch
                             self.process_branches[pending_binder_node.binder_thread].add_event(
                                 pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
@@ -893,10 +913,10 @@ class ProcessTree:
 
             if event.pid in self.pidtracer.app_pids:
 
-                    # First half of a binder transaction
-                    self.pending_binder_calls.append(
-                        FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
-                    return 0
+                # First half of a binder transaction
+                self.pending_binder_calls.append(
+                    FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
+                return 0
 
             elif event.pid in self.pidtracer.system_pids:
                 self.pending_binder_calls.append(
@@ -915,7 +935,8 @@ class ProcessTree:
                         if any(pid == event.pid for pid in transaction.child_pids) or \
                                 event.pid == transaction.parent_pid:  # Find corresponding first half
 
-                            self.completed_binder_calls.append(CompletedBinderTransaction(transaction.send_event, event))
+                            self.completed_binder_calls.append(
+                                CompletedBinderTransaction(transaction.send_event, event))
 
                             del self.pending_binder_calls[x]  # Remove completed first half
                             return 0

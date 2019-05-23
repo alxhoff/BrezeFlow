@@ -1,5 +1,15 @@
+#!/usr/bin/env python
+
 import re
 import sys
+
+__author__ = "Alex Hoffman"
+__copyright__ = "Copyright 2019, Alex Hoffman"
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Alex Hoffman"
+__email__ = "alex.hoffman@tum.de"
+__status__ = "Beta"
 
 
 class PID:

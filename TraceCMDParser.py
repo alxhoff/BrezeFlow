@@ -1,5 +1,20 @@
+#!/usr/bin/env python
+
+"""
+Uses the tracecmd python module to parse the tracecmd events, found in a tracecmd .dat file, into event
+objects, found in the SystemEvents module of the energy debugger.
+"""
+
+from tracecmd import Trace
 from SystemEvents import *
-from tracecmd import *
+
+__author__ = "Alex Hoffman"
+__copyright__ = "Copyright 2019, Alex Hoffman"
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Alex Hoffman"
+__email__ = "alex.hoffman@tum.de"
+__status__ = "Beta"
 
 
 class EventCounts:
