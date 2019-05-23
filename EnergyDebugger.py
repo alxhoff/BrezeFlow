@@ -132,11 +132,11 @@ class Tracer:
         if isinstance(events, list):
             for f in range(0, len(events)):
                 if events[f] in avail_events:
-                    self.adb.append_file(self.tracing_path + "set_event",
-                                         events[f])
+                    self.adb.append_to_file(self.tracing_path + "set_event",
+                                            events[f])
         else:
             if events in avail_events:
-                self.adb.append_file(self.tracing_path + "set_event", events)
+                self.adb.append_to_file(self.tracing_path + "set_event", events)
 
     def _set_event_filter(self, event, filter_contents):
         """ Sets the ftrace event filter for a particular event.
@@ -149,8 +149,8 @@ class Tracer:
         if event_dir is None:
             return
 
-        self.adb.append_file(self.tracing_path + event_dir + "/filter",
-                             filter_contents)
+        self.adb.append_to_file(self.tracing_path + event_dir + "/filter",
+                                filter_contents)
 
     def _clear_event_filter(self, event):
         """ Clears the ftrace event filter for a particular event.

@@ -911,14 +911,13 @@ class ProcessTree:
 
         elif isinstance(event, EventBinderTransaction):
 
-            if event.pid in self.pidtracer.app_pids:
+            if event.pid in self.pidtracer.app_pids:  # First half of a binder transaction
 
-                # First half of a binder transaction
                 self.pending_binder_calls.append(
                     FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
                 return 0
 
-            elif event.pid in self.pidtracer.system_pids:
+            elif event.pid in self.pidtracer.system_pids:  # First half of a binder transaction
                 self.pending_binder_calls.append(
                     FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
 
@@ -926,7 +925,7 @@ class ProcessTree:
                 self.pending_binder_calls[-1].child_pids += caller_children
                 return 0
 
-            elif event.pid in self.pidtracer.binder_pids:  # From binder process
+            elif event.pid in self.pidtracer.binder_pids:  # Second half of a binder transaction
 
                 if self.pending_binder_calls:  # Pending first halves
                     # Find most recent first half

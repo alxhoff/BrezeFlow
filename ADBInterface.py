@@ -15,40 +15,73 @@ __status__ = "Beta"
 
 
 class ADBInterface:
+    """ Object to interface with an attached Android device over an ADB connection. The ADB connection
+    is established using the Python ASB + Fastboot implementation from Google. For this connection to work
+    the "standard" command line ADB server must not be running as this will block access to the target
+    device's ADB connection.
+
+    """
     current_interface = None
 
     def __init__(self):
-        # ADB connection
         signer = sign_m2crypto.M2CryptoSigner(op.expanduser('~/.android/adbkey'))
         self.device = adb_commands.AdbCommands()
         self.device.ConnectDevice(rsa_keys=[signer])
         ADBInterface.current_interface = self
-
-        # traces
-        self.tracers = []
 
     def __del__(self):
         self.current_interface = None
         self.device.Close()
 
     def command(self, command):
+        """ Executes a command on the target device.
+
+        :param command: String literal of the command that is to be run
+        :return: The text output that would otherwise be displayed on stdout
+        """
         return self.device.Shell(command)
 
     def write_file(self, filename, contents):
+        """ Writes the provided string into the target file, this is done using 'echo >'.
+
+        :param filename: File which is to be written into
+        :param contents: String contents that is to be written into file
+        """
         command = 'echo ' + contents + ' > ' + filename
         self.device.Shell(command)
 
     def clear_file(self, filename):
+        """ Clears the target file using 'echo >'
+
+        :param filename: File that is to be cleared
+        """
         self.write_file(filename, "")
 
-    def append_file(self, filename, contents):
+    def append_to_file(self, filename, contents):
+        """ Appends the provided contents to the end of the target file. This is done using 'echo >>'.
+
+        :param filename: File that is to be appended to
+        :param contents: String contents that is to be appended to the target file
+        """
         command = 'echo ' + contents + ' >> ' + filename
         self.device.Shell(command)
 
     def read_file(self, filename):
+        """ Reads the contents of a target file on the target Android system.
+
+        :param filename: File that is to be read
+        :return: A string representation of the target file's contents
+        """
         return self.device.Pull(filename)
 
     def pull_file(self, target_file, dest_filename):
+        """ Pulls the target file from the target Android system into the provided file, relative to the
+        working directory.
+
+        :param target_file: File path and name of the file that is to be pulled
+        :param dest_filename: File path and name, relative to working directory, where the pulled file
+        should be stored
+        """
         f = open(dest_filename, 'wb+')
         f.write(self.device.Pull(target_file))
         f.close()
