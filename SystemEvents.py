@@ -837,7 +837,7 @@ class ProcessTree:
         """
 
         if event.time < start_time or event.time > finish_time:  # Event time window
-            return
+            return 1
 
         elif isinstance(event, EventSchedSwitch):  # PID context swap
 
@@ -852,11 +852,9 @@ class ProcessTree:
             # Task being switched in, again ignoring idle task and binder threads
             if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids:
                 try:
-                    binder_response = False
                     for x, pending_binder_node in reversed(list(enumerate(self.completed_binder_calls))):  # Most recent
                         # If the event being switched in matches the binder node's target
                         if event.next_pid == pending_binder_node.target_pid:
-                            binder_response = True
 
                             # Add first half binder event to binder branch
                             self.process_branches[pending_binder_node.binder_thread].add_event(
@@ -883,24 +881,30 @@ class ProcessTree:
 
                             # remove binder task that is now complete
                             del self.completed_binder_calls[x]
-                            return
+                            return 0
 
-                    if not binder_response:
-                        self.process_branches[event.next_pid].add_event(
-                            event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                    self.process_branches[event.next_pid].add_event(
+                        event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
                 except KeyError:
                     pass
-            return
+            return 0
 
         elif isinstance(event, EventBinderTransaction):
 
-            if (event.pid in self.pidtracer.app_pids or
-                    event.pid in self.pidtracer.system_pids):  # From non-binder process
+            if event.pid in self.pidtracer.app_pids:
 
                     # First half of a binder transaction
                     self.pending_binder_calls.append(
                         FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
-                    return
+                    return 0
+
+            elif event.pid in self.pidtracer.system_pids:
+                self.pending_binder_calls.append(
+                    FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
+
+                caller_children = self.pidtracer.find_child_binder_threads(event.pid)
+                self.pending_binder_calls[-1].child_pids += caller_children
+                return 0
 
             elif event.pid in self.pidtracer.binder_pids:  # From binder process
 
@@ -914,15 +918,15 @@ class ProcessTree:
                             self.completed_binder_calls.append(CompletedBinderTransaction(transaction.send_event, event))
 
                             del self.pending_binder_calls[x]  # Remove completed first half
-                            return
-                return
+                            return 0
+                return 0
 
         elif isinstance(event, EventFreqChange):
             for i in range(event.target_cpu, event.target_cpu + 4):
                 self.metrics.current_core_freqs[i] = event.freq
                 self.metrics.current_core_utils[i] = event.util
                 self.cpus[i].add_event(event)
-            return
+            return 0
 
         elif isinstance(event, EventMaliUtil):
 
@@ -935,7 +939,7 @@ class ProcessTree:
 
         elif isinstance(event, EventIdle):
             self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)
-            return
+            return 0
 
         elif isinstance(event, EventTempInfo):
             if self.metrics.sys_temps.initial_time == 0:
@@ -954,4 +958,4 @@ class ProcessTree:
         # Wakeup events show us the same information as sched switch events and
         # as such can be neglected when it comes to generating directed graphs
         if isinstance(event, EventWakeup):
-            return
+            return 0

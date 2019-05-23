@@ -61,11 +61,13 @@ class TraceProcessor:
         if test:
             for x, event in enumerate(processed_events[:300]):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
-                process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time)
+                if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
+                    break
         else:
             for x, event in enumerate(processed_events):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
-                process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time)
+                if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
+                    break
         print ("All events handled in %s seconds" % (time.time() - start_time))
 
         start_time = time.time()
