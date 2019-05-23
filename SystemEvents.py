@@ -884,10 +884,13 @@ class ProcessTree:
                             self.process_branches[pending_binder_node.binder_thread].add_event(
                                 pending_binder_node.second_half, event_type=JobType.BINDER_RECV)
 
-                            self.graph.add_edge(  # Edge from calling task to binder node
-                                self.process_branches[pending_binder_node.caller_pid].tasks[-1],
-                                self.process_branches[pending_binder_node.binder_thread].tasks[-1],
-                                color='palevioletred3', dir='forward', style='bold')
+                            try:
+                                self.graph.add_edge(  # Edge from calling task to binder node
+                                    self.process_branches[pending_binder_node.caller_pid].tasks[-1],
+                                    self.process_branches[pending_binder_node.binder_thread].tasks[-1],
+                                    color='palevioletred3', dir='forward', style='bold')
+                            except IndexError:
+                                print "Calling task has no nodes yet to link"
 
                             # Switch in new pid which will find pending completed binder transaction and create a
                             # new task node
