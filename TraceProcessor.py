@@ -13,12 +13,36 @@ __status__ = "Beta"
 
 
 class TraceProcessor:
+    """ After a trace is run the trace data is retrieved from the target Android system. This binary trace
+    data must be parsed and processed. The TraceProcessor class loads the data using the provided filename,
+    then processing the stored trace events, compiling required metric histories and process branches as
+    well as the final process tree.
+    """
 
     def __init__(self, pidt, filename):
+        """
+        :param pidt: PID tool object that has all the PIDs relevant to the target application stored
+        :param filename: Filename for storing the results of the processed trace
+        """
         self.pidt = pidt
         self.filename = filename
 
     def process_trace(self, metrics, tracecmd, duration, draw=None, test=None, subgraph=False):
+        """ There are a number of steps required in processing a given trace. This is outlined below.
+
+        - Idle and temperature events are preprocessed and removed from the pending events to be processed. This
+        is so that the per core temperature and utilization lookup timelines can be generated before the events that depending on
+        them to calculate energy consumptions are processed.
+        - A complete utilization
+
+        :param metrics:
+        :param tracecmd:
+        :param duration:
+        :param draw:
+        :param test:
+        :param subgraph:
+        :return:
+        """
 
         process_start_time = time.time()
         print "Processing trace"
@@ -28,12 +52,14 @@ class TraceProcessor:
         if not processed_events:
             sys.exit("Processing trace failed")
 
-        # generate pointers to most recent nodes for each PID (branch heads)
         process_tree = ProcessTree(self.pidt, metrics)
         trace_start_time = processed_events[0].time
         trace_finish_time = int(trace_start_time + float(duration) * 1000000)
 
-        # Create CPU core utilization trees first
+        # Init GPU util tree
+        # TODO does it matter if the first event is a mali event?
+        metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
+
         start_time = time.time()
         print "Compiling util and temp trees"
         i = 0
@@ -49,12 +75,6 @@ class TraceProcessor:
             else:
                 i += 1
         print ("Util trees took %s seconds to build" % (time.time() - start_time))
-
-        # Init GPU util tree
-        # set initial time as first event in log as mali util is able to be found via sysfs
-        # and as such is available from the start and must not be calculated
-        # TODO does it matter if the first event is a mali event?
-        metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
 
         # Compile cluster utilizations
         start_time = time.time()

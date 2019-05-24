@@ -111,6 +111,7 @@ class Tracer:
         """
         self.adb.pull_file("/data/local/tmp/trace.dat", self.name + ".dat")
         self.adb.pull_file("/data/local/tmp/trace.report", self.name + ".report")
+        self.adb.pull_file("/d/binder/transaction_log", self.name + ".tlog")
 
     def _get_available_events(self):
         """ Retrieves all the events that are able to be traced on the target system

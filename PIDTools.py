@@ -72,7 +72,6 @@ class PIDTool:
 
         :return:
         """
-        # Get all processes except the system_server itself
         res = self.adb_device.command("busybox ps -T | grep /system/bin")
         res = res.splitlines()
 
@@ -121,8 +120,7 @@ class PIDTool:
             # Check that parent threads are in system server threads. This catches threads
             # such as the media codec which is commonly used but is not a system service
             parent_pid = int(regex_line[0][2])
-            # process will be first line as it's PID will be lower than child threads and as
-            # such will be higher is list
+
             if not any(proc == parent_pid for proc in self.system_pids.keys()):
                 parent_thread = self.adb_device.command("busybox ps -T | grep " + str(parent_pid))
                 parent_thread = parent_thread.splitlines()
