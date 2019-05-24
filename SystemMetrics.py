@@ -50,6 +50,9 @@ class UtilizationSlice:
 
 
 class CPUUtilizationSlice(UtilizationSlice):
+    """ Records a slice of a CPU's utilization timeline. Used to initially store time markers for the moments in time
+    when a CPU's state changed before the timeline of the CPU is compile from these events.
+    """
 
     def __init__(self, start_time, finish_time, freq, state=0, util=0):
         UtilizationSlice.__init__(self, start_time, util)
@@ -94,26 +97,24 @@ class CPUUtilizationTable(UtilizationTable):
             return 0.0
 
     def add_idle_event(self, event):
-        # First event
-        if self.start_time is 0:
+        if self.start_time is 0:  # First event
             self.start_time = event.time
             if event.state == 4294967295:
                 self.core_state = IdleState.is_not_idle
             else:
                 self.core_state = not event.state
-            return
         else:
             self.events.append(CPUUtilizationSlice(
                 self.last_event_time, event.time - self.start_time,
                 SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
 
-        self.last_event_time = event.time - self.start_time
-        self.calc_util_last_event()
+            self.last_event_time = event.time - self.start_time
+            self.calc_util_last_event()
 
-        if event.state == 4294967295:
-            self.core_state = not self.core_state
-        else:
-            self.core_state = event.state
+            if event.state == 4294967295:
+                self.core_state = not self.core_state
+            else:
+                self.core_state = event.state
 
     def calc_util_last_event(self):
         # Iterate backwards until 250ms has been traversed or until first event hit
@@ -273,47 +274,69 @@ class SystemUtilization:
 
 
 class SystemMetrics:
+    """ Stores all current and previous system metrics for all relevant hardware from the target system.
+
+    Attributes:
+        adb                 The ADB connection used to interface with the target Android device.
+        energy_profile      Regression constants used to calculate per-core energy consumption for target device.
+        core_count          Number of cores on the target Android device.
+
+        current_core_freqs  As the event timeline is processed the "current" core frequencies, utilizations are stored
+        current_core_utils  for the CPUs and GPU, used for energy calculations
+        current_gpu_freq
+        current_gpu_util
+
+        sys_util_history    A history of all utilizations for both the CPU and GPU
+        sys_temp_history    A history of all temperature measurements for both the CPU and GPU
+    """
     current_metrics = None
 
     def __init__(self, adb):
         self.adb = adb
         self.energy_profile = XU3RegressionConstants()
         self.core_count = self._get_core_count()
+
         self.current_core_freqs = self._get_core_freqs()
         self.current_core_utils = self._get_core_utils()
         self.current_gpu_freq = self._get_gpu_freq()
         self.current_gpu_util = self._get_gpu_util()
+
         self.sys_util_history = SystemUtilization(self.core_count)
-        self.sys_temps = SystemTemps()
-        self.unprocessed_temps = []
+        self.sys_temp_history = SystemTemps()
 
         SystemMetrics.current_metrics = self
 
-    # Core of -1 is GPU
     def get_temp(self, ts, core):
-        # If time is before first temp recording then default to fire temp recording
+        """ Returns the temperature for a particular core (GPU represented by core -1) at a particular point in time.
+        If the time falls before or after the recorded temperature measurements then the first or last temperature will
+        be returned respectively.
+
+        :param ts: The time at which the temperature should be returned
+        :param core: The core for which the temperature should be returned
+        :return: The temperature of the specified core at the specified time
+        """
         try:
-            if ts <= self.sys_temps.temps[0].time:
+            if ts <= self.sys_temp_history.temps[0].time:
                 if core == -1:
-                    return self.sys_temps.temps[0].gpu
+                    return self.sys_temp_history.temps[0].gpu
                 elif core <= 3:
-                    return self.sys_temps.temps[0].little
+                    return self.sys_temp_history.temps[0].little
                 else:
-                    return self.sys_temps.temps[0].big[core % 4]
-            elif ts >= self.sys_temps.temps[-1].time:
+                    return self.sys_temp_history.temps[0].big[core % 4]
+            elif ts >= self.sys_temp_history.temps[-1].time:
                 if core == -1:
-                    return self.sys_temps.temps[-1].gpu
+                    return self.sys_temp_history.temps[-1].gpu
                 elif core <= 3:
-                    return self.sys_temps.temps[-1].little
+                    return self.sys_temp_history.temps[-1].little
                 else:
-                    return self.sys_temps.temps[-1].big[core % 4]
+                    return self.sys_temp_history.temps[-1].big[core % 4]
             else:
                 if core == -1:
-                    return self.sys_temps.temps[ts - self.sys_temps.initial_time].gpu
+                    return self.sys_temp_history.temps[ts - self.sys_temp_history.initial_time].gpu
                 elif core <= 3:
-                    return self.sys_temps.temps[ts - self.sys_temps.initial_time].little
+                    return self.sys_temp_history.temps[ts - self.sys_temp_history.initial_time].little
                 else:
-                    return self.sys_temps.temps[ts - self.sys_temps.initial_time].big[core % 4]
+                    return self.sys_temp_history.temps[ts - self.sys_temp_history.initial_time].big[core % 4]
         except IndexError:
             print "Temperature could not be retrieved for time %d" % ts
             sys.exit(1)

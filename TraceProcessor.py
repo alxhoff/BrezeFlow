@@ -31,17 +31,22 @@ class TraceProcessor:
         """ There are a number of steps required in processing a given trace. This is outlined below.
 
         - Idle and temperature events are preprocessed and removed from the pending events to be processed. This
-        is so that the per core temperature and utilization lookup timelines can be generated before the events that depending on
-        them to calculate energy consumptions are processed.
-        - A complete utilization
+        is so that the per core temperature and utilization lookup timelines can be generated before the events that
+        depending on them to calculate energy consumptions are processed.
+        - Events are handled by their respective PID branches
+        - The process tree is finished, this generates the results of the energy debugger from the data stored in the
+        process branches
+        - The visual graph is drawn, if required
 
-        :param metrics:
-        :param tracecmd:
-        :param duration:
-        :param draw:
-        :param test:
-        :param subgraph:
-        :return:
+        :param metrics: The SystemMetrics object that stores all metric timelines and actual values for the target
+        system
+        :param tracecmd: The tracecmd processor object
+        :param duration: The duration for which the trace should be processed, required as the tracing duration
+        is not exact, due to overhead in loading and unloading the trace framework
+        :param draw: Boolean to signal if the visual .dot graph file should be drawn or not
+        :param test: Boolean to signal if the trial is a test of not, test runs only parse 300 events such that they
+        can complete the processing process quickly
+        :param subgraph: Boolean to signal if the subgraphs of the graph's task nodes should be drawn
         """
 
         process_start_time = time.time()
@@ -76,10 +81,9 @@ class TraceProcessor:
                 i += 1
         print ("Util trees took %s seconds to build" % (time.time() - start_time))
 
-        # Compile cluster utilizations
         start_time = time.time()
         print "Compiling cluster util tables"
-        for x, cluster in enumerate(metrics.sys_util_history.clusters):
+        for x, cluster in enumerate(metrics.sys_util_history.clusters):  # Compile cluster utilizations
             cluster.compile_table(metrics.sys_util_history.cpu[x * 4: x * 4 + 4])
         print ("Cluster util table generated in %s seconds" % (time.time() - start_time))
 
