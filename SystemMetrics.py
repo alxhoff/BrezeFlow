@@ -183,6 +183,13 @@ class GPUUtilizationTable(UtilizationTable):
         self.finish_time = 0
 
     def init(self, start_time, finish_time, util):
+        """ Sets the initial values for the GPU.
+
+        :param start_time:
+        :param finish_time:
+        :param util:
+        :return:
+        """
         self.start_time = start_time
         self.finish_time = finish_time
         self.current_util = util
@@ -196,6 +203,12 @@ class GPUUtilizationTable(UtilizationTable):
         self.last_event_time = event.time - self.start_time
 
     def get_energy(self, start_time, finish_time):
+        """ Sums the energy consumption of the GPU between the specified times.
+
+        :param start_time: Time at which the summing of the GPU's energy consumption should start
+        :param finish_time: Time at which the summing of the GPU's energy consumption should stop
+        :return: The summed energy (in joules) between the specified timestamps
+        """
 
         energy = 0
 
@@ -211,7 +224,6 @@ class GPUUtilizationTable(UtilizationTable):
             if relative_start_time < 0:
                 relative_start_time = 0
 
-        # iterate through power events
         for x, event in enumerate(self.events):
             cycles = 0
 
@@ -222,25 +234,21 @@ class GPUUtilizationTable(UtilizationTable):
             cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
             assert (cycle_energy != 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
 
-            # find start event
-            if (relative_start_time >= event.start_time) and (
-                    relative_start_time < (event.start_time + event.duration)):
+            if (relative_start_time >= event.start_time) and \
+                (relative_start_time < (event.start_time + event.duration)):
                 cycles = (event.duration - (relative_start_time - event.start_time)) * 0.000000001 * event.freq
                 assert (cycles != 0), "duration: %d, relative start: %d, start time: %d, freq: %d, cycles: %d" \
                     % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
-            # end case
-            elif (relative_finish_time >= event.start_time) and (
-                    relative_finish_time < (event.start_time + event.duration)):
+            elif (relative_finish_time >= event.start_time) and \
+                (relative_finish_time < (event.start_time + event.duration)):
                 cycles = (event.duration - (relative_finish_time - event.start_time)) * 0.000000001 * event.freq
                 assert (cycles != 0), "duration: %d, relative finish: %d, start time: %d, freq: %d, cycles: %d" \
                     % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
-            # middle cases
-            elif (relative_start_time < event.start_time) and (
-                    relative_finish_time > (event.start_time + event.duration)):
+            elif (relative_start_time < event.start_time) and \
+                    (relative_finish_time > (event.start_time + event.duration)):
                 cycles = event.duration * 0.000000001 * event.freq
                 assert (cycles != 0), "Cycles could not be found for GPU"
 
-            # Finished the second
             elif event.start_time >= relative_finish_time:
                 return energy
 
@@ -249,6 +257,13 @@ class GPUUtilizationTable(UtilizationTable):
         return energy
 
     def get_second_energy(self, second, start_time, finish_time):
+        """ Returns the energy consumption (in joules) between the two timestamps, offset by a number of seconds.
+
+        :param second: Number of seconds that the summed second should be offset from the start timestamp
+        :param start_time: Start time from which the second summs should be referenced in time
+        :param finish_time: Timestamp which no sum should go over
+        :return: The energy (in joules) of the second
+        """
         nanosecond_start = start_time + (second * 1000000)
         nanosecond_finish = nanosecond_start + 1000000
         if finish_time < nanosecond_finish:
