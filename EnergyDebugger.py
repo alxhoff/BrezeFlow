@@ -60,7 +60,7 @@ class Tracer:
         self.adb = adb_device
         self.name = name
         self.filename = os.path.dirname(os.path.realpath(__file__)) + '/' \
-            + name + "_tracer.trace"
+                        + name + "_tracer.trace"
         self.trace_type = trace_type
         self.functions = functions
         self.events = events
@@ -146,7 +146,7 @@ class Tracer:
         :param filter_contents: State of the event filter to be set
         """
         event_dir = self.adb.command(
-            "find " + self.tracing_path + "/events -name " + event)
+                "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return
 
@@ -159,7 +159,7 @@ class Tracer:
         :param event: Event whoes filter is to be cleared
         """
         event_dir = self.adb.command(
-            "find " + self.tracing_path + "/events -name " + event)
+                "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return
 
@@ -172,7 +172,7 @@ class Tracer:
         :return: String representation of the event's format. Empty string otherwise.
         """
         event_dir = self.adb.command(
-            "find " + self.tracing_path + "/events -name " + event)
+                "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return ""
 

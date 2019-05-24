@@ -26,6 +26,7 @@ class IdleState(Enum):
 class TempLogEntry:
     """ Stores a snapshot of the system's temperatures at a given timestamp.
     """
+
     def __init__(self, ts, big0, big1, big2, big3, little, gpu):
         self.time = ts
         self.big = [big0, big1, big2, big3]
@@ -36,6 +37,7 @@ class TempLogEntry:
 class SystemTemps:
     """ A timeline of system temperature snapshots.
     """
+
     def __init__(self):
         self.temps = []
         self.initial_time = 0
@@ -43,19 +45,12 @@ class SystemTemps:
 
 
 class UtilizationSlice:
+    """ Records a slice of a utilization timeline.
+        """
 
-    def __init__(self, start_time, util=0):
+    def __init__(self, start_time, finish_time, freq=0, state=0, util=0):
         self.start_time = start_time
         self.util = util
-
-
-class CPUUtilizationSlice(UtilizationSlice):
-    """ Records a slice of a CPU's utilization timeline. Used to initially store time markers for the moments in time
-    when a CPU's state changed before the timeline of the CPU is compile from these events.
-    """
-
-    def __init__(self, start_time, finish_time, freq, state=0, util=0):
-        UtilizationSlice.__init__(self, start_time, util)
         self.duration = (finish_time - 1) - start_time
         self.state = state
         self.freq = freq
@@ -104,9 +99,9 @@ class CPUUtilizationTable(UtilizationTable):
             else:
                 self.core_state = not event.state
         else:
-            self.events.append(CPUUtilizationSlice(
-                self.last_event_time, event.time - self.start_time,
-                SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
+            self.events.append(UtilizationSlice(
+                    self.last_event_time, event.time - self.start_time,
+                    SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
 
             self.last_event_time = event.time - self.start_time
             self.calc_util_last_event()
@@ -195,9 +190,9 @@ class GPUUtilizationTable(UtilizationTable):
         self.current_util = util
 
     def add_event(self, event):
-        self.events.append(CPUUtilizationSlice(
-            self.last_event_time, event.time - self.start_time,
-            freq=event.freq, util=self.current_util))
+        self.events.append(UtilizationSlice(
+                self.last_event_time, event.time - self.start_time,
+                freq=event.freq, util=self.current_util))
 
         self.current_util = event.util
         self.last_event_time = event.time - self.start_time
@@ -235,15 +230,15 @@ class GPUUtilizationTable(UtilizationTable):
             assert (cycle_energy != 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
 
             if (relative_start_time >= event.start_time) and \
-                (relative_start_time < (event.start_time + event.duration)):
+                    (relative_start_time < (event.start_time + event.duration)):
                 cycles = (event.duration - (relative_start_time - event.start_time)) * 0.000000001 * event.freq
                 assert (cycles != 0), "duration: %d, relative start: %d, start time: %d, freq: %d, cycles: %d" \
-                    % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
-            elif (relative_finish_time >= event.start_time) and \
-                (relative_finish_time < (event.start_time + event.duration)):
+                                      % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
+            elif (relative_finish_time >= event.start_time) and (
+                    relative_finish_time < (event.start_time + event.duration)):
                 cycles = (event.duration - (relative_finish_time - event.start_time)) * 0.000000001 * event.freq
                 assert (cycles != 0), "duration: %d, relative finish: %d, start time: %d, freq: %d, cycles: %d" \
-                    % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
+                                      % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
             elif (relative_start_time < event.start_time) and \
                     (relative_finish_time > (event.start_time + event.duration)):
                 cycles = event.duration * 0.000000001 * event.freq
@@ -363,8 +358,8 @@ class SystemMetrics:
         frequencies = []
         for core in range(self.core_count):
             frequencies.append(
-                int(self.adb.command("cat /sys/devices/system/cpu/cpu"
-                                     + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
+                    int(self.adb.command("cat /sys/devices/system/cpu/cpu"
+                                         + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
         return frequencies
 
     def _get_core_utils(self):

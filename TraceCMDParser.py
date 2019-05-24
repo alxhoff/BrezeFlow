@@ -5,8 +5,8 @@ Uses the tracecmd python module to parse the tracecmd events, found in a tracecm
 objects, found in the SystemEvents module of the energy debugger.
 """
 
-from tracecmd import Trace
 from SystemEvents import *
+from tracecmd import Trace
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"
@@ -140,7 +140,8 @@ class TracecmdProcessor:
             trans_num = event.num_field("debug_id")
 
             self.processed_events.append(EventBinderTransaction(event.pid, int(round(event.ts / 1000.0)),
-                                                                event.cpu, event.name, reply, to_proc, to_thread, flags, code, trans_num))
+                                                                event.cpu, event.name, reply, to_proc, to_thread, flags,
+                                                                code, trans_num))
 
         elif event.name == "mali":
             self.event_count.mali += 1

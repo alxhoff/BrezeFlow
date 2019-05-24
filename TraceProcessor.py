@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from SystemEvents import *
 from Grapher import Grapher
+from SystemEvents import *
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"

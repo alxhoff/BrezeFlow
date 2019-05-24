@@ -42,6 +42,7 @@ class PIDTool:
         self._find_all_pid()
 
     def _find_all_pid(self):
+
         self._find_main_pid()
         self._find_all_app_pids()
         self._find_system_server_pids()
