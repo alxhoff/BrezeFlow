@@ -865,8 +865,9 @@ class ProcessTree:
             for x in list(self.process_branches.keys()):
 
                 branch = self.process_branches[x]
-                # Remove empty PID branches
+
                 if len(branch.tasks) == 0:
+
                     del self.process_branches[x]
                     continue
 
@@ -878,7 +879,6 @@ class ProcessTree:
                 if branch.energy == 0.0:
                     continue
 
-                # Write results to file
                 writer.writerow([branch.pid, branch.pname, branch.tname, str(len(branch.tasks)),
                                  branch.energy, branch.duration])
             writer.writerow([])
@@ -891,12 +891,11 @@ class ProcessTree:
             writer.writerow([])
             writer.writerow(["Energy Timeline"])
 
-            # Go through each branch and calculate the values energy values for each second
             energy_timeline = [[0.0, 0.0] for _ in range(int(duration + 1))]
 
-            for x, branch in self.process_branches.iteritems():
+            for i, second in enumerate(energy_timeline):
 
-                for i, second in enumerate(energy_timeline):
+                for x, branch in self.process_branches.iteritems():
                     energy = branch.get_second_energy(i, start_time, finish_time)
                     second[0] += energy
 

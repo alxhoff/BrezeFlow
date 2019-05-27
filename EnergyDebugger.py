@@ -64,7 +64,6 @@ class Tracer:
         self.trace_type = trace_type
         self.functions = functions
         self.events = events
-        self.start_time = 0
         self.duration = duration
 
     def run_tracer(self):
@@ -95,15 +94,18 @@ class Tracer:
 
         :param duration: Time for which the trace should run
         """
-        sys_time = self.adb.command("cat /proc/uptime")  # Get timestamp when test started
-        self.start_time = int(float(re.findall(r"(\d+.\d{2})", sys_time)[0]) * 1000000)
-
-        start_time = time.time()
+        # start_time = time.time()
+        start_time = self._get_device_time()
         self._enable_tracing(True)
-        while (time.time() - start_time) < duration:
-            pass
+        while (self._get_device_time() - start_time) < (duration * 1000000):
+            time.sleep(0.1)
 
+        print ("Traced for %s seconds" % ((self._get_device_time() - start_time) / 1000000.0))
         self._enable_tracing(False)
+
+    def _get_device_time(self):
+        sys_time = self.adb.command("cat /proc/uptime")  # Get timestamp when test started
+        return int(float(re.findall(r"(\d+.\d{2})", sys_time)[0]) * 1000000)
 
     def get_trace_results(self):
         """ Retrieves, through the ADB connection, both the tracecmd binary data and the ASCII ftrace data

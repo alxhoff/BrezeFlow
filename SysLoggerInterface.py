@@ -27,7 +27,7 @@ class SysLogger:
         self._finish()
 
     def _setup(self):
-        self.adb.command("./data/local/tmp/sys_logger.sh setup")
+        self.adb.command("./data/local/tmp/sys_logger.sh setup -nt")
         self.status = SysLoggerStatus.SETUP
 
     def _finish(self):
