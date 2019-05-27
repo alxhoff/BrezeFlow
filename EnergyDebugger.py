@@ -235,6 +235,10 @@ def main():
     are pulled from the target system.
     """
 
+    if args.duration > 6:
+        print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
+              "limitations"
+
     sys_logger = SysLogger(adb)
     sys_logger.start()
     tracer.run_tracer()
