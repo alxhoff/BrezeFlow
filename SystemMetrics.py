@@ -251,7 +251,7 @@ class GPUUtilizationTable(UtilizationTable):
 
         return energy
 
-    def get_second_energy(self, second, start_time, finish_time):
+    def get_interval_energy(self, second, interval, start_time, finish_time):
         """ Returns the energy consumption (in joules) between the two timestamps, offset by a number of seconds.
 
         :param second: Number of seconds that the summed second should be offset from the start timestamp
@@ -259,8 +259,8 @@ class GPUUtilizationTable(UtilizationTable):
         :param finish_time: Timestamp which no sum should go over
         :return: The energy (in joules) of the second
         """
-        nanosecond_start = start_time + (second * 1000000)
-        nanosecond_finish = nanosecond_start + 1000000
+        nanosecond_start = start_time + (second * interval * 1000000)
+        nanosecond_finish = nanosecond_start + interval * 1000000
         if finish_time < nanosecond_finish:
             nanosecond_finish = finish_time
 

@@ -75,7 +75,7 @@ class Tracer:
             self.adb.clear_file(self.tracing_path + "set_event")
         self._set_available_events(self.events)
         self._set_available_tracer(self.trace_type)
-        self._trace_for_time(self.duration)
+        self._trace_for_time(self.duration, 0.2)
 
     def _enable_tracing(self, on=True):
         """ Enables tracing on the system connected to the current ADB connection.
@@ -87,16 +87,15 @@ class Tracer:
         else:
             self.adb.write_file(self.tracing_path + "tracing_on", "0")
 
-    def _trace_for_time(self, duration):
+    def _trace_for_time(self, duration, preamble):
         """ The system time is firstly recorded such that the start time is known in system time.
         The trace is then let to run for the specified duration.
 
         :param duration: Time for which the trace should run
         """
-        # start_time = time.time()
         start_time = self._get_device_time()
         self._enable_tracing(True)
-        while (self._get_device_time() - start_time) < (duration * 1000000):
+        while (self._get_device_time() - start_time) < (duration * 1000000 + preamble * 1000000):
             time.sleep(0.1)
 
         print ("Traced for %s seconds" % ((self._get_device_time() - start_time) / 1000000.0))

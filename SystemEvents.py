@@ -584,17 +584,18 @@ class ProcessBranch:
         self.cpu = event.cpu
         self._connect_to_cpu_event(self.cpu)
 
-    def get_second_energy(self, second, start_time, finish_time):
+    def get_interval_energy(self, second, interval, start_time, finish_time):
         """ Returns the energy consumed by a process during a given second offset from an initial start time,
         constrained by a finish time.
 
-        :param second: The number of seconds that the time window of interest is offset from the start time
+        :param second: The number of intervals that the time window of interest is offset from the start time
+        :param interval: The size of the time intervals that are being calculated
         :param start_time: The time at which the energy calculations are offset from
         :param finish_time: An upper bound which cannot be exceeded.
         :return: The calculated energy (in joules) for the specified second
         """
-        nanosecond_start = start_time + (second * 1000000)
-        nanosecond_finish = nanosecond_start + 1000000
+        nanosecond_start = start_time + (second * interval * 1000000)
+        nanosecond_finish = nanosecond_start + interval * 1000000
 
         if finish_time < nanosecond_finish:
             nanosecond_finish = finish_time
@@ -891,22 +892,25 @@ class ProcessTree:
             writer.writerow([])
             writer.writerow(["Energy Timeline"])
 
-            energy_timeline = [[0.0, 0.0] for _ in range(int(duration + 1))]
+            timeline_interval = 0.2
+            energy_timeline = [[0.0, 0.0] for _ in range(int(duration/timeline_interval) + 1)]  # 0.2 second
+            # increments
 
             for i, second in enumerate(energy_timeline):
 
                 for x, branch in self.process_branches.iteritems():
-                    energy = branch.get_second_energy(i, start_time, finish_time)
+                    energy = branch.get_interval_energy(i, timeline_interval, start_time, finish_time)
                     second[0] += energy
 
             for i, second in enumerate(energy_timeline):
                 second[1] += \
-                    self.metrics.sys_util_history.gpu.get_second_energy(i, start_time, finish_time)
+                    self.metrics.sys_util_history.gpu.get_interval_energy(i, timeline_interval, start_time, finish_time)
 
             writer.writerow(["Sec", "Thread Energy", "GPU Energy", "Total Energy"])
 
             for x, second in enumerate(energy_timeline):
-                writer.writerow([str(x), str(second[0]), str(second[1]), str(second[0] + second[1])])
+                writer.writerow([str(x * timeline_interval), str(second[0]), str(second[1]), str(second[0] + second[
+                    1])])
 
     def handle_event(self, event, subgraph, start_time, finish_time):
         """
