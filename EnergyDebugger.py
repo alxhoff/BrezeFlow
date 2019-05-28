@@ -59,8 +59,7 @@ class Tracer:
         self.metrics = metrics
         self.adb = adb_device
         self.name = name
-        self.filename = os.path.dirname(os.path.realpath(__file__)) + '/' \
-                        + name + "_tracer.trace"
+        self.filename = os.path.dirname(os.path.realpath(__file__)) + '/' + name + "_tracer.trace"
         self.trace_type = trace_type
         self.functions = functions
         self.events = events

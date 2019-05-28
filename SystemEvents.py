@@ -307,11 +307,11 @@ class TaskNode:
             if isinstance(event, EventSchedSwitch):
                 self.graph.add_node(event,
                                     label=str(event.time)[:-6] + "." + str(event.time)[-6:]
-                                          + " CPU: " + str(event.cpu) + "\n" + str(event.pid)
-                                          + " ==> " + str(event.next_pid)
-                                          + "\nPrev state: " + str(event.prev_state)
-                                          + "\n" + event.name + " --> " + event.next_name + "\n"
-                                          + str(event.__class__.__name__),
+                                    + " CPU: " + str(event.cpu) + "\n" + str(event.pid)
+                                    + " ==> " + str(event.next_pid)
+                                    + "\nPrev state: " + str(event.prev_state)
+                                    + "\n" + event.name + " --> " + event.next_name + "\n"
+                                    + str(event.__class__.__name__),
                                     fillcolor='bisque1', style='filled', shape='box')
 
             if len(self.events) >= 2:  # Inter-job edges
@@ -675,20 +675,20 @@ class ProcessBranch:
                 self.active = False  # Current task has ended and new one will be needed
                 self.graph.add_node(self.tasks[-1],
                                     label=str(self.tasks[-1].start_time)[:-6] + "."
-                                          + str(self.tasks[-1].start_time)[-6:]
-                                          + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
-                                          + str(self.tasks[-1].finish_time)[-6:]
-                                          + "\nCPU: " + str(event.cpu)
-                                          + "   Util: " + str(self.tasks[-1].util) + "%"
-                                          + "   Temp: " + str(self.tasks[-1].temp)
-                                          + "   PID: " + str(event.pid)
-                                          + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   "
-                                          + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util"
-                                          + "\nDuration: " + str(self.tasks[-1].duration)
-                                          + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
-                                          + "\nEnergy: " + str(self.tasks[-1].energy)
-                                          + "\n" + str(event.name)
-                                          + "\n" + str(self.tasks[-1].__class__.__name__),
+                                    + str(self.tasks[-1].start_time)[-6:]
+                                    + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
+                                    + str(self.tasks[-1].finish_time)[-6:]
+                                    + "\nCPU: " + str(event.cpu)
+                                    + "   Util: " + str(self.tasks[-1].util) + "%"
+                                    + "   Temp: " + str(self.tasks[-1].temp)
+                                    + "   PID: " + str(event.pid)
+                                    + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   "
+                                    + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util"
+                                    + "\nDuration: " + str(self.tasks[-1].duration)
+                                    + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
+                                    + "\nEnergy: " + str(self.tasks[-1].energy)
+                                    + "\n" + str(event.name)
+                                    + "\n" + str(self.tasks[-1].__class__.__name__),
                                     fillcolor='darkolivegreen3',
                                     style='filled,bold,rounded', shape='box')
 
@@ -731,14 +731,14 @@ class ProcessBranch:
             self.tasks[-1].finish()
             self.graph.add_node(self.tasks[-1],
                                 label=str(self.tasks[-1].events[0].time)[:-6]
-                                      + "." + str(self.tasks[-1].events[0].time)[-6:]
-                                      + " ==> " + str(self.tasks[-1].events[-1].time)[:-6]
-                                      + "." + str(self.tasks[-1].events[-1].time)[-6:]
-                                      + "\nPID: " + str(event.pid)
-                                      + "  dest PID: " + str(event.target_pid)
-                                      + "\nType: " + str(self.tasks[-1].events[0].trans_type.name)
-                                      + "\n" + str(event.name)
-                                      + "\n" + str(self.tasks[-1].__class__.__name__),
+                                + "." + str(self.tasks[-1].events[0].time)[-6:]
+                                + " ==> " + str(self.tasks[-1].events[-1].time)[:-6]
+                                + "." + str(self.tasks[-1].events[-1].time)[-6:]
+                                + "\nPID: " + str(event.pid)
+                                + "  dest PID: " + str(event.target_pid)
+                                + "\nType: " + str(self.tasks[-1].events[0].trans_type.name)
+                                + "\n" + str(event.name)
+                                + "\n" + str(self.tasks[-1].__class__.__name__),
                                 fillcolor='coral', style='filled,bold', shape='box')
 
             return
@@ -955,7 +955,7 @@ class ProcessTree:
                                         self.process_branches[pending_binder_node.binder_thread].tasks[-1],
                                         color='palevioletred3', dir='forward', style='bold')
                             except IndexError:
-                                print "Calling task has no nodes yet to link"
+                                pass  # Calling task has no nodes yet to link
 
                             # Switch in new pid which will find pending completed binder transaction and create a
                             # new task node

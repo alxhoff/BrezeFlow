@@ -57,11 +57,9 @@ class TraceProcessor:
 
         process_tree = ProcessTree(self.pidt, metrics)
         trace_start_time = tracecmd.processed_events[0].time
+        if tracecmd.processed_preprocess_events[0].time < trace_start_time:
+            trace_start_time = tracecmd.processed_preprocess_events[0].time
         trace_finish_time = int(trace_start_time + float(duration) * 1000000)
-
-        # Init GPU util tree
-        # TODO does it matter if the first event is a mali event?
-        metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
 
         start_time = time.time()
         print "Compiling util and temp trees"
@@ -84,6 +82,9 @@ class TraceProcessor:
 
         start_time = time.time()
         print "Processing events"
+
+        # TODO does it matter if the first event is a mali event?
+        metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
 
         if test:
             for x, event in enumerate(tracecmd.processed_events[:300]):
