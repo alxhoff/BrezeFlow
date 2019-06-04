@@ -506,6 +506,7 @@ class ProcessBranch:
         self.pname = pname
         self.tname = tname
         self.tasks = []
+        self.binder_tasks = []
         self.start = start
         self.active = False
         self.graph = graph
@@ -668,38 +669,42 @@ class ProcessBranch:
 
                 return
 
-            elif event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S) and \
-                    event.pid not in self.pidtracer.binder_pids:
+            else: #if event.pid not in self.pidtracer.binder_pids:
 
-                self.tasks[-1].add_event(event, subgraph=subgraph)
-                self.tasks[-1].finish()
-                self.active = False  # Current task has ended and new one will be needed
-                self.graph.add_node(self.tasks[-1],
-                                    label=str(self.tasks[-1].start_time)[:-6] + "."
-                                    + str(self.tasks[-1].start_time)[-6:]
-                                    + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
-                                    + str(self.tasks[-1].finish_time)[-6:]
-                                    + "\nCPU: " + str(event.cpu)
-                                    + "   Util: " + str(self.tasks[-1].util) + "%"
-                                    + "   Temp: " + str(self.tasks[-1].temp)
-                                    + "   PID: " + str(event.pid)
-                                    + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   "
-                                    + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util"
-                                    + "\nDuration: " + str(self.tasks[-1].duration)
-                                    + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
-                                    + "\nEnergy: " + str(self.tasks[-1].energy)
-                                    + "\n" + str(event.name)
-                                    + "\n" + str(self.tasks[-1].__class__.__name__),
-                                    fillcolor='darkolivegreen3',
-                                    style='filled,bold,rounded', shape='box')
+                if event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
 
-                if subgraph:
-                    self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
-                                        dir='forward')
-                    self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red',
-                                        dir='back')
+                    self.tasks[-1].add_event(event, subgraph=subgraph)
+                    self.tasks[-1].finish()
+                    self.active = False  # Current task has ended and new one will be needed
+                    self.graph.add_node(self.tasks[-1],
+                                        label=str(self.tasks[-1].start_time)[:-6] + "."
+                                        + str(self.tasks[-1].start_time)[-6:]
+                                        + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
+                                        + str(self.tasks[-1].finish_time)[-6:]
+                                        + "\nCPU: " + str(event.cpu)
+                                        + "   Util: " + str(self.tasks[-1].util) + "%"
+                                        + "   Temp: " + str(self.tasks[-1].temp)
+                                        + "   PID: " + str(event.pid)
+                                        + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   "
+                                        + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util"
+                                        + "\nDuration: " + str(self.tasks[-1].duration)
+                                        + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
+                                        + "\nEnergy: " + str(self.tasks[-1].energy)
+                                        + "\n" + str(event.name)
+                                        + "\n" + str(self.tasks[-1].__class__.__name__),
+                                        fillcolor='darkolivegreen3',
+                                        style='filled,bold,rounded', shape='box')
 
-                return
+                    if subgraph:
+                        self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
+                                            dir='forward')
+                        self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red',
+                                            dir='back')
+
+                    return
+
+                else:
+                    self.tasks[-1].add_event(event, subgraph=subgraph)
 
         elif event_type == JobType.SCHED_SWITCH_IN:
 
@@ -721,31 +726,34 @@ class ProcessBranch:
 
         elif event_type == JobType.BINDER_SEND:
 
-            self.tasks.append(BinderNode(self.graph, self.pid))
-            self.tasks[-1].add_event(event, subgraph=subgraph)
+            self.binder_tasks.append(BinderNode(self.graph, self.pid))
+            self.binder_tasks[-1].add_event(event, subgraph=subgraph)
 
             return
 
         elif event_type == JobType.BINDER_RECV:
 
-            self.tasks[-1].add_event(event, subgraph=subgraph)
-            self.tasks[-1].finish()
-            self.graph.add_node(self.tasks[-1],
-                                label=str(self.tasks[-1].events[0].time)[:-6]
-                                + "." + str(self.tasks[-1].events[0].time)[-6:]
-                                + " ==> " + str(self.tasks[-1].events[-1].time)[:-6]
-                                + "." + str(self.tasks[-1].events[-1].time)[-6:]
+            if event.flags & 0x1:  # Async binder recv
+                self.binder_tasks.append(BinderNode(self.graph, self.pid))
+
+            self.binder_tasks[-1].add_event(event, subgraph=subgraph)
+            self.binder_tasks[-1].finish()
+            self.graph.add_node(self.binder_tasks[-1],
+                                label=str(self.binder_tasks[-1].events[0].time)[:-6]
+                                + "." + str(self.binder_tasks[-1].events[0].time)[-6:]
+                                + " ==> " + str(self.binder_tasks[-1].events[-1].time)[:-6]
+                                + "." + str(self.binder_tasks[-1].events[-1].time)[-6:]
                                 + "\nPID: " + str(event.pid)
                                 + "  dest PID: " + str(event.target_pid)
-                                + "\nType: " + str(self.tasks[-1].events[0].trans_type.name)
+                                + "\nType: " + str(self.binder_tasks[-1].events[0].trans_type.name)
                                 + "\n" + str(event.name)
-                                + "\n" + str(self.tasks[-1].__class__.__name__),
+                                + "\n" + str(self.binder_tasks[-1].__class__.__name__),
                                 fillcolor='coral', style='filled,bold', shape='box')
 
             return
 
-        else:  # All other job types just need to get added to the task
-            self.tasks[-1].add_event(event, subgraph=subgraph)
+        # All other job types just need to get added to the task
+        self.tasks[-1].add_event(event, subgraph=subgraph)
 
 
 class FirstHalfBinderTransaction:
@@ -769,13 +777,14 @@ class CompletedBinderTransaction:
     child threads.
     """
 
-    def __init__(self, first_half_event, second_half_event):
-        self.caller_pid = first_half_event.pid
-        self.target_pid = second_half_event.target_pid
-        self.binder_thread = second_half_event.pid
-        self.time = first_half_event.time
-        self.duration = second_half_event.time - first_half_event.time
+    def __init__(self, second_half_event, first_half_event=None):
+
         self.first_half = first_half_event
+        self.binder_thread = second_half_event.pid
+        self.duration = second_half_event.time - first_half_event.time
+        self.caller_pid = first_half_event.pid
+        self.time = first_half_event.time
+        self.target_pid = second_half_event.target_pid
         self.second_half = second_half_event
 
 
@@ -934,6 +943,7 @@ class ProcessTree:
                 try:
                     process_branch = self.process_branches[event.pid]
                     process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
+
                 except KeyError:
                     pass  # PID not of interest to program
 
@@ -943,8 +953,9 @@ class ProcessTree:
                 try:
                     for x, pending_binder_node in reversed(
                             list(enumerate(self.completed_binder_calls))):  # Most recent
-                        # If the event being switched in matches the binder node's target
+
                         if event.next_pid == pending_binder_node.target_pid:
+
                             # Add first half binder event to binder branch
                             self.process_branches[pending_binder_node.binder_thread].add_event(
                                     pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
@@ -956,8 +967,9 @@ class ProcessTree:
                             try:
                                 self.graph.add_edge(  # Edge from calling task to binder node
                                         self.process_branches[pending_binder_node.caller_pid].tasks[-1],
-                                        self.process_branches[pending_binder_node.binder_thread].tasks[-1],
+                                        self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
                                         color='palevioletred3', dir='forward', style='bold')
+
                             except IndexError:
                                 pass  # Calling task has no nodes yet to link
 
@@ -967,7 +979,7 @@ class ProcessTree:
                                     event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                             self.graph.add_edge(  # Edge from binder node to next task
-                                    self.process_branches[pending_binder_node.binder_thread].tasks[-1],
+                                    self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
                                     self.process_branches[pending_binder_node.target_pid].tasks[-1],
                                     color='yellow3', dir='forward')
 
@@ -986,38 +998,33 @@ class ProcessTree:
 
         elif isinstance(event, EventBinderTransaction):
 
-            if event.pid in self.pidtracer.app_pids:  # First half of a binder transaction
+            # Normal calls and async calls (first halves)
+            if event.trans_type == BinderType.ASYNC or event.trans_type == BinderType.CALL:
 
-                self.pending_binder_calls.append(
-                        FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
+                if event.pid in self.pidtracer.app_pids or event.pid in self.pidtracer.system_pids:  # First half of a binder transaction
 
-                return 0
+                    self.pending_binder_calls.append(
+                            FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
 
-            elif event.pid in self.pidtracer.system_pids:  # First half of a binder transaction
+                    return 0
 
-                self.pending_binder_calls.append(
-                        FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
-                caller_children = self.pidtracer.find_child_binder_threads(event.pid)
-                self.pending_binder_calls[-1].child_pids += caller_children
+            elif event.trans_type == BinderType.REPLY:
 
-                return 0
+                if event.pid in self.pidtracer.system_pids or event.pid in self.pidtracer.binder_pids:
 
-            elif event.pid in self.pidtracer.binder_pids:  # Second half of a binder transaction
+                    if self.pending_binder_calls:  # Pending first halves
+                        # Find most recent first half
+                        for x, transaction in reversed(list(enumerate(self.pending_binder_calls))):
 
-                if self.pending_binder_calls:  # Pending first halves
-                    # Find most recent first half
-                    for x, transaction in reversed(list(enumerate(self.pending_binder_calls))):
+                            if any(pid == event.pid for pid in transaction.child_pids) or \
+                                    event.pid == transaction.parent_pid:  # Find corresponding first half
 
-                        if any(pid == event.pid for pid in transaction.child_pids) or \
-                                event.pid == transaction.parent_pid:  # Find corresponding first half
+                                self.completed_binder_calls.append(
+                                        CompletedBinderTransaction(event, transaction.send_event))
 
-                            self.completed_binder_calls.append(
-                                    CompletedBinderTransaction(transaction.send_event, event))
+                                del self.pending_binder_calls[x]  # Remove completed first half
 
-                            del self.pending_binder_calls[x]  # Remove completed first half
-
-                            return 0
-                return 0
+                                return 0
 
         elif isinstance(event, EventFreqChange):
             for i in range(event.target_cpu, event.target_cpu + 4):

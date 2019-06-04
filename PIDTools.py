@@ -196,6 +196,8 @@ class PIDTool:
         for line in res:
             if line.isspace():
                 continue
+            if re.search("(grep)", line):
+                continue
             child_pids.append(int(re.findall(r" *(\d+)", line)[0]))
         return child_pids
 
