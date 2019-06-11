@@ -967,6 +967,39 @@ class ProcessTree:
                     if event.next_pid == pending_binder_node.target_pid:
 
                         # Add first half binder event to binder branch
+                        if pending_binder_node.binder_thread not in self.process_branches:
+                            pid_info = self.pidtracer.find_pid_info(pending_binder_node.binder_thread)
+
+                            if not pid_info:
+                                del self.completed_binder_calls[x]
+                                break
+
+                            print "New Binder thread found: " + str(pending_binder_node.binder_thread)
+
+                            self.process_branches[pending_binder_node.binder_thread] = \
+                                ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
+                                              self.pidtracer,
+                                              self.cpus.self.gpu)
+
+                            self.process_branches[pending_binder_node.binder_thread] = pid_info
+
+                        if event.next_pid not in self.process_branches:
+                            # Calling to a PID that was not initially found as belonging to app
+                            pid_info = self.pidtracer.find_pid_info(event.next_pid)
+
+                            if not pid_info:
+                                del self.completed_binder_calls[x]
+                                break
+
+                            print "New PID of interest found: " + str(pid_info.pid)
+
+                            self.process_branches[event.next_pid] = \
+                                ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
+                                              self.pidtracer,
+                                              self.cpus.self.gpu)
+
+                            self.pidtracer.app_pids[event.next_pid] = pid_info
+
                         self.process_branches[pending_binder_node.binder_thread].add_event(
                                 pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
 
@@ -985,27 +1018,8 @@ class ProcessTree:
 
                         # Switch in new pid which will find pending completed binder transaction and create a
                         # new task node
-                        try:
-                            self.process_branches[event.next_pid].add_event(
-                                    event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
-                        except KeyError:
-                            # Calling to a PID that was not initially found as belonging to app
-                            pid_info = self.pidtracer.find_pid_info(event.next_pid)
-
-                            if not pid_info:
-                                break
-
-                            print "New PID of interest found: " + str(pid_info.pid)
-
-                            self.process_branches[event.next_pid] = \
-                                ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
-                                              self.pidtracer,
-                                              self.cpus. self.gpu)
-
-                            self.pidtracer.app_pids[event.next_pid] = pid_info
-
-                            self.process_branches[event.next_pid].add_event(
-                                    event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                        self.process_branches[event.next_pid].add_event(
+                                event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                         self.graph.add_edge(  # Edge from binder node to next task
                                 self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
