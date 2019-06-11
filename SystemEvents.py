@@ -940,9 +940,6 @@ class ProcessTree:
         :return 0 on success
         """
 
-        if event.time == 3863918301:
-            print "wait here"
-
         if event.time < start_time or event.time > finish_time:  # Event time window
             return 1
 

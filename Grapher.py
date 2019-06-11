@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import networkx as nx
+import os
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"
@@ -24,4 +25,6 @@ class Grapher :
         a_graph.graph_attr['packmode'] = 'node'
         a_graph.graph_attr['margin'] = 2
 
-        a_graph.draw("/home/alxhoff/Downloads/test.xdot", format='xdot', prog='dot')
+        a_graph.draw(os.path.join(os.path.dirname(os.path.realpath(__file__)), self.pt.pidtracer.name) + ".xdot",
+                     format='xdot',
+                     prog='dot')
