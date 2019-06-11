@@ -143,6 +143,33 @@ class PIDTool:
 
                     self.binder_pids[pid] = PID(pid, pname, tname)
 
+    def find_pid_info(self, pid):
+        res = self.adb_device.command("busybox ps -T | grep " + str(pid))
+        res = res.splitlines()
+
+        if len(res) > 2:
+            return None
+
+        for line in res:
+            if re.search("(Binder)", line):
+                continue
+            if line.isspace():
+                continue
+            # remove grep process
+            if re.search("(grep)", line):
+                continue
+
+            regex_line = re.findall(r"(\d+) \d+ +\d+:\d+ ({(.*)}.* )?(.+)$", line)
+
+            pid = int(regex_line[0][0])
+            pname = regex_line[0][3]
+            if not regex_line[0][2]:
+                tname = pname
+            else:
+                tname = regex_line[0][2]
+
+            return PID(pid, pname, tname)
+
     def _find_all_app_pids(self):
         """ Finds all child processes that are involved in the execution of the target application
         returning their PIDs. Does not include binder threads.

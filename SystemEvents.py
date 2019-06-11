@@ -940,6 +940,9 @@ class ProcessTree:
         :return 0 on success
         """
 
+        if event.time == 6824516507:
+            print "wait here"
+
         if event.time < start_time or event.time > finish_time:  # Event time window
             return 1
 
@@ -958,49 +961,67 @@ class ProcessTree:
             # Task being switched in, again ignoring idle task and binder threads
             if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids:
 
-                try:
-                    for x, pending_binder_node in reversed(
-                            list(enumerate(self.completed_binder_calls))):  # Most recent
+                for x, pending_binder_node in reversed(
+                        list(enumerate(self.completed_binder_calls))):  # Most recent
 
-                        if event.next_pid == pending_binder_node.target_pid:
+                    if event.next_pid == pending_binder_node.target_pid:
 
-                            # Add first half binder event to binder branch
-                            self.process_branches[pending_binder_node.binder_thread].add_event(
-                                    pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
+                        # Add first half binder event to binder branch
+                        self.process_branches[pending_binder_node.binder_thread].add_event(
+                                pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
 
-                            # Add second half binder event to binder branch
-                            self.process_branches[pending_binder_node.binder_thread].add_event(
-                                    pending_binder_node.second_half, event_type=JobType.BINDER_RECV)
+                        # Add second half binder event to binder branch
+                        self.process_branches[pending_binder_node.binder_thread].add_event(
+                                pending_binder_node.second_half, event_type=JobType.BINDER_RECV)
 
-                            try:
-                                self.graph.add_edge(  # Edge from calling task to binder node
-                                        self.process_branches[pending_binder_node.caller_pid].tasks[-1],
-                                        self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
-                                        color='palevioletred3', dir='forward', style='bold')
+                        try:
+                            self.graph.add_edge(  # Edge from calling task to binder node
+                                    self.process_branches[pending_binder_node.caller_pid].tasks[-1],
+                                    self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
+                                    color='palevioletred3', dir='forward', style='bold')
 
-                            except IndexError:
-                                pass  # Calling task has no nodes yet to link
+                        except IndexError:
+                            pass  # Calling task has no nodes yet to link
 
-                            # Switch in new pid which will find pending completed binder transaction and create a
-                            # new task node
+                        # Switch in new pid which will find pending completed binder transaction and create a
+                        # new task node
+                        try:
+                            self.process_branches[event.next_pid].add_event(
+                                    event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                        except KeyError:
+                            # Calling to a PID that was not initially found as belonging to app
+                            pid_info = self.pidtracer.find_pid_info(event.next_pid)
+
+                            if not pid_info:
+                                break
+
+                            print "New PID of interest found: " + str(pid_info.pid)
+
+                            self.process_branches[event.next_pid] = \
+                                ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
+                                              self.pidtracer,
+                                              self.cpus. self.gpu)
+
+                            self.pidtracer.app_pids[event.next_pid] = pid_info
+
                             self.process_branches[event.next_pid].add_event(
                                     event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
-                            self.graph.add_edge(  # Edge from binder node to next task
-                                    self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
-                                    self.process_branches[pending_binder_node.target_pid].tasks[-1],
-                                    color='yellow3', dir='forward')
+                        self.graph.add_edge(  # Edge from binder node to next task
+                                self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
+                                self.process_branches[pending_binder_node.target_pid].tasks[-1],
+                                color='yellow3', dir='forward')
 
-                            # remove binder task that is now complete
-                            del self.completed_binder_calls[x]
+                        # remove binder task that is now complete
+                        del self.completed_binder_calls[x]
 
-                            return 0
+                        return 0
 
+                try:
                     self.process_branches[event.next_pid].add_event(
                             event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
-
                 except KeyError:
-                    pass
+                    pass  # Branch (PID) is not of interest and as such can be passed
 
             return 0
 
