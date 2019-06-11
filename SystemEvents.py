@@ -669,7 +669,7 @@ class ProcessBranch:
 
                 return
 
-            else: #if event.pid not in self.pidtracer.binder_pids:
+            else:
 
                 if event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
 
@@ -690,7 +690,8 @@ class ProcessBranch:
                                         + "\nDuration: " + str(self.tasks[-1].duration)
                                         + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
                                         + "\nEnergy: " + str(self.tasks[-1].energy)
-                                        + "\n" + str(event.name)
+                                        + "\n" + self.tname
+                                        + "\n" + self.pname
                                         + "\n" + str(self.tasks[-1].__class__.__name__),
                                         fillcolor='darkolivegreen3',
                                         style='filled,bold,rounded', shape='box')
@@ -976,7 +977,7 @@ class ProcessTree:
                             self.process_branches[pending_binder_node.binder_thread] = \
                                 ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
                                               self.pidtracer,
-                                              self.cpus.self.gpu)
+                                              self.cpus, self.gpu)
 
                             self.process_branches[pending_binder_node.binder_thread] = pid_info
 
@@ -993,7 +994,7 @@ class ProcessTree:
                             self.process_branches[event.next_pid] = \
                                 ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
                                               self.pidtracer,
-                                              self.cpus.self.gpu)
+                                              self.cpus, self.gpu)
 
                             self.pidtracer.app_pids[event.next_pid] = pid_info
 
@@ -1041,7 +1042,8 @@ class ProcessTree:
             # Normal calls and async calls (first halves)
             if event.trans_type == BinderType.CALL:
 
-                if event.pid in self.pidtracer.app_pids or event.pid in self.pidtracer.system_pids:  # First half of a binder transaction
+                # First half of a binder transaction
+                if event.pid in self.pidtracer.app_pids or event.pid in self.pidtracer.system_pids:
 
                     self.pending_binder_calls.append(
                             FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
