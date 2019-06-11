@@ -780,10 +780,18 @@ class CompletedBinderTransaction:
     def __init__(self, second_half_event, first_half_event=None):
 
         self.first_half = first_half_event
-        self.binder_thread = second_half_event.pid
-        self.duration = second_half_event.time - first_half_event.time
-        self.caller_pid = first_half_event.pid
-        self.time = first_half_event.time
+
+        if first_half_event:
+            self.duration = second_half_event.time - first_half_event.time
+            self.binder_thread = second_half_event.pid
+            self.caller_pid = first_half_event.pid
+            self.time = first_half_event.time
+        else:
+            self.duration = 0
+            self.binder_thread = None
+            self.caller_pid = second_half_event.pid
+            self.time = second_half_event.time
+
         self.target_pid = second_half_event.target_pid
         self.second_half = second_half_event
 
@@ -932,6 +940,9 @@ class ProcessTree:
         :return 0 on success
         """
 
+        if event.time == 3863918301:
+            print "wait here"
+
         if event.time < start_time or event.time > finish_time:  # Event time window
             return 1
 
@@ -999,7 +1010,7 @@ class ProcessTree:
         elif isinstance(event, EventBinderTransaction):
 
             # Normal calls and async calls (first halves)
-            if event.trans_type == BinderType.ASYNC or event.trans_type == BinderType.CALL:
+            if event.trans_type == BinderType.CALL:
 
                 if event.pid in self.pidtracer.app_pids or event.pid in self.pidtracer.system_pids:  # First half of a binder transaction
 
@@ -1007,6 +1018,12 @@ class ProcessTree:
                             FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
 
                     return 0
+
+            elif event.trans_type == BinderType.ASYNC:
+
+                if event.pid in self.pidtracer.app_pids or event.pid in self.pidtracer.system_pids:
+
+                    self.completed_binder_calls.append(CompletedBinderTransaction(event))
 
             elif event.trans_type == BinderType.REPLY:
 
