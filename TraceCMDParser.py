@@ -118,7 +118,7 @@ class TracecmdProcessor:
 
             state = event.num_field("state")
             self.processed_preprocess_events.append(EventIdle(int(round(event.ts / 1000.0)), event.cpu, event.name,
-                                                   state))
+                                                              state))
 
         elif event.name == "cpu_freq":
             self.event_count.cpu_freq += 1
@@ -164,4 +164,4 @@ class TracecmdProcessor:
             gpu = event.num_field("t4") / 1000
 
             self.processed_preprocess_events.append(EventTempInfo(int(round(event.ts / 1000.0)), big0,
-                                                       big1, big2, big3, little, gpu))
+                                                                  big1, big2, big3, little, gpu))

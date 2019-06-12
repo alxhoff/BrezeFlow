@@ -255,7 +255,8 @@ class GPUUtilizationTable(UtilizationTable):
         """ Returns the energy consumption (in joules) between the two timestamps, offset by a number of seconds.
 
         :param second: Number of seconds that the summed second should be offset from the start timestamp
-        :param start_time: Start time from which the second summs should be referenced in time
+        :param interval: The size of the measurement interval as a fraction of a second, ie. 200ms = 0.2
+        :param start_time: Start time from which the second sums should be referenced in time
         :param finish_time: Timestamp which no sum should go over
         :return: The energy (in joules) of the second
         """
