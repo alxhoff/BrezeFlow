@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os.path as op
+import time
 
 from adb import adb_commands
 from adb import sign_m2crypto
@@ -39,6 +40,8 @@ class ADBInterface:
         :param command: String literal of the command that is to be run
         :return: The text output that would otherwise be displayed on stdout
         """
+
+        time.sleep(0.1)
         return self.device.Shell(command)
 
     def write_file(self, filename, contents):

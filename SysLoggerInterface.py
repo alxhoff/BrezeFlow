@@ -1,6 +1,7 @@
 from enum import Enum
 import time
 
+
 class SysLoggerStatus(Enum):
     INIT = 1
     SETUP = 2
