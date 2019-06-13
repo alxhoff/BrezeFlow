@@ -21,10 +21,11 @@ class SysLogger:
         cur_val = int(self.adb.command("cat /sys/kernel/debug/tracing/buffer_size_kb"))
         attempts = 0
         while cur_val < buffer_val:
-            self.adb.command("echo " + str(cur_val + 500) + " > /sys/kernel/debug/tracing/buffer_size_kb")
+            self.adb.command('echo "' + str(cur_val + 500) + '" > /sys/kernel/debug/tracing/buffer_size_kb')
             time.sleep(0.1)
             prev_val = cur_val
             cur_val = int(self.adb.command("cat /sys/kernel/debug/tracing/buffer_size_kb"))
+            print "Trace buffer set to " + str(cur_val)
             if prev_val == cur_val:
                 attempts +=1
                 if attempts == 3:
@@ -46,7 +47,7 @@ class SysLogger:
         self._finish()
 
     def _setup(self):
-        self._get_da_buffers_up(30000)
+        self._get_da_buffers_up(19000)
         self.adb.command("./data/local/tmp/sys_logger.sh setup -nt")
         print "Syslogger setup"
         self.status = SysLoggerStatus.SETUP
