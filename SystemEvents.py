@@ -910,7 +910,7 @@ class ProcessTree:
             writer.writerow([])
             writer.writerow(["Energy Timeline"])
 
-            timeline_interval = 0.2
+            timeline_interval = 0.1
             energy_timeline = [[0.0, 0.0] for _ in range(int(duration/timeline_interval) + 1)]  # 0.2 second
             # increments
 
