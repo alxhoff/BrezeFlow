@@ -910,7 +910,7 @@ class ProcessTree:
             writer.writerow([])
             writer.writerow(["Energy Timeline"])
 
-            timeline_interval = 0.1
+            timeline_interval = 0.05
             energy_timeline = [[0.0, 0.0] for _ in range(int(duration/timeline_interval) + 1)]  # 0.2 second
             # increments
 
@@ -924,11 +924,12 @@ class ProcessTree:
                 second[1] += \
                     self.metrics.sys_util_history.gpu.get_interval_energy(i, timeline_interval, start_time, finish_time)
 
-            writer.writerow(["Sec", "Thread Energy", "GPU Energy", "Total Energy"])
+            writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "GPU Energy", "Total Energy"])
 
             for x, second in enumerate(energy_timeline):
-                writer.writerow([str(x * timeline_interval), str(second[0]), str(second[1]), str(second[0] + second[
-                    1])])
+                writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
+                                 str(second[0]), str(second[1]),
+                                 str(second[0] + second[1])])
 
     def handle_event(self, event, subgraph, start_time, finish_time):
         """

@@ -41,7 +41,6 @@ class ADBInterface:
         :return: The text output that would otherwise be displayed on stdout
         """
 
-        time.sleep(0.1)
         return self.device.Shell(command)
 
     def write_file(self, filename, contents):
