@@ -60,16 +60,22 @@ class TracecmdProcessor:
         print "Mali: " + str(self.event_count.mali)
         print "Temp: " + str(self.event_count.temp)
 
-    def _process_trace(self):
+    def _process_trace(self, start_time):
         """ Sequentially process trace events.
 
         :return:
         """
+        start_time = 0
         event = self.trace.read_next_event()
+        # Discard the first 2 seconds of tracing as syslogger initially causes
+        # spikes in system power
+        if start_time = 0:
+            start_time = int(round(event.ts / 1000.0)) + 1000000
         self._handle_event(event)
         while event:
             event = self.trace.read_next_event()
-            self._handle_event(event)
+            if int(round(event.ts / 1000.0)) > start_time:
+                self._handle_event(event)
 
     def _handle_event(self, event):
         """ Create an appropriate Event class child object that is then added to the list of unprocessed

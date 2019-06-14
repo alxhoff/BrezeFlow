@@ -75,7 +75,7 @@ class Tracer:
             self.adb.clear_file(self.tracing_path + "set_event")
         self._set_available_events(self.events)
         self._set_available_tracer(self.trace_type)
-        self._trace_for_time(self.duration, 0.2)
+        self._trace_for_time(self.duration, 1)
 
     def _enable_tracing(self, on=True):
         """ Enables tracing on the system connected to the current ADB connection.
