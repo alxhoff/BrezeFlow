@@ -44,10 +44,11 @@ class SysLogger:
         self.adb.command("./data/local/tmp/sys_logger.sh stop")
         print "Syslogger stopped"
         self.status = SysLoggerStatus.STOP
+        time.sleep(0.5)
         self._finish()
 
     def _setup(self):
-        self._get_da_buffers_up(19000)
+        self._get_da_buffers_up(17000)
         self.adb.command("./data/local/tmp/sys_logger.sh setup -nt")
         print "Syslogger setup"
         self.status = SysLoggerStatus.SETUP
