@@ -49,7 +49,7 @@ class TraceProcessor:
         :param subgraph: Boolean to signal if the subgraphs of the graph's task nodes should be drawn
         """
 
-        duration += 0.2
+        # duration += 0.2
 
         process_start_time = time.time()
         print "Processing trace"
