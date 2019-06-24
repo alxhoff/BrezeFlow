@@ -91,7 +91,6 @@ setup()
 		-e binder_transaction \
 		-e cpu_idle \
 		-e sched_switch \
-		-e cpu_frequency \
 		-i \
 		-b $BUFFER_SIZE \
 		-d -D \

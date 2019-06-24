@@ -36,6 +36,8 @@ parser.add_argument("-te", "--test", action='store_true',
                     help="Tests only a few hundred events to speed up testing")
 parser.add_argument("-sub", "--subgraph", action='store_true',
                     help="Enable the drawing of node subgraphs")
+parser.add_argument("-p", "--preamble", required=True,
+                    help="Specifies the number of seconds that be discarded at the begining of tracing")
 
 args = parser.parse_args()
 
@@ -227,7 +229,7 @@ def main():
 
     print "Creating tracer, starting sys_logger and running trace"
 
-    preamble = 2
+    preamble = int(args.preamble)
 
     tracer = Tracer(adb,
                     args.app,
