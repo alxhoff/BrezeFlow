@@ -666,6 +666,8 @@ class ProcessBranch:
                 if event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
                     self.active = False
                     self.tasks[-1].finish()
+                else:
+                    self.active = True
 
                 return
 
@@ -948,8 +950,8 @@ class ProcessTree:
         elif isinstance(event, EventSchedSwitch):  # PID context swap
 
             # Task being switched out, ignoring idle task and binder threads
-            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids:
-
+            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids and "GLThread" not in event.name:
+            # TODO why do GLThreads run rampant in some games?
                 try:
                     process_branch = self.process_branches[event.pid]
                     process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
@@ -958,7 +960,8 @@ class ProcessTree:
                     pass  # PID not of interest to program
 
             # Task being switched in, again ignoring idle task and binder threads
-            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids:
+            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids and "GLThread" not in \
+                    event.next_name:
 
                 for x, pending_binder_node in reversed(
                         list(enumerate(self.completed_binder_calls))):  # Most recent

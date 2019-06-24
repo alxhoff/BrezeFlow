@@ -65,7 +65,7 @@ class Tracer:
         self.events = events
         self.duration = duration
 
-    def run_tracer(self):
+    def run_tracer(self, preamble):
         """ Runs the tracer by getting all of the appropriate flags set in the /d/tracing directory on the
         target system, then starting the trace by writing to the tracing_on file in the tracing directory.
         """
@@ -75,7 +75,7 @@ class Tracer:
             self.adb.clear_file(self.tracing_path + "set_event")
         self._set_available_events(self.events)
         self._set_available_tracer(self.trace_type)
-        self._trace_for_time(self.duration, 1)
+        self._trace_for_time(self.duration, preamble)
 
     def _enable_tracing(self, on=True):
         """ Enables tracing on the system connected to the current ADB connection.
@@ -227,6 +227,8 @@ def main():
 
     print "Creating tracer, starting sys_logger and running trace"
 
+    preamble = 2
+
     tracer = Tracer(adb,
                     args.app,
                     metrics=sys_metrics,
@@ -245,7 +247,7 @@ def main():
 
     sys_logger = SysLogger(adb)
     sys_logger.start()
-    tracer.run_tracer()
+    tracer.run_tracer(preamble)
     sys_logger.stop()
     tracer.get_trace_results()
 
@@ -258,7 +260,7 @@ def main():
 
     dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.app + ".dat")
 
-    tc_processor = TracecmdProcessor(dat_path)
+    tc_processor = TracecmdProcessor(dat_path, preamble)
     tc_processor.print_event_count()
     trace_processor.process_trace(sys_metrics, tc_processor, args.duration, args.draw, args.test, args.subgraph)
 

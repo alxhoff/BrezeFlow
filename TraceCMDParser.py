@@ -37,7 +37,7 @@ class TracecmdProcessor:
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, preamble):
         self.processed_events = []
         self.processed_preprocess_events = []
         try:
@@ -47,7 +47,7 @@ class TracecmdProcessor:
             sys.exit(1)
 
         self.event_count = EventCounts()
-        self._process_trace()
+        self._process_trace(preamble)
 
     def print_event_count(self):
         print "Total events: " + str(self.event_count.sched_switch + self.event_count.cpu_idle
@@ -60,7 +60,7 @@ class TracecmdProcessor:
         print "Mali: " + str(self.event_count.mali)
         print "Temp: " + str(self.event_count.temp)
 
-    def _process_trace(self):
+    def _process_trace(self, preamble):
         """ Sequentially process trace events.
 
         :return:
@@ -70,7 +70,7 @@ class TracecmdProcessor:
         # Discard the first 2 seconds of tracing as syslogger initially causes
         # spikes in system power
         if start_time == 0 and event:
-            start_time = int(round(event.ts / 1000.0)) + 1000000
+            start_time = int(round(event.ts / 1000.0)) + (preamble * 1000000)
         while event:
             if int(round(event.ts / 1000.0)) > start_time:
                 self._handle_event(event)
