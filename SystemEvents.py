@@ -678,23 +678,64 @@ class ProcessBranch:
                     self.tasks[-1].add_event(event, subgraph=subgraph)
                     self.tasks[-1].finish()
                     self.active = False  # Current task has ended and new one will be needed
+                    label = str(self.tasks[-1].start_time)[:-6] + "." \
+                                        + str(self.tasks[-1].start_time)[-6:] \
+                                        + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "." \
+                                        + str(self.tasks[-1].finish_time)[-6:] \
+                                        + "\nCPU: " + str(event.cpu) + " @ " + str(
+                            SystemMetrics.current_metrics.get_cpu_core_freq(event.cpu)) + "Hz" \
+                                        + "\nUtil: " + str(self.tasks[-1].util) + "%" \
+                                        + "   Temp: " + str(self.tasks[-1].temp) \
+                                        + "   PID: " + str(event.pid) \
+                                        + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   " \
+                                        + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util" \
+                                        + "\nDuration: " + str(self.tasks[-1].duration) \
+                                        + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
+                                        + "\nEnergy: " + str(self.tasks[-1].energy) \
+                                        + "\n" + self.tname \
+                                        + "\n" + self.pname \
+                                        + "\n" + str(self.tasks[-1].__class__.__name__)
+
+                    if event.cpu > 3:
+                        if self.tasks[-1].util < 40:
+                            cores = SystemMetrics.current_metrics.sys_util_history
+                            cores_utils = []
+                            cores_utils.append(cores.cpu[0].get_util(self.tasks[-1].finish_time))
+                            cores_utils.append(cores.cpu[1].get_util(self.tasks[-1].finish_time))
+                            cores_utils.append(cores.cpu[2].get_util(self.tasks[-1].finish_time))
+                            cores_utils.append(cores.cpu[3].get_util(self.tasks[-1].finish_time))
+                            label += "\n\n***************"
+                            freq = SystemMetrics.current_metrics.get_cpu_core_freq(0)
+                            label += "\n Little cores under utilized, current utils: %d %d %d %d @ %dHz" % (
+                                    cores_utils[0],
+                                                                                                              cores_utils[1],
+                                                                                                              cores_utils[2],
+                                                                                                              cores_utils[3],
+                                                                                                              freq)
+                            capacity = 1.7058 * 1.2 * 10**9 * self.tasks[-1].util/100
+                            req_util = capacity/float(SystemMetrics.current_metrics.get_cpu_core_freq(0))
+                            label += "\nNeeded capacity is %d cycles (%f Util needed on a little core)" % (capacity,
+                                                                                                           req_util *
+                                                                                                           100)
+                            cores_able = ""
+                            for i, core in enumerate(cores_utils):
+                                if (100 - core) > (req_util * 100):
+                                    label += "\nCores %s able to run work" % str(i)
+                                    energy_profile = SystemMetrics.current_metrics.energy_profile
+                                    voltage = energy_profile.little_voltages[freq]
+                                    temp = self.tasks[-1].temp
+                                    a1 = energy_profile.little_reg_const["a1"]
+                                    a2 = energy_profile.little_reg_const["a2"]
+                                    a3 = energy_profile.little_reg_const["a3"]
+                                    energy = voltage * (a1 * voltage * freq * (req_util * 100 + core) + a2 * temp +
+                                                        a3) / freq
+
+                                    little_energy = capacity * energy
+                                    energy_difference = self.tasks[-1].energy - little_energy
+                                    label += "\nSaving %f Joules" % energy_difference
+
                     self.graph.add_node(self.tasks[-1],
-                                        label=str(self.tasks[-1].start_time)[:-6] + "."
-                                        + str(self.tasks[-1].start_time)[-6:]
-                                        + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "."
-                                        + str(self.tasks[-1].finish_time)[-6:]
-                                        + "\nCPU: " + str(event.cpu)
-                                        + "   Util: " + str(self.tasks[-1].util) + "%"
-                                        + "   Temp: " + str(self.tasks[-1].temp)
-                                        + "   PID: " + str(event.pid)
-                                        + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   "
-                                        + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util"
-                                        + "\nDuration: " + str(self.tasks[-1].duration)
-                                        + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles)
-                                        + "\nEnergy: " + str(self.tasks[-1].energy)
-                                        + "\n" + self.tname
-                                        + "\n" + self.pname
-                                        + "\n" + str(self.tasks[-1].__class__.__name__),
+                                        label=label,
                                         fillcolor='darkolivegreen3',
                                         style='filled,bold,rounded', shape='box')
 
@@ -950,7 +991,7 @@ class ProcessTree:
         elif isinstance(event, EventSchedSwitch):  # PID context swap
 
             # Task being switched out, ignoring idle task and binder threads
-            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids and "GLThread" not in event.name:
+            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids: # and "GLThread" not in event.name:
             # TODO why do GLThreads run rampant in some games?
                 try:
                     process_branch = self.process_branches[event.pid]
@@ -960,8 +1001,8 @@ class ProcessTree:
                     pass  # PID not of interest to program
 
             # Task being switched in, again ignoring idle task and binder threads
-            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids and "GLThread" not in \
-                    event.next_name:
+            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids: # and "GLThread" not in \
+                    #event.next_name:
 
                 for x, pending_binder_node in reversed(
                         list(enumerate(self.completed_binder_calls))):  # Most recent
