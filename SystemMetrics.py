@@ -358,9 +358,13 @@ class SystemMetrics:
     def _get_core_freqs(self):
         frequencies = []
         for core in range(self.core_count):
-            frequencies.append(
-                    int(self.adb.command("cat /sys/devices/system/cpu/cpu"
-                                         + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
+            try:
+                frequencies.append(
+                        int(self.adb.command("cat /sys/devices/system/cpu/cpu"
+                                             + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
+            except ValueError: # Big is off
+                frequencies.append(0)
+
         return frequencies
 
     def _get_core_utils(self):

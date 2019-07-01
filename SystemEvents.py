@@ -717,7 +717,6 @@ class ProcessBranch:
                             label += "\nNeeded capacity is %d cycles (%f Util needed on a little core)" % (capacity,
                                                                                                            req_util *
                                                                                                            100)
-                            cores_able = ""
                             for i, core in enumerate(cores_utils):
                                 if (100 - core) > (req_util * 100):
                                     label += "\nCores %s able to run work" % str(i)
@@ -973,6 +972,7 @@ class ProcessTree:
                 writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
                                  str(second[0]), str(second[1]),
                                  str(second[0] + second[1])])
+
 
     def handle_event(self, event, subgraph, start_time, finish_time):
         """

@@ -58,3 +58,4 @@ class XU3RegressionConstants:
                 480000000: 0.94475,
                 543000000: 0.995345
                 }
+        
