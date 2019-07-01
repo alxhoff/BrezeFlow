@@ -218,6 +218,9 @@ def main():
     """ Required objects for tracking system metrics and interfacing with a target system, connected
     via an ADB connection.
     """
+
+    start_time = time.time()
+
     adb = ADBInterface()
     pid_tool = PIDTool(adb, args.app)
     trace_processor = TraceProcessor(pid_tool, args.app)
@@ -247,11 +250,11 @@ def main():
         print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
               "limitations"
 
-    # sys_logger = SysLogger(adb)
-    # sys_logger.start()
-    # tracer.run_tracer(preamble)
-    # sys_logger.stop()
-    # tracer.get_trace_results()
+    sys_logger = SysLogger(adb)
+    sys_logger.start()
+    tracer.run_tracer(preamble)
+    sys_logger.stop()
+    tracer.get_trace_results()
 
     """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
     processed. Results are generated into a CSV file, saved to the working directory under the same name as the target
@@ -266,6 +269,7 @@ def main():
     tc_processor.print_event_count()
     trace_processor.process_trace(sys_metrics, tc_processor, args.duration, args.draw, args.test, args.subgraph)
 
+    print("Run took a total of %s seconds to run" % (time.time() - start_time))
 
 if __name__ == '__main__':
     main()

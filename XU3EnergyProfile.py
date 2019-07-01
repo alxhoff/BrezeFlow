@@ -82,9 +82,9 @@ class XU3RegressionModel:
 
         :param cpu: CPU core index of the target CPU core. 0-3 are LITTLE cores and 4-7 are big cores.
         :param freq: The frequency of the target CPU core
-        :param util: The utilization of the target CPU core
-        :param temp: The temperature of the target CPU core
-        :return: Per-second energy consumption of the target core (in joules)
+        :param util: The utilizations of the target CPU cluster
+        :param temp: The temperatures of the target CPU cluster
+        :return: Per-second energy consumption of the target core (in Joules/Sec = Watts)
         """
         try:
             if cpu in range(4):  # Little
@@ -100,17 +100,6 @@ class XU3RegressionModel:
                 energy = voltage * (a1 * voltage * freq * util[cpu] + a2 * temp[cpu] + a3)
 
                 return energy
-
-            # Power
-            # A15 = -7.67667467145395 + 0.0118551114030954 * Temp A15
-            # C1[C] + 0.0394152249258121 * TempA15
-            # C2[C] + 0.0207884463414049 * TempA15
-            # C3[C] + 0.0626956921220966 * TempA15
-            # C4[C] + 6.35765269142174E-07 * Freq
-            # A15[Hz] + 0.00373561226058926 * UsageA15
-            # C1[ %] + 0.00070814696438041 * UsageA15
-            # C2[ %] + 0.00176904935507982 * UsageA15
-            # C3[ %] + 0.00231972698040641 * UsageA15 C4[ %]
 
             else:  # Big
 
