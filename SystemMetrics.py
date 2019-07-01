@@ -5,7 +5,7 @@ import time
 
 from enum import Enum
 
-from XU3EnergyProfile import XU3RegressionConstants
+from XU3EnergyProfile import XU3RegressionModel
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"
@@ -156,20 +156,6 @@ class TotalUtilizationTable(UtilizationTable):
         return
 
 
-def get_gpu_cycle_energy(freq, util, temp):
-    energy_profile = SystemMetrics.current_metrics.energy_profile
-    try:
-        voltage = energy_profile.GPU_voltages[freq]
-    except IndexError:
-        print "Attempted to get GPU voltage with invalid freq"
-        sys.exit(1)
-    a1 = energy_profile.GPU_reg_const["a1"]
-    a2 = energy_profile.GPU_reg_const["a2"]
-    a3 = energy_profile.GPU_reg_const["a3"]
-    energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
-    return energy
-
-
 class GPUUtilizationTable(UtilizationTable):
 
     def __init__(self):
@@ -226,7 +212,7 @@ class GPUUtilizationTable(UtilizationTable):
 
             assert (temp != 0), "GPU temp found to be zero at time %d" % (event.start_time + self.start_time)
 
-            cycle_energy = get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
+            cycle_energy = XU3RegressionModel.get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
             assert (cycle_energy != 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
 
             if (relative_start_time >= event.start_time) and \
@@ -304,7 +290,7 @@ class SystemMetrics:
 
     def __init__(self, adb):
         self.adb = adb
-        self.energy_profile = XU3RegressionConstants()
+        self.energy_profile = XU3RegressionModel()
         self.core_count = self._get_core_count()
 
         self.current_core_freqs = self._get_core_freqs()

@@ -269,10 +269,22 @@ class TaskNode:
                             continue
                         # calc time is the point until which the energy has been calculated
                         new_cycles = int((pe.time - self.calc_time) * 0.000000001 * pe.cpu_frequency)
-                        self.util = SystemMetrics.current_metrics.sys_util_history.cpu[pe.cpu].get_util(pe.time)
-                        self.temp = SystemMetrics.current_metrics.get_temp(pe.time, pe.cpu)
 
-                        cycle_energy = self._get_cpu_per_second_energy(pe.cpu, pe.cpu_frequency, self.util,
+                        #TODO Streamline this
+                        # self.util = SystemMetrics.current_metrics.sys_util_history.cpu[pe.cpu].get_util(pe.time)
+                        self.util = [SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 0].get_util(
+                                pe.time)]
+                        self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 1].get_util(pe.time))
+                        self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 2].get_util(pe.time))
+                        self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 3].get_util(pe.time))
+
+                        # self.temp = SystemMetrics.current_metrics.get_temp(pe.time, pe.cpu)
+                        self.temp = [SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 0)]
+                        self.temp.append(SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 1))
+                        self.temp.append(SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 2))
+                        self.temp.append(SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 3))
+
+                        cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(pe.cpu, pe.cpu_frequency, self.util,
                                                                        self.temp) / pe.cpu_frequency
                         self.cpu_cycles += new_cycles
                         self.energy += cycle_energy * new_cycles
@@ -285,10 +297,22 @@ class TaskNode:
 
                     cpu_speed = SystemMetrics.current_metrics.get_cpu_core_freq(event.cpu)
                     new_cycles = int((event.time - self.calc_time) * 0.000000001 * cpu_speed)
-                    self.util = SystemMetrics.current_metrics.sys_util_history.cpu[event.cpu].get_util(event.time)
-                    self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
 
-                    cycle_energy = self._get_cpu_per_second_energy(event.cpu, cpu_speed, self.util,
+                    # TODO here as well
+                    # self.util = SystemMetrics.current_metrics.sys_util_history.cpu[event.cpu].get_util(event.time)
+                    # self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
+
+                    self.util = [SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 0].get_util(event.time)]
+                    self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 1].get_util(event.time))
+                    self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 2].get_util(event.time))
+                    self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 3].get_util(event.time))
+
+                    self.temp = [SystemMetrics.current_metrics.get_temp(event.time, (event.cpu / 4) * 4 + 0)]
+                    self.temp.append(SystemMetrics.current_metrics.get_temp(event.time, (event.cpu / 4) * 4 + 1))
+                    self.temp.append(SystemMetrics.current_metrics.get_temp(event.time, (event.cpu / 4) * 4 + 2))
+                    self.temp.append(SystemMetrics.current_metrics.get_temp(event.time, (event.cpu / 4) * 4 + 3))
+
+                    cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(event.cpu, cpu_speed, self.util,
                                                                    self.temp) / cpu_speed
 
                     self.cpu_cycles += new_cycles
@@ -339,55 +363,6 @@ class TaskNode:
         :return:
         """
         self.sys_metric_change_events.append(FreqPowerEvent(ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util))
-
-    @staticmethod
-    def _get_cpu_per_second_energy(cpu, freq, util, temp):
-        """ Using the values calculated for the energy profile of the Odroid XU3, using a regression model,
-        the per-second energy consumption (in joules) can be calculated using the found values and the
-        formula:
-                energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
-
-        :param cpu: CPU core index of the target CPU core. 0-3 are LITTLE cores and 4-7 are big cores.
-        :param freq: The frequency of the target CPU core
-        :param util: The utilization of the target CPU core
-        :param temp: The temperature of the target CPU core
-        :return: Per-second energy consumption of the target core (in joules)
-        """
-        try:
-            energy_profile = SystemMetrics.current_metrics.energy_profile
-            if cpu in range(4):
-
-                try:
-                    voltage = energy_profile.little_voltages[freq]
-                except IndexError:
-                    print "Couldn't get voltage for little core at freq: %d" % freq
-                    sys.exit(-1)
-                a1 = energy_profile.little_reg_const["a1"]
-                a2 = energy_profile.little_reg_const["a2"]
-                a3 = energy_profile.little_reg_const["a3"]
-                energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
-
-                return energy
-
-            else:
-
-                try:
-                    voltage = energy_profile.big_voltages[freq]
-                except IndexError:
-                    print "Couldn't get voltage for big core at freq: %d" % freq
-                    sys.exit(-1)
-                a1 = energy_profile.big_reg_const["a1"]
-                a2 = energy_profile.big_reg_const["a2"]
-                a3 = energy_profile.big_reg_const["a3"]
-                energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
-
-                return energy
-
-        except ValueError:
-            print "Invalid frequency"
-        except TypeError:
-            print "Type error"
-
 
 class BinderNode(TaskNode):
 
@@ -972,7 +947,6 @@ class ProcessTree:
                 writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
                                  str(second[0]), str(second[1]),
                                  str(second[0] + second[1])])
-
 
     def handle_event(self, event, subgraph, start_time, finish_time):
         """
