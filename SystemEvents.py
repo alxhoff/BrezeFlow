@@ -442,7 +442,11 @@ class GPUBranch:
         """
         :param event: A EventMaliUtil to be added to the GPU branch
         """
-        self.events.append(event)
+        if self.events:
+            if (event.freq != self.events[-1].freq) or (event.util != self.events[-1].util):
+                self.events.append(event)
+        else:
+            self.events.append(event)
 
         if event.freq != self.freq or event.util != self.util:  # Update current metrics
             self.prev_freq = self.freq
@@ -928,8 +932,7 @@ class ProcessTree:
             writer.writerow(["Energy Timeline"])
 
             timeline_interval = 0.05
-            energy_timeline = [[0.0, 0.0] for _ in range(int(duration/timeline_interval) + 1)]  # 0.2 second
-            # increments
+            energy_timeline = [[0.0, 0.0, 0.0, 0.0, 0] for _ in range(int(duration/timeline_interval) + 1)]
 
             for i, second in enumerate(energy_timeline):
 
@@ -938,15 +941,20 @@ class ProcessTree:
                     second[0] += energy
 
             for i, second in enumerate(energy_timeline):
+
                 second[1] += \
                     self.metrics.sys_util_history.gpu.get_interval_energy(i, timeline_interval, start_time, finish_time)
+                second[2] = SystemMetrics.current_metrics.get_temp(i * timeline_interval * 1000000, -1)
+                second[3] = SystemMetrics.current_metrics.sys_util_history.gpu.get_util(i * timeline_interval * 1000000)
+                second[4] = SystemMetrics.current_metrics.sys_util_history.gpu.get_freq(i * timeline_interval * 1000000)
 
-            writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "GPU Energy", "Total Energy"])
+            writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "GPU Energy", "Total Energy",
+                             "GPU Temp", "GPU Util", "GPU Freq"])
 
             for x, second in enumerate(energy_timeline):
                 writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
                                  str(second[0]), str(second[1]),
-                                 str(second[0] + second[1])])
+                                 str(second[0] + second[1]), str(second[2]), str(second[3]), str(second[4])])
 
     def handle_event(self, event, subgraph, start_time, finish_time):
         """

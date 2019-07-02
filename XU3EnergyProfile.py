@@ -53,7 +53,7 @@ class XU3RegressionModel:
 
         :param cpu: CPU core index of the target CPU core. 0-3 are LITTLE cores and 4-7 are big cores.
         :param freq: The frequency of the target CPU core
-        :param util: The utilizations of the target CPU cluster
+        :param util: The utilisations of the target CPU cluster
         :param temp: The temperatures of the target CPU cluster
         :return: Per-second energy consumption of the target core (in Joules/Sec = Watts)
         """

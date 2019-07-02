@@ -183,6 +183,22 @@ class GPUUtilizationTable(UtilizationTable):
         self.current_util = event.util
         self.last_event_time = event.time - self.start_time
 
+    def get_util(self, ts):
+
+        for x, event in enumerate(self.events):
+            if event.start_time <= ts < (event.start_time + event.duration):
+                return event.util
+
+        return 0
+
+    def get_freq(self, ts):
+
+        for x, event in enumerate(self.events):
+            if event.start_time <= ts < (event.start_time + event.duration):
+                return event.freq
+
+        return 0
+
     def get_energy(self, start_time, finish_time):
         """ Sums the energy consumption of the GPU between the specified times.
 
@@ -213,21 +229,34 @@ class GPUUtilizationTable(UtilizationTable):
             assert (temp != 0), "GPU temp found to be zero at time %d" % (event.start_time + self.start_time)
 
             cycle_energy = XU3RegressionModel.get_gpu_cycle_energy(event.freq, event.util, temp) / event.freq
+
             assert (cycle_energy != 0), "freq: %d, util: %d, temp: %d" % (event.freq, event.util, temp)
 
+            #  Start event
             if (relative_start_time >= event.start_time) and \
                     (relative_start_time < (event.start_time + event.duration)):
-                cycles = (event.duration - (relative_start_time - event.start_time)) * 0.000001 * event.freq
+
+                duration = (event.duration - (relative_start_time - event.start_time)) * 0.000001
+                cycles = duration * event.freq
+
                 assert (cycles != 0), "duration: %d, relative start: %d, start time: %d, freq: %d, cycles: %d" \
                                       % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
+            #  End event
             elif (relative_finish_time >= event.start_time) and (
                     relative_finish_time < (event.start_time + event.duration)):
-                cycles = (event.duration - (relative_finish_time - event.start_time)) * 0.000001 * event.freq
+
+                duration = (event.duration - (relative_finish_time - event.start_time)) * 0.000001
+                cycles = duration * event.freq
+
                 assert (cycles != 0), "duration: %d, relative finish: %d, start time: %d, freq: %d, cycles: %d" \
                                       % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
+            # Middle event
             elif (relative_start_time < event.start_time) and \
                     (relative_finish_time > (event.start_time + event.duration)):
-                cycles = event.duration * 0.000001 * event.freq
+
+                duration = event.duration * 0.000001
+                cycles = duration * event.freq
+
                 assert (cycles != 0), "Cycles could not be found for GPU"
 
             elif event.start_time >= relative_finish_time:
@@ -246,12 +275,12 @@ class GPUUtilizationTable(UtilizationTable):
         :param finish_time: Timestamp which no sum should go over
         :return: The energy (in joules) of the second
         """
-        nanosecond_start = start_time + (second * interval * 1000000)
-        nanosecond_finish = nanosecond_start + interval * 1000000
-        if finish_time < nanosecond_finish:
-            nanosecond_finish = finish_time
+        microsecond_start = start_time + (second * interval * 1000000)
+        microsecond_finish = microsecond_start + interval * 1000000
+        if finish_time < microsecond_finish:
+            microsecond_finish = finish_time
 
-        return self.get_energy(nanosecond_start, nanosecond_finish)
+        return self.get_energy(microsecond_start, microsecond_finish)
 
 
 class SystemUtilization:
