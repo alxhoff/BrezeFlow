@@ -268,7 +268,7 @@ class TaskNode:
                         if pe.time < self.events[-1].time:
                             continue
                         # calc time is the point until which the energy has been calculated
-                        new_cycles = int((pe.time - self.calc_time) * 0.000000001 * pe.cpu_frequency)
+                        new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency)
 
                         #TODO Streamline this
                         # self.util = SystemMetrics.current_metrics.sys_util_history.cpu[pe.cpu].get_util(pe.time)
@@ -296,7 +296,7 @@ class TaskNode:
                 if event.time != self.calc_time:  # Calculate remainder of energy consumption
 
                     cpu_speed = SystemMetrics.current_metrics.get_cpu_core_freq(event.cpu)
-                    new_cycles = int((event.time - self.calc_time) * 0.000000001 * cpu_speed)
+                    new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed)
 
                     # TODO here as well
                     # self.util = SystemMetrics.current_metrics.sys_util_history.cpu[event.cpu].get_util(event.time)

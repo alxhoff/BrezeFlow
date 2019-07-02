@@ -217,17 +217,17 @@ class GPUUtilizationTable(UtilizationTable):
 
             if (relative_start_time >= event.start_time) and \
                     (relative_start_time < (event.start_time + event.duration)):
-                cycles = (event.duration - (relative_start_time - event.start_time)) * 0.000000001 * event.freq
+                cycles = (event.duration - (relative_start_time - event.start_time)) * 0.000001 * event.freq
                 assert (cycles != 0), "duration: %d, relative start: %d, start time: %d, freq: %d, cycles: %d" \
                                       % (event.duration, relative_start_time, event.start_time, event.freq, cycles)
             elif (relative_finish_time >= event.start_time) and (
                     relative_finish_time < (event.start_time + event.duration)):
-                cycles = (event.duration - (relative_finish_time - event.start_time)) * 0.000000001 * event.freq
+                cycles = (event.duration - (relative_finish_time - event.start_time)) * 0.000001 * event.freq
                 assert (cycles != 0), "duration: %d, relative finish: %d, start time: %d, freq: %d, cycles: %d" \
                                       % (event.duration, relative_finish_time, event.start_time, event.freq, cycles)
             elif (relative_start_time < event.start_time) and \
                     (relative_finish_time > (event.start_time + event.duration)):
-                cycles = event.duration * 0.000000001 * event.freq
+                cycles = event.duration * 0.000001 * event.freq
                 assert (cycles != 0), "Cycles could not be found for GPU"
 
             elif event.start_time >= relative_finish_time:
