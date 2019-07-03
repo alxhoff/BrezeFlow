@@ -250,11 +250,11 @@ def main():
         print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
               "limitations"
 
-    sys_logger = SysLogger(adb)
-    sys_logger.start()
-    tracer.run_tracer(preamble)
-    sys_logger.stop()
-    tracer.get_trace_results()
+    # sys_logger = SysLogger(adb)
+    # sys_logger.start()
+    # tracer.run_tracer(preamble)
+    # sys_logger.stop()
+    # tracer.get_trace_results()
 
     """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
     processed. Results are generated into a CSV file, saved to the working directory under the same name as the target
