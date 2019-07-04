@@ -231,7 +231,7 @@ class TaskNode:
         self.gpu_cycles = 0
         self.start_time = 0
         self.calc_time = 0
-        self.energy = 0.0
+        self.energy = [0.0, 0.0]
         self.duration = 0
         self.finish_time = 0
         self.graph = graph
@@ -285,9 +285,13 @@ class TaskNode:
                         self.temp.append(SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 3))
 
                         cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(pe.cpu, pe.cpu_frequency, self.util,
-                                                                       self.temp) / pe.cpu_frequency
+                                                                       self.temp)
+                        cycle_energy = [component / pe.cpu_frequency for component in cycle_energy]
+
                         self.cpu_cycles += new_cycles
-                        self.energy += cycle_energy * new_cycles
+                        new_energy = [component * new_cycles for component in cycle_energy]
+                        new_summed_energy = [self.energy[i] + new_energy[i] for i in range(len(new_energy))]
+                        self.energy = new_summed_energy
                         self.duration += pe.time - self.calc_time
                         self.calc_time = pe.time
 
@@ -313,10 +317,13 @@ class TaskNode:
                     self.temp.append(SystemMetrics.current_metrics.get_temp(event.time, (event.cpu / 4) * 4 + 3))
 
                     cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(event.cpu, cpu_speed, self.util,
-                                                                   self.temp) / cpu_speed
+                                                                                self.temp)
+                    cycle_energy = [component / cpu_speed for component in cycle_energy]
 
                     self.cpu_cycles += new_cycles
-                    self.energy += cycle_energy * new_cycles
+                    new_energy = [component * new_cycles for component in cycle_energy]
+                    new_summed_energy = [self.energy[i] + new_energy[i] for i in range(len(new_energy))]
+                    self.energy = new_summed_energy
                     self.duration += event.time - self.calc_time
                     self.calc_time = event.time
 
@@ -468,7 +475,7 @@ class EnergyDuration:
     """
 
     def __init__(self):
-        self.energy = 0
+        self.energy = [0.0, 0.0]
         self.duration = 0
 
 
@@ -493,7 +500,7 @@ class ProcessBranch:
         self.cpu = None
         self.cpus = cpus
         self.gpu = gpu
-        self.energy = 0  # calculated upon request at the end between given intervals
+        self.energy = [0.0, 0.0]  # calculated upon request at the end between given intervals
         self.duration = 0
 
     def _connect_to_cpu_event(self, cpu):
@@ -596,22 +603,34 @@ class ProcessBranch:
             if (task.start_time < start_time) and (task.finish_time > start_time):
 
                 try:
-                    tasks_stats.energy += ((task.finish_time - start_time) / task.duration * task.energy)
+                    energy_delta = [((task.finish_time - start_time) / task.duration * component) for component in
+                                    task.energy]
+                    for i in range(len(tasks_stats.energy)):
+                        tasks_stats.energy[i] += energy_delta[i]
+
                     tasks_stats.duration += (task.finish_time - start_time)
+
                 except ZeroDivisionError:
                     continue
             # Task that falls at the ending of the second
             elif (task.start_time <= finish_time) and (task.finish_time > finish_time):
 
                 try:
-                    tasks_stats.energy += ((finish_time - task.start_time) / task.duration * task.energy)
+                    energy_delta = [((finish_time - task.start_time) / task.duration * component) for component in
+                                    task.energy]
+                    for i in range(len(tasks_stats.energy)):
+                        tasks_stats.energy[i] += energy_delta[i]
+
                     tasks_stats.duration += (finish_time - task.start_time)
+
                 except ZeroDivisionError:
                     continue
             # Middle events
             elif (task.start_time >= start_time) and (task.finish_time <= finish_time):
 
-                tasks_stats.energy += task.energy
+                for i in range(len(tasks_stats.energy)):
+                    tasks_stats.energy[i] += task.energy[i]
+
                 tasks_stats.duration += task.duration
             # Finished second
             elif task.start_time >= finish_time:
@@ -670,7 +689,8 @@ class ProcessBranch:
                                         + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util" \
                                         + "\nDuration: " + str(self.tasks[-1].duration) \
                                         + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
-                                        + "\nEnergy: " + str(self.tasks[-1].energy) \
+                                        + "\nEnergy: b" + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
+                                                                                                       -1].energy[0]) \
                                         + "\n" + self.tname \
                                         + "\n" + self.pname \
                                         + "\n" + str(self.tasks[-1].__class__.__name__)
@@ -894,7 +914,7 @@ class ProcessTree:
             writer.writerow([PL_PID, PL_PID_PNAME, PL_PID_TNAME, PL_TASK_COUNT,
                              PL_ENERGY, PL_DURATION])
 
-            total_energy = 0
+            total_energy = 0.0
 
             # Calculate GPU energy
             gpu_energy = self.metrics.sys_util_history.gpu.get_energy(start_time, finish_time)
@@ -913,7 +933,8 @@ class ProcessTree:
 
                 branch_stats = branch.get_task_energy(start_time, finish_time)
                 branch.energy = branch_stats.energy
-                total_energy += branch.energy
+                for i in range(len(branch.energy)):
+                    total_energy += branch.energy[i]
                 branch.duration = branch_stats.duration
 
                 if branch.energy == 0.0:
@@ -932,13 +953,14 @@ class ProcessTree:
             writer.writerow(["Energy Timeline"])
 
             timeline_interval = 0.05
-            energy_timeline = [[0.0, 0.0, 0.0, 0.0, 0] for _ in range(int(duration/timeline_interval) + 1)]
+            energy_timeline = [[(0.0, 0.0), 0.0, 0.0, 0.0, 0] for _ in range(int(duration/timeline_interval) + 1)]
 
             for i, second in enumerate(energy_timeline):
 
                 for x, branch in self.process_branches.iteritems():
                     energy = branch.get_interval_energy(i, timeline_interval, start_time, finish_time)
-                    second[0] += energy
+                    new_energy = [second[0][0] + energy[0], second[0][1] + energy[1]]
+                    second[0] = new_energy
 
             for i, second in enumerate(energy_timeline):
 
@@ -948,13 +970,14 @@ class ProcessTree:
                 second[3] = SystemMetrics.current_metrics.sys_util_history.gpu.get_util(i * timeline_interval * 1000000)
                 second[4] = SystemMetrics.current_metrics.sys_util_history.gpu.get_freq(i * timeline_interval * 1000000)
 
-            writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "GPU Energy", "Total Energy",
-                             "GPU Temp", "GPU Util", "GPU Freq"])
+            writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "Big Energy", "Little Energy",
+                             "GPU Energy", "Total Energy","GPU Temp", "GPU Util", "GPU Freq"])
 
             for x, second in enumerate(energy_timeline):
                 writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
-                                 str(second[0]), str(second[1]),
-                                 str(second[0] + second[1]), str(second[2]), str(second[3]), str(second[4])])
+                                 str(second[0][0] + second[0][1]), str(second[0][1]), str(second[0][0]), str(second[1]),
+                                 str(second[0][0] + second[0][1] + second[1]), str(second[2]), str(second[3]),
+                                 str(second[4])])
 
     def handle_event(self, event, subgraph, start_time, finish_time):
         """

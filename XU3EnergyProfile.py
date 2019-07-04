@@ -37,10 +37,10 @@ class XU3RegressionModel:
             "util3": 0.00231972698040632
             }
     GPU_reg_const = {
-            "static": -2.03211741706263,
-            "util": 0.00786090334094841,
-            "freq": (1.23064856387138 * pow(10, -9)),
-            "temp": 0.0311636573334557
+            "static": -1.979703742,
+            "util": 0.011911485,
+            "freq": (1.73811 * pow(10, -9)),
+            "temp": 0.026603022
             }
 
 
@@ -57,12 +57,15 @@ class XU3RegressionModel:
         :param temp: The temperatures of the target CPU cluster
         :return: Per-second energy consumption of the target core (in Joules/Sec = Watts)
         """
+
+        energy = [0.0, 0.0]
+
         try:
             if cpu in range(4):  # Little
 
                 reg_const = XU3RegressionModel.little_reg_const
 
-                energy = reg_const["static"] + reg_const["freq"] * freq + \
+                energy[0] = reg_const["static"] + reg_const["freq"] * freq + \
                          reg_const["util0"] * util[0] + reg_const["util1"] * util[1] + reg_const["util2"] * util[2] + \
                          reg_const["util3"] * util[3]
 
@@ -72,7 +75,7 @@ class XU3RegressionModel:
 
                 reg_const = XU3RegressionModel.big_reg_const
 
-                energy = reg_const["static"] + reg_const["temp0"] * temp[0] + reg_const["temp1"] * temp[1] + \
+                energy[1] = reg_const["static"] + reg_const["temp0"] * temp[0] + reg_const["temp1"] * temp[1] + \
                          reg_const["temp2"] * temp[2] + reg_const["temp3"] * temp[3] + reg_const["freq"] * freq + \
                          reg_const["util0"] * util[0] + reg_const["util1"] * util[1] + reg_const["util2"] * util[2] + \
                          reg_const["util3"] * util[3]
