@@ -34,11 +34,23 @@ PL_ENERGY = 'ENERGY [J]'
 PL_DURATION = 'DURATION [nS]'
 
 
+class DependencyType(Enum):
+    NONE = 0
+    TASK = 1
+    BINDER = 2
+
+    def __str__(self):
+        return "%s" % self.name
+
+
 class BinderType(Enum):
     UNKNOWN = 0
     CALL = 1
     REPLY = 2
     ASYNC = 3
+
+    def __str__(self):
+        return "%s" % self.name
 
 
 class JobType(Enum):
@@ -238,6 +250,7 @@ class TaskNode:
         self.pid = pid
         self.temp = 0
         self.util = 0
+        self.dependency = DependencyType.NONE
 
     def add_event(self, event, subgraph=False):
         """ Adds an event to the current task. Creation of new tasks is handled at a branch level. At a task
@@ -689,16 +702,17 @@ class ProcessBranch:
                                         + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util" \
                                         + "\nDuration: " + str(self.tasks[-1].duration) \
                                         + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
-                                        + "\nEnergy: b" + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
+                                        + "\nEnergy: " + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
                                                                                                        -1].energy[0]) \
+                                        + "\n Dependency: " + str(self.tasks[-1].dependency) \
                                         + "\n" + self.tname \
                                         + "\n" + self.pname \
                                         + "\n" + str(self.tasks[-1].__class__.__name__)
 
-                    if event.cpu > 3:
+                    if event.cpu > 3:  # Big core being underutilized
                         if self.tasks[-1].util < 40:
                             cores = SystemMetrics.current_metrics.sys_util_history
-                            cores_utils = []
+                            cores_utils = [0.0] * 4
                             cores_utils.append(cores.cpu[0].get_util(self.tasks[-1].finish_time))
                             cores_utils.append(cores.cpu[1].get_util(self.tasks[-1].finish_time))
                             cores_utils.append(cores.cpu[2].get_util(self.tasks[-1].finish_time))
@@ -732,6 +746,40 @@ class ProcessBranch:
                                     energy_difference = self.tasks[-1].energy - little_energy
                                     label += "\nSaving %f Joules" % energy_difference
 
+                    ## TASK NODE EVALUATION
+
+                    task = self.tasks[-1]
+                    normalized_util = float(task.duration) / (task.finish_time - task.start_time)
+
+                    cores = SystemMetrics.current_metrics.sys_util_history
+                    cores_utils = [0.0] * 8
+                    cores_utils[0] = cores.cpu[0].get_util(self.tasks[-1].finish_time)
+                    cores_utils[1] = cores.cpu[1].get_util(self.tasks[-1].finish_time)
+                    cores_utils[2] = cores.cpu[2].get_util(self.tasks[-1].finish_time)
+                    cores_utils[3] = cores.cpu[3].get_util(self.tasks[-1].finish_time)
+                    cores_utils[4] = cores.cpu[4].get_util(self.tasks[-1].finish_time)
+                    cores_utils[5] = cores.cpu[5].get_util(self.tasks[-1].finish_time)
+                    cores_utils[6] = cores.cpu[6].get_util(self.tasks[-1].finish_time)
+                    cores_utils[7] = cores.cpu[7].get_util(self.tasks[-1].finish_time)
+
+                    if event.cpu > 3: #  big
+                        cur_freq = SystemMetrics.current_metrics.get_cpu_core_freq(4)
+
+                        util_capacity_on_max_little = float(cur_freq) / \
+                                                      SystemMetrics.current_metrics.energy_profile.little_freqs[4] * \
+                                                 normalized_util * SystemMetrics.current_metrics.energy_profile.migration_factor
+
+                        duration_on_little = util_capacity_on_max_little * task.duration
+
+                        finish_time_on_little = task.start_time + duration_on_little
+
+                        # find point in time when the job will finish executing
+
+                        # Are all dependencies satisfied by this timing
+
+
+                    # else: #  little
+
                     self.graph.add_node(self.tasks[-1],
                                         label=label,
                                         fillcolor='darkolivegreen3',
@@ -763,6 +811,7 @@ class ProcessBranch:
                 if len(self.tasks) >= 2:  # Connecting task in the same PID branch for visual aid
                     self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen',
                                         style='dashed')
+                    self.tasks[-1].dependency = DependencyType.TASK
 
                 return
 
@@ -787,7 +836,7 @@ class ProcessBranch:
                                 + "." + str(self.binder_tasks[-1].events[-1].time)[-6:]
                                 + "\nPID: " + str(event.pid)
                                 + "  dest PID: " + str(event.target_pid)
-                                + "\nType: " + str(self.binder_tasks[-1].events[0].trans_type.name)
+                                + "\nType: " + str(self.binder_tasks[-1].events[0].trans_type)
                                 + "\n" + str(event.name)
                                 + "\n" + str(self.binder_tasks[-1].__class__.__name__),
                                 fillcolor='coral', style='filled,bold', shape='box')
@@ -953,7 +1002,8 @@ class ProcessTree:
             writer.writerow(["Energy Timeline"])
 
             timeline_interval = 0.05
-            energy_timeline = [[(0.0, 0.0), 0.0, 0.0, 0.0, 0] for _ in range(int(duration/timeline_interval) + 1)]
+            energy_timeline = [[(0.0, 0.0), 0.0, (0.0, 0.0, 0.0), 0.0, 0] for _ in range(int(
+            duration/timeline_interval) + 1)]
 
             for i, second in enumerate(energy_timeline):
 
@@ -966,12 +1016,15 @@ class ProcessTree:
 
                 second[1] += \
                     self.metrics.sys_util_history.gpu.get_interval_energy(i, timeline_interval, start_time, finish_time)
-                second[2] = SystemMetrics.current_metrics.get_temp(i * timeline_interval * 1000000, -1)
+                temp_l = SystemMetrics.current_metrics.get_temp(i * timeline_interval * 1000000, 0)
+                temp_b = SystemMetrics.current_metrics.get_temp(i * timeline_interval * 1000000, 4)
+                temp_g = SystemMetrics.current_metrics.get_temp(i * timeline_interval * 1000000, -1)
+                second[2] = (temp_b, temp_l, temp_g)
                 second[3] = SystemMetrics.current_metrics.sys_util_history.gpu.get_util(i * timeline_interval * 1000000)
                 second[4] = SystemMetrics.current_metrics.sys_util_history.gpu.get_freq(i * timeline_interval * 1000000)
 
             writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "Big Energy", "Little Energy",
-                             "GPU Energy", "Total Energy","GPU Temp", "GPU Util", "GPU Freq"])
+                             "GPU Energy", "Total Energy", "Temps", "GPU Util", "GPU Freq"])
 
             for x, second in enumerate(energy_timeline):
                 writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
@@ -1073,6 +1126,8 @@ class ProcessTree:
                                 self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
                                 self.process_branches[pending_binder_node.target_pid].tasks[-1],
                                 color='yellow3', dir='forward')
+
+                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency = DependencyType.BINDER
 
                         # remove binder task that is now complete
                         del self.completed_binder_calls[x]

@@ -120,7 +120,7 @@ class CPUUtilizationTable(UtilizationTable):
             if event.state:
                 active_duration += event.duration
 
-            if calc_duration >= 25000:
+            if calc_duration >= 250000:
                 break
 
         self.events[-1].util = float(active_duration) / float(calc_duration) * 100.00

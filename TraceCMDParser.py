@@ -170,3 +170,6 @@ class TracecmdProcessor:
 
             self.processed_preprocess_events.append(EventTempInfo(int(round(event.ts / 1000.0)), big0,
                                                                   big1, big2, big3, little, gpu))
+
+        else:
+            print "Unknown event %s" % event.name
