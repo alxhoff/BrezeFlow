@@ -42,6 +42,12 @@ class DependencyType(Enum):
     def __str__(self):
         return "%s" % self.name
 
+class Dependency:
+
+    def __init__(self, node=None, type=DependencyType.NONE):
+        self.type = type
+        self.node = node
+
 
 class BinderType(Enum):
     UNKNOWN = 0
@@ -250,7 +256,7 @@ class TaskNode:
         self.pid = pid
         self.temp = 0
         self.util = 0
-        self.dependency = DependencyType.NONE
+        self.dependency = Dependency()
 
     def add_event(self, event, subgraph=False):
         """ Adds an event to the current task. Creation of new tasks is handled at a branch level. At a task
@@ -704,7 +710,7 @@ class ProcessBranch:
                                         + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
                                         + "\nEnergy: " + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
                                                                                                        -1].energy[0]) \
-                                        + "\n Dependency: " + str(self.tasks[-1].dependency) \
+                                        + "\n Dependency: " + str(self.tasks[-1].dependency.type) \
                                         + "\n" + self.tname \
                                         + "\n" + self.pname \
                                         + "\n" + str(self.tasks[-1].__class__.__name__)
@@ -811,7 +817,8 @@ class ProcessBranch:
                 if len(self.tasks) >= 2:  # Connecting task in the same PID branch for visual aid
                     self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen',
                                         style='dashed')
-                    self.tasks[-1].dependency = DependencyType.TASK
+                    self.tasks[-1].dependency.type = DependencyType.TASK
+                    self.tasks[-1].dependency.node = self.tasks[-2]
 
                 return
 
@@ -1127,7 +1134,10 @@ class ProcessTree:
                                 self.process_branches[pending_binder_node.target_pid].tasks[-1],
                                 color='yellow3', dir='forward')
 
-                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency = DependencyType.BINDER
+                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.type = \
+                            DependencyType.BINDER
+                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.node = \
+                            self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1]
 
                         # remove binder task that is now complete
                         del self.completed_binder_calls[x]
