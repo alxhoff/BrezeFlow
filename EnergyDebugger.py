@@ -61,8 +61,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.current_debugger = None
 
         self.application_name = None
-        self.events=[]
-        self.duration = 0 #TODO defaults
+        self.events = []
+        self.duration = 0  # TODO defaults
         self.events_to_process = 0
         self.preamble = 2
         self.graph = False
@@ -145,6 +145,7 @@ class CommandInterface:
     def run(self):
         pass
 
+
 class EnergyDebugger:
 
     def __init__(self, application, duration, events, event_count, preamble, graph, subgraph):
@@ -175,15 +176,15 @@ class EnergyDebugger:
         print "Creating tracer, starting sys_logger and running trace"
 
         self.tracer = Tracer(adb_device=self.adb,
-                        name=application,
-                        metrics=self.sys_metrics,
-                        events=events,
-                        duration=duration
-                        )
+                             name=application,
+                             metrics=self.sys_metrics,
+                             events=events,
+                             duration=duration
+                             )
 
         if self.duration > 6:
             print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
-            "limitations"
+                "limitations"
             QMessageBox.warning(self, "Warning", "Running traces over 6 seconds can cause issue due to data loss from trace buffer size limitations",
                                 QMessageBox.Ok)
 
@@ -192,9 +193,8 @@ class EnergyDebugger:
         self.run()
 
     def clear(self):
-        #TODO
+        # TODO
         pass
-
 
     def run(self):
         """ Entry point into the debugging tool.
@@ -223,6 +223,7 @@ class EnergyDebugger:
 
         print "Run took a total of %s seconds to run" % (time.time() - self.start_time)
 
+
 if __name__ == '__main__':
     if not args.commandline:
         app = QApplication(sys.argv)
@@ -231,4 +232,3 @@ if __name__ == '__main__':
     else:
         app = CommandInterface()
         app.run()
-
