@@ -533,7 +533,7 @@ class ProcessBranch:
             dispatcher.connect(self._handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
                                sender=dispatcher.Any)
         except IndexError:
-            print "CPUs not init'd"
+            print("CPUs not init'd")
             sys.exit(1)
 
     def _disconnect_from_cpu_event(self, cpu):
@@ -545,7 +545,7 @@ class ProcessBranch:
             dispatcher.disconnect(self._handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
                                   sender=dispatcher.Any)
         except IndexError:
-            print "IndexError in disconnecting from cpu"
+            print("IndexError in disconnecting from cpu")
             sys.exit(1)
 
     def _handle_cpu_freq_change(self):
@@ -563,7 +563,7 @@ class ProcessBranch:
                                                  self.gpu.freq,
                                                  self.gpu.util)
             except IndexError:
-                print "IndexError in handling CPU freq change"
+                print("IndexError in handling CPU freq change")
                 sys.exit(1)
 
     def _handle_cpu_num_change(self, event):
@@ -583,7 +583,7 @@ class ProcessBranch:
                                                      self.gpu.freq,
                                                      self.gpu.util)
             except IndexError:
-                print "IndexError in handing CPU num change"
+                print("IndexError in handing CPU num change")
                 sys.exit(1)
 
         self._disconnect_from_cpu_event(self.cpu)
@@ -1003,7 +1003,7 @@ class ProcessTree:
             try:
                 writer.writerow(["Average wattage", total_energy / duration])
             except ZeroDivisionError:
-                print "No events were recorded!"
+                print("No events were recorded!")
 
             writer.writerow([])
             writer.writerow(["Energy Timeline"])
@@ -1082,7 +1082,7 @@ class ProcessTree:
                                 del self.completed_binder_calls[x]
                                 break
 
-                            print "New Binder thread found: " + str(pending_binder_node.binder_thread)
+                            print("New Binder thread found: " + str(pending_binder_node.binder_thread))
 
                             self.process_branches[pending_binder_node.binder_thread] = \
                                 ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
@@ -1099,7 +1099,7 @@ class ProcessTree:
                                 del self.completed_binder_calls[x]
                                 break
 
-                            print "New PID of interest found: " + str(pid_info.pid)
+                            print("New PID of interest found: " + str(pid_info.pid))
 
                             self.process_branches[event.next_pid] = \
                                 ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,

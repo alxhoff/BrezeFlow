@@ -33,9 +33,11 @@ and it is recommended applications not use it directly.
 TODO: consider a complete class hierarchy of ftrace events...
 """
 
+
 def cached_property(func, name=None):
     if name is None:
         name = func.__name__
+
     def _get(self):
         try:
             return self.__cached_properties[name]
@@ -47,15 +49,18 @@ def cached_property(func, name=None):
         self.__cached_properties[name] = value
         return value
     update_wrapper(_get, func)
+
     def _del(self):
         self.__cached_properties.pop(name, None)
     return property(_get, None, _del)
+
 
 class Event(object, DictMixin):
     """
     This class can be used to access event data
     according to an event's record and format.
     """
+
     def __init__(self, pevent, record, format):
         self._pevent = pevent
         self._record = record
@@ -63,7 +68,7 @@ class Event(object, DictMixin):
 
     def __str__(self):
         return "%d.%d CPU%d %s: pid=%d comm=%s type=%d" % \
-               (self.ts/1000000000, self.ts%1000000000, self.cpu, self.name,
+               (self.ts/1000000000, self.ts % 1000000000, self.cpu, self.name,
                 self.num_field("common_pid"), self.comm, self.type)
 
     def __del__(self):
@@ -121,16 +126,19 @@ class Event(object, DictMixin):
         return py_field_get_stack(self._pevent, self._record, self._format,
                                   long_size)
 
+
 class TraceSeq(object):
     def __init__(self, trace_seq):
         self._trace_seq = trace_seq
 
     def puts(self, s):
-    	print "Help\n"
+        print("Help\n")
         return trace_seq_puts(self._trace_seq, s)
+
 
 class FieldError(Exception):
     pass
+
 
 class Field(object):
     def __init__(self, record, field):
@@ -142,8 +150,8 @@ class Field(object):
         return py_field_get_data(self._field, self._record)
 
     def __long__(self):
-        ret, val =  pevent_read_number_field(self._field,
-                                             pevent_record_data_get(self._record))
+        ret, val = pevent_read_number_field(self._field,
+                                            pevent_record_data_get(self._record))
         if ret:
             raise FieldError("Not a number field")
         return val
@@ -151,6 +159,7 @@ class Field(object):
 
     def __str__(self):
         return py_field_get_str(self._field, self._record)
+
 
 class PEvent(object):
     def __init__(self, pevent):
@@ -160,10 +169,10 @@ class PEvent(object):
         return cb(TraceSeq(s), Event(self._pevent, record, event_fmt))
 
     def register_event_handler(self, subsys, event_name, callback):
-        l = lambda s, r, e: self._handler(callback, s, r, e)
+        def l(s, r, e): return self._handler(callback, s, r, e)
 
         py_pevent_register_event_handler(
-                  self._pevent, -1, subsys, event_name, l)
+            self._pevent, -1, subsys, event_name, l)
 
     @cached_property
     def file_endian(self):
@@ -175,6 +184,7 @@ class PEvent(object):
 class FileFormatError(Exception):
     pass
 
+
 class Trace(object):
     """
     Trace object represents the trace file it is created with.
@@ -182,6 +192,7 @@ class Trace(object):
     The Trace object aggregates the tracecmd structures and functions that are
     used to manage the trace and extract events from it.
     """
+
     def __init__(self, filename):
         self._handle = tracecmd_alloc(filename)
 
@@ -243,21 +254,18 @@ class Trace(object):
 # Basic builtin test, execute module directly
 if __name__ == "__main__":
     t = Trace("trace.dat")
-    print "Trace contains data for %d cpus" % (t.cpus)
+    print("Trace contains data for %d cpus" % (t.cpus))
 
     for cpu in range(0, t.cpus):
-        print "CPU %d" % (cpu)
+        print("CPU %d" % (cpu))
         ev = t.read_event(cpu)
         while ev:
-            print "\t%s" % (ev)
-            print "\tcomm: %s" % (ev.str_field("comm"))
+            print("\t%s" % (ev))
+            print("\tcomm: %s" % (ev.str_field("comm")))
             pid = ev.num_field("pid")
             if pid is not None:
-            	print "\tpid: %d" % (pid)
+                print("\tpid: %d" % (pid))
             tgid = ev.num_field("tgid")
             if tgid is not None:
-            	print "\ttgid: %d" % (tgid)
+                print("\ttgid: %d" % (tgid))
             ev = t.read_event(cpu)
-
-
-

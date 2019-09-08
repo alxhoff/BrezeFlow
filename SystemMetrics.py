@@ -364,7 +364,7 @@ class SystemMetrics:
                 else:
                     return self.sys_temp_history.temps[ts - self.sys_temp_history.initial_time].big[core % 4]
         except IndexError:
-            print "Temperature could not be retrieved for time %d" % ts
+            print("Temperature could not be retrieved for time %d" % ts)
             sys.exit(1)
 
     def _get_core_count(self):

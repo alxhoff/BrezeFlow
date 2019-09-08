@@ -42,23 +42,23 @@ class TracecmdProcessor:
         self.processed_preprocess_events = []
         try:
             self.trace = Trace(filename)
-        except Exception, e:
-            print "Tracecmd file could not be read: %s" % str(e)
+        except Exception as e:
+            print("Tracecmd file could not be read: %s" % str(e))
             sys.exit(1)
 
         self.event_count = EventCounts()
         self._process_trace(preamble)
 
     def print_event_count(self):
-        print "Total events: " + str(self.event_count.sched_switch + self.event_count.cpu_idle
+        print("Total events: " + str(self.event_count.sched_switch + self.event_count.cpu_idle
                                      + self.event_count.sched_switch + self.event_count.binder_transaction +
-                                     + self.event_count.cpu_freq + self.event_count.mali)
-        print "Sched switch: " + str(self.event_count.sched_switch)
-        print "CPU idle: " + str(self.event_count.cpu_idle)
-        print "CPU freq: " + str(self.event_count.cpu_freq)
-        print "Binder transactions: " + str(self.event_count.binder_transaction)
-        print "Mali: " + str(self.event_count.mali)
-        print "Temp: " + str(self.event_count.temp)
+                                     + self.event_count.cpu_freq + self.event_count.mali))
+        print("Sched switch: " + str(self.event_count.sched_switch))
+        print("CPU idle: " + str(self.event_count.cpu_idle))
+        print("CPU freq: " + str(self.event_count.cpu_freq))
+        print("Binder transactions: " + str(self.event_count.binder_transaction))
+        print("Mali: " + str(self.event_count.mali))
+        print("Temp: " + str(self.event_count.temp))
 
     def _process_trace(self, preamble):
         """ Sequentially process trace events.
@@ -172,4 +172,4 @@ class TracecmdProcessor:
                                                                   big1, big2, big3, little, gpu))
 
         else:
-            print "Unknown event %s" % event.name
+            print("Unknown event %s" % event.name)
