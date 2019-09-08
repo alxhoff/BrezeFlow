@@ -87,7 +87,7 @@ class TraceProcessor:
         metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
 
         if test:
-            for x, event in enumerate(tracecmd.processed_events[:300]):
+            for x, event in enumerate(tracecmd.processed_events[:test]):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
                 if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                     break
