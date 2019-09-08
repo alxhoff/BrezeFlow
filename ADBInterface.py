@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 import os.path as op
-import time
 
 from adb import adb_commands
-# from adb import sign_m2crypto
+from adb import sign_m2crypto
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"

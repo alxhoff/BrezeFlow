@@ -27,11 +27,11 @@ __status__ = "Beta"
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-a", "--app", required=True,
+parser.add_argument("-a", "--app", required=False,
                     help="Specifies the name of the game to be traced")
-parser.add_argument("-d", "--duration", required=True, type=float,
+parser.add_argument("-d", "--duration", required=False, type=float,
                     help="The duration to trace")
-parser.add_argument("-e", "--events", required=True,
+parser.add_argument("-e", "--events", required=False,
                     help="Events that are to be traced")
 parser.add_argument("-s", "--skip-clear", action='store_true',
                     help="Skip clearing trace settings")
@@ -41,7 +41,7 @@ parser.add_argument("-te", "--test", action='store_true',
                     help="Tests only a few hundred events to speed up testing")
 parser.add_argument("-sub", "--subgraph", action='store_true',
                     help="Enable the drawing of node subgraphs")
-parser.add_argument("-p", "--preamble", required=True,
+parser.add_argument("-p", "--preamble", required=False,
                     help="Specifies the number of seconds that be discarded at the begining of tracing")
 
 args = parser.parse_args()
@@ -50,17 +50,29 @@ args = parser.parse_args()
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     def __init__(self, parent=None):
-        super().__init___(parent)
+        super(QMainWindow, self).__init__(parent)
 
-        self.setupUi()
+        self.setupUi(self)
         self.setupbuttons()
+        self.show()
 
     def setupbuttons(self):
         self.pushButtonRun.clicked.connect(self.buttonrun)
         self.pushButtonKillADB.clicked.connect(self.buttonkilladb)
 
+    def checkrun(self):
+        if not self.lineEditApplication.text() and not args.app:
+            return False
+
+        if self.doubleSpinBoxDuration.value() == 0 and args.duration:
+            return False
+
+        return True
+
     def buttonrun(self):
-        pass
+        if not self.checkrun():
+            return
+        
 
     def buttonkilladb(self):
         pass
@@ -70,7 +82,7 @@ class EnergyDebugger:
     def __init__(self):
         self.app = QApplication(sys.argv)
         self.UI = MainInterface()
-        self.main()
+        # self.main()
         sys.exit(self.app.exec_())
 
     def main(self):
@@ -93,7 +105,7 @@ class EnergyDebugger:
         target system.
         """
 
-        print("Creating tracer, starting sys_logger and running trace")
+        print "Creating tracer, starting sys_logger and running trace"
 
         preamble = int(args.preamble)
 
@@ -110,8 +122,8 @@ class EnergyDebugger:
         """
 
         if args.duration > 6:
-            print("WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
-            "limitations")
+            print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
+            "limitations"
 
         self.sys_logger = SysLogger(self.adb)
         self.sys_logger.start()
@@ -124,7 +136,7 @@ class EnergyDebugger:
         application with the suffix _results.csv.
         """
 
-        print("Loading tracecmd data and processing")
+        print "Loading tracecmd data and processing"
 
         dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.app + ".dat")
 
@@ -132,7 +144,7 @@ class EnergyDebugger:
         self.tc_processor.print_event_count()
         self.trace_processor.process_trace(sys_metrics, self.tc_processor, args.duration, args.draw, args.test, args.subgraph)
 
-        print("Run took a total of %s seconds to run" % (time.time() - start_time))
+        print "Run took a total of %s seconds to run" % (time.time() - start_time)
 
 if __name__ == '__main__':
     app = EnergyDebugger()

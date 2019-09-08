@@ -105,9 +105,9 @@ class XU3RegressionModel:
                 return energy
 
         except ValueError:
-            print("Getting CPU cycle energy invalid frequency")
+            print "Getting CPU cycle energy invalid frequency"
         except TypeError:
-            print("Getting CPU cycle energy type error")
+            print "Getting CPU cycle energy type error"
 
     @staticmethod
     def get_gpu_cycle_energy(freq, util, temp):
