@@ -41,7 +41,7 @@
             <x>0</x>
             <y>0</y>
             <width>332</width>
-            <height>684</height>
+            <height>692</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -235,6 +235,62 @@
             </widget>
            </item>
            <item>
+            <widget class="QFrame" name="frame_5">
+             <property name="frameShape">
+              <enum>QFrame::StyledPanel</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Raised</enum>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_9">
+              <item>
+               <widget class="QLabel" name="label_9">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Display Options</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignHCenter|Qt::AlignTop</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <layout class="QGridLayout" name="gridLayout_2">
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="checkBoxDisplayGraph">
+                  <property name="text">
+                   <string>Graph</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QCheckBox" name="checkBoxDisplayResults">
+                  <property name="text">
+                   <string>Results</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QCheckBox" name="checkBoxDisplayBinderLog">
+                  <property name="text">
+                   <string>Binder Log</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
             <widget class="QFrame" name="frameDebugOptions">
              <property name="sizePolicy">
               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
@@ -382,7 +438,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tabResults">
        <attribute name="title">
@@ -398,52 +454,6 @@
        <attribute name="title">
         <string>Graph</string>
        </attribute>
-      </widget>
-      <widget class="QWidget" name="tabTrace">
-       <attribute name="title">
-        <string>Trace</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_9">
-          <item>
-           <widget class="QLabel" name="label_7">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Filter:</string>
-            </property>
-            <property name="margin">
-             <number>20</number>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="lineEdit">
-            <property name="placeholderText">
-             <string>Search for lines containing....</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QTextBrowser" name="textBrowserTrace">
-          <property name="lineWrapMode">
-           <enum>QTextEdit::WidgetWidth</enum>
-          </property>
-          <property name="source">
-           <url>
-            <string>file:///home/alxhoff/git/GitHub/Android-Energy-Debugger/test.log</string>
-           </url>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </widget>
       <widget class="QWidget" name="tabBinderLog">
        <attribute name="title">
@@ -469,10 +479,17 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonRunBinderFilter">
+            <property name="text">
+             <string>Run</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
-         <widget class="QTextBrowser" name="textBrowser"/>
+         <widget class="QTextBrowser" name="textBrowserBinderLog"/>
         </item>
        </layout>
       </widget>

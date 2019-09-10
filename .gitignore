@@ -5,6 +5,7 @@ __pycache__/
 *.xls#
 
 #logs and traces
+results/
 *.log
 *.dat
 *.xdot

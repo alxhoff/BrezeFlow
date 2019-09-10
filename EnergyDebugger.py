@@ -9,7 +9,9 @@ import csv
 
 import MainInterface
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableWidgetItem
+
+from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableWidgetItem, QScrollBar
 
 from ADBInterface import ADBInterface
 from PIDTools import PIDTool
@@ -66,6 +68,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.results_file = None
         self.graph_file = None
         self.binder_log_file = None
+        self.binder_log = []
+        self.trace_file = None
+        self.trace = []
 
         self.current_debugger = None
 
@@ -76,8 +81,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.preamble = 2
         self.graph = False
         self.subgraph = False
-        text = open('test.log').read()
-        self.textBrowserTrace.setText(text)
 
     def setupbuttons(self):
         self.pushButtonRun.clicked.connect(self.buttonrun)
@@ -85,9 +88,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     def setupmenu(self):
         self.actionOpenResults.triggered.connect(self.openresults)
+        self.actionOpenBinderLog.triggered.connect(self.openbinderlog)
 
     def openresults(self):
-        print "Open results"
         if self.lineEditApplication.text() is None:
             QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
             return
@@ -111,14 +114,30 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 for j, col in enumerate(row):
                     self.tableWidgetResults.setItem(i, j, QTableWidgetItem(col))
 
-    def opentrace(self):
-        pass
+
 
     def opengraph(self):
         pass
 
     def openbinderlog(self):
-        pass
+        if self.lineEditApplication.text() is None:
+            QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
+            return
+
+        self.application_name = self.lineEditApplication.text()
+
+        try:
+            self.binder_log_file = open(os.path.join(self.results_path, self.application_name + ".tlog"), "r")
+        except Exception:
+            QMessageBox.warning(self, "Error", "Binder log does not exist", QMessageBox.Ok)
+            return
+
+        self.binder_log = []
+        for line in self.binder_log_file:
+            self.binder_log.append(line)
+            self.textBrowserBinderLog.append(line)
+
+        self.textBrowserBinderLog.verticalScrollBar().setValue(0)
 
     def checkrun(self):
 
