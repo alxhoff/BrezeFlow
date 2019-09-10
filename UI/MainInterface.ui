@@ -176,16 +176,6 @@
                   </property>
                  </widget>
                 </item>
-                <item row="0" column="1">
-                 <widget class="QCheckBox" name="checkBoxBinderTransaction">
-                  <property name="text">
-                   <string>Binder Transaction</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
                 <item row="3" column="0" colspan="2">
                  <widget class="QPushButton" name="pushButtonEventReset">
                   <property name="sizeIncrement">
@@ -226,6 +216,16 @@
                  <widget class="QCheckBox" name="checkBoxCPUIdle">
                   <property name="text">
                    <string>CPU Idle</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QCheckBox" name="checkBoxBinderTransaction">
+                  <property name="text">
+                   <string>Binder Transaction</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
@@ -333,6 +333,9 @@
                 <property name="text">
                  <string>Progress:</string>
                 </property>
+                <property name="margin">
+                 <number>20</number>
+                </property>
                </widget>
               </item>
               <item>
@@ -379,8 +382,18 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
+      <widget class="QWidget" name="tabResults">
+       <attribute name="title">
+        <string>Results</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_8">
+        <item>
+         <widget class="QTableWidget" name="tableWidgetResults"/>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="tabGraph">
        <attribute name="title">
         <string>Graph</string>
@@ -390,6 +403,78 @@
        <attribute name="title">
         <string>Trace</string>
        </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <item>
+           <widget class="QLabel" name="label_7">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Filter:</string>
+            </property>
+            <property name="margin">
+             <number>20</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit">
+            <property name="placeholderText">
+             <string>Search for lines containing....</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QTextBrowser" name="textBrowserTrace">
+          <property name="lineWrapMode">
+           <enum>QTextEdit::WidgetWidth</enum>
+          </property>
+          <property name="source">
+           <url>
+            <string>file:///home/alxhoff/git/GitHub/Android-Energy-Debugger/test.log</string>
+           </url>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabBinderLog">
+       <attribute name="title">
+        <string>Binder Log</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_7">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_10">
+          <item>
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Filter:</string>
+            </property>
+            <property name="margin">
+             <number>20</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit_2">
+            <property name="placeholderText">
+             <string>Search for lines containing....</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QTextBrowser" name="textBrowser"/>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -408,9 +493,14 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionSettings"/>
     <addaction name="separator"/>
-    <addaction name="actionQuit"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpenGraph"/>
+    <addaction name="actionOpenBinderLog"/>
+    <addaction name="actionOpenTrace"/>
+    <addaction name="actionOpenResults"/>
+    <addaction name="actionOpenSettings"/>
+    <addaction name="actionQuitProgram"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -449,10 +539,67 @@
   <action name="actionAbout">
    <property name="icon">
     <iconset>
-     <normaloff>../../../../.designer/icons/about.png</normaloff>../../../../.designer/icons/about.png</iconset>
+     <normaloff>../icons/about.png</normaloff>../icons/about.png</iconset>
    </property>
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionOpen_Graph">
+   <property name="text">
+    <string>Open Graph</string>
+   </property>
+  </action>
+  <action name="actionOpen_Graph_2">
+   <property name="text">
+    <string>Open Graph</string>
+   </property>
+  </action>
+  <action name="actionOpenGraph">
+   <property name="text">
+    <string>Open Graph</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionOpenSettings">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/settings.png</normaloff>../icons/settings.png</iconset>
+   </property>
+   <property name="text">
+    <string>Settings</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionOpenBinderLog">
+   <property name="text">
+    <string>Open Binder Log</string>
+   </property>
+  </action>
+  <action name="actionOpenTrace">
+   <property name="text">
+    <string>Open Trace</string>
+   </property>
+  </action>
+  <action name="actionOpenResults">
+   <property name="text">
+    <string>Open Results</string>
+   </property>
+  </action>
+  <action name="actionQuitProgram">
+   <property name="icon">
+    <iconset>
+     <normaloff>../icons/quit.png</normaloff>../icons/quit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
    </property>
   </action>
  </widget>

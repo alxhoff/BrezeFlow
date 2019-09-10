@@ -5,9 +5,11 @@ import time
 import os
 import sys
 
+import csv
+
 import MainInterface
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableWidgetItem
 
 from ADBInterface import ADBInterface
 from PIDTools import PIDTool
@@ -56,7 +58,14 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         self.setupUi(self)
         self.setupbuttons()
+        self.setupmenu()
         self.show()
+
+        self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
+        self.trace_file = None
+        self.results_file = None
+        self.graph_file = None
+        self.binder_log_file = None
 
         self.current_debugger = None
 
@@ -67,10 +76,49 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.preamble = 2
         self.graph = False
         self.subgraph = False
+        text = open('test.log').read()
+        self.textBrowserTrace.setText(text)
 
     def setupbuttons(self):
         self.pushButtonRun.clicked.connect(self.buttonrun)
         self.pushButtonKillADB.clicked.connect(self.buttonkilladb)
+
+    def setupmenu(self):
+        self.actionOpenResults.triggered.connect(self.openresults)
+
+    def openresults(self):
+        print "Open results"
+        if self.lineEditApplication.text() is None:
+            QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
+            return
+
+        self.application_name = self.lineEditApplication.text()
+        results_filename = os.path.join(self.results_path, self.application_name + "_results.csv")
+
+        col_count = 0
+        row_count = 0
+        with open(results_filename, "r") as fileInput:
+            for row in csv.reader(fileInput):
+                row_count += 1
+                if len(row) > col_count:
+                    col_count = len(row)
+
+            fileInput.seek(0)
+            self.tableWidgetResults.setColumnCount(col_count)
+            self.tableWidgetResults.setRowCount(row_count)
+
+            for i, row in enumerate(csv.reader(fileInput)):
+                for j, col in enumerate(row):
+                    self.tableWidgetResults.setItem(i, j, QTableWidgetItem(col))
+
+    def opentrace(self):
+        pass
+
+    def opengraph(self):
+        pass
+
+    def openbinderlog(self):
+        pass
 
     def checkrun(self):
 
@@ -165,9 +213,7 @@ class EnergyDebugger:
         self.pid_tool = PIDTool(self.adb, self.application)
         self.trace_processor = TraceProcessor(self.pid_tool, self.application)
         self.sys_metrics = SystemMetrics(self.adb)
-        dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), self.application + ".dat")
 
-        self.tc_processor = TracecmdProcessor(dat_path, self.preamble)
 
         """ The tracer object stores the configuration for the ftrace trace that is to be performed on the
         target system.
@@ -216,6 +262,9 @@ class EnergyDebugger:
         """
 
         print "Loading tracecmd data and processing"
+
+        dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + self.application + ".dat")
+        self.tc_processor = TracecmdProcessor(dat_path, self.preamble)
 
         self.tc_processor.print_event_count()
         self.trace_processor.process_trace(self.sys_metrics, self.tc_processor,
