@@ -127,7 +127,23 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         pass
 
     def sysloggerconverttrace_clicked(self):
-        pass
+        error = False
+        error_str = "The following required parameters are missing:\n\n"
+        if not self.lineEditConvertSource.text():
+            error = True
+            error_str += "Application Name\n"
+        if self.lineEditConvertDestination.text():
+            error = True
+            error_str += "Duration"
+
+        if error:
+            QMessageBox.warning(self, "Error", error_str, QMessageBox.Ok)
+
+        if not os.path.isfile(self.lineEditConvertSource.text()):
+            QMessageBox.critical(self, "Error", "The trace source file does not exist", QMessageBox.Ok)
+
+        os.system("trace_conv.py -i " + self.lineEditConvertSource.text() + " -o " + self.lineEditConvertDestination.text())
+        QMessageBox.information(self, "Trace convert", "Converting trace complete", QMessageBox.Ok)
 
     def accept(self):
 
