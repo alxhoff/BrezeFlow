@@ -53,14 +53,15 @@ parser.add_argument("-p", "--preamble", required=False,
 
 args = parser.parse_args()
 
+
 class AboutDialog(QDialog, AboutDialog.Ui_Dialog):
 
     def __init__(self, parent=None):
         super(QDialog, self).__init__(parent)
         self.setupUi(self)
 
-class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
+class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
     def __init__(self, settings, parent=None):
         super(QDialog, self).__init__(parent)
@@ -68,7 +69,7 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
         self.settings = settings
 
-        #Application
+        # Application
         self.lineEditApplicationName.setText(settings.value("DefaultApplication", defaultValue=""))
         self.doubleSpinBoxDuration.setValue(float(settings.value("DefaultDuration", defaultValue=0.0)))
         self.doubleSpinBoxPreamble.setValue(float(settings.value("DefaultPreamble", defaultValue=0.0)))
@@ -79,7 +80,7 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.checkBoxBinderTransaction.setChecked(bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
 
-        #Syslogger
+        # Syslogger
         self.spinBoxCPU.setValue(int(settings.value("DefaultSysloggerCPU", defaultValue=2)))
         self.spinBoxInterval.setValue(int(settings.value("DefaultSysloggerInterval", defaultValue=5)))
         self.checkBoxCPUInfo.setChecked(bool(int(settings.value("DefaultSysloggerCPUInfo", defaultValue=1))))
@@ -119,7 +120,6 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         adb = ADBInterface()
         adb.pull_file("/data/local/tmp/trace.dat", pull_location)
 
-
     def sysloggerfiletoconvert_clicked(self):
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
@@ -155,7 +155,7 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
     def accept(self):
 
-        #Application
+        # Application
         self.settings.setValue("DefaultApplication", self.lineEditApplicationName.text())
         self.settings.setValue("DefaultDuration", self.doubleSpinBoxDuration.value())
         self.settings.setValue("DefaultPreamble", self.doubleSpinBoxPreamble.value())
@@ -166,7 +166,7 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.settings.setValue("DefaultEventSyslogger", int(self.checkBoxSyslogger.isChecked()))
         self.settings.setValue("DefaultEventWakeUp", int(self.checkBoxWakeUp.isChecked()))
 
-        #Syslogger
+        # Syslogger
         self.settings.setValue("DefaultSysloggerCPU", self.spinBoxCPU.value())
         self.settings.setValue("DefaultSysloggerInterval", self.spinBoxInterval.value())
         self.settings.setValue("DefaultSysloggerCPUInfo", int(self.checkBoxCPUInfo.isChecked()))
@@ -228,7 +228,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     def setupsettings(self):
         self.settings = QSettings("HoffSoft", "Android Energy Debugger")
-
 
     def setupbuttons(self):
         self.pushButtonRun.clicked.connect(self.buttonrun)
@@ -388,7 +387,6 @@ class EnergyDebugger:
         self.pid_tool = PIDTool(self.adb, self.application)
         self.trace_processor = TraceProcessor(self.pid_tool, self.application)
         self.sys_metrics = SystemMetrics(self.adb)
-
 
         """ The tracer object stores the configuration for the ftrace trace that is to be performed on the
         target system.
