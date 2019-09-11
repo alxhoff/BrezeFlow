@@ -67,6 +67,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.setupUi(self)
 
         self.settings = settings
+
+        #Application
         self.lineEditApplicationName.setText(settings.value("DefaultApplication", defaultValue=""))
         self.doubleSpinBoxDuration.setValue(float(settings.value("DefaultDuration", defaultValue=0.0)))
         self.doubleSpinBoxPreamble.setValue(float(settings.value("DefaultPreamble", defaultValue=0.0)))
@@ -76,6 +78,18 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.checkBoxCPUIdle.setChecked(bool(int(settings.value("DefaultEventCPUIdle", defaultValue=0))))
         self.checkBoxBinderTransaction.setChecked(bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
+
+        #Syslogger
+        self.spinBoxCPU.setValue(int(settings.value("DefaultSysloggerCPU", defaultValue=2)))
+        self.spinBoxInterval.setValue(int(settings.value("DefaultSysloggerInterval", defaultValue=5)))
+        self.checkBoxCPUInfo.setChecked(bool(int(settings.value("DefaultSysloggerCPUInfo", defaultValue=1))))
+        self.checkBoxCPUFrequency.setChecked(bool(int(settings.value("DefaultSysloggerCPUFreq",
+                                                                     defaultValue=1))))
+        self.checkBoxPower.setChecked(bool(int(settings.value("DefaultSysloggerPower", defaultValue=1))))
+        self.checkBoxMali.setChecked(bool(int(settings.value("DefaultSysloggerMali", defaultValue=1))))
+        self.checkBoxTemp.setChecked(bool(int(settings.value("DefaultSysloggerTemp", defaultValue=1))))
+        self.checkBoxNetwork.setChecked(bool(int(settings.value("DefaultSysloggerNetwork",
+                                                                defaultValue=0))))
 
     def sysloggerstart_clicked(self):
         pass
@@ -116,6 +130,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         pass
 
     def accept(self):
+
+        #Application
         self.settings.setValue("DefaultApplication", self.lineEditApplicationName.text())
         self.settings.setValue("DefaultDuration", self.doubleSpinBoxDuration.value())
         self.settings.setValue("DefaultPreamble", self.doubleSpinBoxPreamble.value())
@@ -125,6 +141,16 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.settings.setValue("DefaultEventBinderTransaction", int(self.checkBoxBinderTransaction.isChecked()))
         self.settings.setValue("DefaultEventSyslogger", int(self.checkBoxSyslogger.isChecked()))
         self.settings.setValue("DefaultEventWakeUp", int(self.checkBoxWakeUp.isChecked()))
+
+        #Syslogger
+        self.settings.setValue("DefaultSysloggerCPU", self.spinBoxCPU.value())
+        self.settings.setValue("DefaultSysloggerInterval", self.spinBoxInterval.value())
+        self.settings.setValue("DefaultSysloggerCPUInfo", int(self.checkBoxCPUInfo.isChecked()))
+        self.settings.setValue("DefaultSysloggerCPUFreq", int(self.checkBoxCPUFrequency.isChecked()))
+        self.settings.setValue("DefaultSysloggerPower", int(self.checkBoxPower.isChecked()))
+        self.settings.setValue("DefaultSysloggerMali", int(self.checkBoxMali.isChecked()))
+        self.settings.setValue("DefaultSysloggerTemp", int(self.checkBoxTemp.isChecked()))
+        self.settings.setValue("DefaultSysloggerNetwork", int(self.checkBoxNetwork.isChecked()))
 
         super(SettingsMenu, self).accept()
 
