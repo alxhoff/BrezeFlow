@@ -9,6 +9,7 @@ import csv
 
 import MainInterface
 import SettingsDialog
+import AboutDialog
 
 from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableWidgetItem, QDialog
@@ -51,6 +52,12 @@ parser.add_argument("-p", "--preamble", required=False,
                     help="Specifies the number of seconds that be discarded at the begining of tracing")
 
 args = parser.parse_args()
+
+class AboutDialog(QDialog, AboutDialog.Ui_Dialog):
+
+    def __init__(self, parent=None):
+        super(QDialog, self).__init__(parent)
+        self.setupUi(self)
 
 class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
@@ -145,6 +152,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.actionOpenResults.triggered.connect(self.openresults)
         self.actionOpenBinderLog.triggered.connect(self.openbinderlog)
         self.actionOpenSettings.triggered.connect(self.opensettingsmenu)
+        self.actionAbout.triggered.connect(self.openaboutdialog)
 
     def openresults(self):
         if self.lineEditApplicationName.text() is None:
@@ -173,6 +181,10 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
     def opensettingsmenu(self):
         settings_menu = SettingsMenu(self.settings)
         settings_menu.exec_()
+
+    def openaboutdialog(self):
+        dialog = AboutDialog()
+        dialog.exec_()
 
     def opengraph(self):
         pass
