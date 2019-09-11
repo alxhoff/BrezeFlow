@@ -105,7 +105,15 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         pass
 
     def sysloggerpull_clicked(self):
-        print "Pulled"
+        if self.lineEditSyslogPullFilename.text():
+            pull_location = self.lineEditSyslogPullFolder.text() + "/" + self.lineEditSyslogPullFilename.text()
+        else:
+            pull_location = self.lineEditSyslogPullFolder.text() + "/trace.dat"
+        try:
+            adb = ADBInterface()
+            adb.pull_file("/data/local/tmp/trace.dat", pull_location)
+        except Exception, e:
+            QMessageBox.critical(self, "Error", "Pulling file via ADB failed\n\n Error: {}".format(e))
 
     def sysloggerpullfile_clicked(self):
         options = QFileDialog.Options()
@@ -113,19 +121,12 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         dialog.setFileMode(QFileDialog.DirectoryOnly)
         filename = dialog.getExistingDirectory(self, options=options)
         self.lineEditSyslogPullFolder.setText(filename)
-        if self.lineEditSyslogPullFilename.text():
-            pull_location = self.lineEditSyslogPullFolder.text() + "/" + self.lineEditSyslogPullFilename.text()
-        else:
-            pull_location = self.lineEditSyslogPullFolder.text() + "/trace.dat"
-        adb = ADBInterface()
-        adb.pull_file("/data/local/tmp/trace.dat", pull_location)
 
     def sysloggerfiletoconvert_clicked(self):
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
                                                   "", "All Files (*)", options=options)
         self.lineEditConvertSource.setText(filename)
-        pass
 
     def sysloggerfiletoconvertdestination_clicked(self):
         options = QFileDialog.Options()
