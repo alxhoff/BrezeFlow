@@ -8,10 +8,10 @@ import sys
 import csv
 
 import MainInterface
+import SettingsDialog
 
-
-from PyQt5.QtCore import QUrl
-from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableWidgetItem, QScrollBar
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableWidgetItem, QDialog
 
 from ADBInterface import ADBInterface
 from PIDTools import PIDTool
@@ -52,6 +52,46 @@ parser.add_argument("-p", "--preamble", required=False,
 
 args = parser.parse_args()
 
+class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
+
+
+    def __init__(self, settings, parent=None):
+        super(QDialog, self).__init__(parent)
+        self.setupUi(self)
+
+        self.settings = settings
+        self.lineEditApplicationName.setText(settings.value("DefaultApplication", defaultValue=""))
+        self.doubleSpinBoxDuration.setValue(float(settings.value("DefaultDuration", defaultValue=0.0)))
+        self.doubleSpinBoxPreamble.setValue(float(settings.value("DefaultPreamble", defaultValue=0.0)))
+        self.checkBoxDrawGraph.setChecked(bool(int(settings.value("DefaultDrawGraph", defaultValue=0))))
+        self.checkBoxWakeUp.setChecked(bool(int(settings.value("DefaultEventWakeUp", defaultValue=0))))
+        self.checkBoxSchedSwitch.setChecked(bool(int(settings.value("DefaultEventSchedSwitch", defaultValue=1))))
+        self.checkBoxCPUIdle.setChecked(bool(int(settings.value("DefaultEventCPUIdle", defaultValue=0))))
+        self.checkBoxBinderTransaction.setChecked(bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
+        self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
+
+        wake_up = settings.value("DefaultEventWakeUp")
+
+        pass
+
+    def accept(self):
+        self.settings.setValue("DefaultApplication", self.lineEditApplicationName.text())
+        self.settings.setValue("DefaultDuration", self.doubleSpinBoxDuration.value())
+        self.settings.setValue("DefaultPreamble", self.doubleSpinBoxPreamble.value())
+        self.settings.setValue("DefaultDrawGraph", int(self.checkBoxDrawGraph.isChecked()))
+        self.settings.setValue("DefaultEventSchedSwitch", int(self.checkBoxSchedSwitch.isChecked()))
+        self.settings.setValue("DefaultEventCPUIdle", int(self.checkBoxCPUIdle.isChecked()))
+        self.settings.setValue("DefaultEventBinderTransaction", int(self.checkBoxBinderTransaction.isChecked()))
+        self.settings.setValue("DefaultEventSyslogger", int(self.checkBoxSyslogger.isChecked()))
+        self.settings.setValue("DefaultEventWakeUp", int(self.checkBoxWakeUp.isChecked()))
+
+        wake_uo = int(self.checkBoxWakeUp.isChecked())
+
+        super(SettingsMenu, self).accept()
+
+    def reject(self):
+        super(SettingsMenu, self).reject()
+
 
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
@@ -61,7 +101,10 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.setupUi(self)
         self.setupbuttons()
         self.setupmenu()
+        self.settings = None
+        self.setupsettings()
         self.show()
+
 
         self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
         self.trace_file = None
@@ -69,8 +112,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.graph_file = None
         self.binder_log_file = None
         self.binder_log = []
-        self.trace_file = None
-        self.trace = []
 
         self.current_debugger = None
 
@@ -82,6 +123,21 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.graph = False
         self.subgraph = False
 
+    def getsettings(self):
+        self.lineEditApplicationName.setText(self.settings.value("DefaultApplication", defaultValue=""))
+        self.doubleSpinBoxDuration.setValue(float(self.settings.value("DefaultDuration", defaultValue=0.0)))
+        self.doubleSpinBoxPreamble.setValue(float(self.settings.value("DefaultPreamble", defaultValue=0.0)))
+        self.checkBoxDrawGraph.setChecked(self.settings.value("DefaultDrawGraph", defaultValue=False))
+        self.checkBoxWakeUp.setChecked(self.settings.value("DefaultEventWakeUp", defaultValue=False))
+        self.checkBoxSchedSwitch.setChecked(self.settings.value("DefaultEventSchedSwitch", defaultValue=True))
+        self.checkBoxCPUIdle.setChecked(self.settings.value("DefaultEventCPUIdle", defaultValue=False))
+        self.checkBoxBinderTransaction.setChecked(self.settings.value("DefaultEventBinderTransaction", defaultValue=True))
+        self.checkBoxSyslogger.setChecked(self.settings.value("DefaultEventSyslogger", defaultValue=True))
+
+    def setupsettings(self):
+        self.settings = QSettings("HoffSoft", "Android Energy Debugger")
+
+
     def setupbuttons(self):
         self.pushButtonRun.clicked.connect(self.buttonrun)
         self.pushButtonKillADB.clicked.connect(self.buttonkilladb)
@@ -89,13 +145,14 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
     def setupmenu(self):
         self.actionOpenResults.triggered.connect(self.openresults)
         self.actionOpenBinderLog.triggered.connect(self.openbinderlog)
+        self.actionOpenSettings.triggered.connect(self.opensettingsmenu)
 
     def openresults(self):
-        if self.lineEditApplication.text() is None:
+        if self.lineEditApplicationName.text() is None:
             QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
             return
 
-        self.application_name = self.lineEditApplication.text()
+        self.application_name = self.lineEditApplicationName.text()
         results_filename = os.path.join(self.results_path, self.application_name + "_results.csv")
 
         col_count = 0
@@ -114,17 +171,19 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 for j, col in enumerate(row):
                     self.tableWidgetResults.setItem(i, j, QTableWidgetItem(col))
 
-
+    def opensettingsmenu(self):
+        settings_menu = SettingsMenu(self.settings)
+        settings_menu.exec_()
 
     def opengraph(self):
         pass
 
     def openbinderlog(self):
-        if self.lineEditApplication.text() is None:
+        if self.lineEditApplicationName.text() is None:
             QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
             return
 
-        self.application_name = self.lineEditApplication.text()
+        self.application_name = self.lineEditApplicationName.text()
 
         try:
             self.binder_log_file = open(os.path.join(self.results_path, self.application_name + ".tlog"), "r")
@@ -143,7 +202,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         error = False
         error_str = "The following required parameters are missing:\n\n"
-        if not self.lineEditApplication.text():
+        if not self.lineEditApplicationName.text():
             error = True
             error_str += "Application Name\n"
         if self.doubleSpinBoxDuration.value() == 0.0:
@@ -161,7 +220,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         if self.current_debugger:
             self.current_debugger.clear()
 
-        self.application_name = self.lineEditApplication.text()
+        self.application_name = self.lineEditApplicationName.text()
         self.duration = self.doubleSpinBoxDuration.value()
         self.events = []
         if self.checkBoxBinderTransaction.isCheckable():
