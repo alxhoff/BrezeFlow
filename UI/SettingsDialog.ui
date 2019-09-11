@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>503</width>
+    <height>789</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,112 +15,494 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>Default Application Name</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLineEdit" name="lineEditApplicationName"/>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Default Duration</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QDoubleSpinBox" name="doubleSpinBoxDuration"/>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Default Preamble</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QDoubleSpinBox" name="doubleSpinBoxPreamble"/>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>Default Events</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QFrame" name="frame">
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Raised</enum>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <widget class="QCheckBox" name="checkBoxSyslogger">
-          <property name="text">
-           <string>Syslogger</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBoxBinderTransaction">
-          <property name="text">
-           <string>Binder Transaction</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBoxSchedSwitch">
-          <property name="text">
-           <string>Sched Switch</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBoxCPUIdle">
-          <property name="text">
-           <string>CPU Idle</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBoxWakeUp">
-          <property name="text">
-           <string>Wake Up</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Draw Graph by  Default</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QCheckBox" name="checkBoxDrawGraph">
-       <property name="text">
-        <string>Draw Graph</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QToolBox" name="toolBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
+     <widget class="QWidget" name="pageApp">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>485</width>
+        <height>673</height>
+       </rect>
+      </property>
+      <attribute name="label">
+       <string>Application</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Default Application Name</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="lineEditApplicationName"/>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Default Duration</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QDoubleSpinBox" name="doubleSpinBoxDuration"/>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Default Preamble</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QDoubleSpinBox" name="doubleSpinBoxPreamble"/>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Default Events</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QFrame" name="frame">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_2">
+            <item>
+             <widget class="QCheckBox" name="checkBoxSyslogger">
+              <property name="text">
+               <string>Syslogger</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxBinderTransaction">
+              <property name="text">
+               <string>Binder Transaction</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxSchedSwitch">
+              <property name="text">
+               <string>Sched Switch</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxCPUIdle">
+              <property name="text">
+               <string>CPU Idle</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxWakeUp">
+              <property name="text">
+               <string>Wake Up</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Draw Graph by  Default</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QCheckBox" name="checkBoxDrawGraph">
+           <property name="text">
+            <string>Draw Graph</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="pageSyslogger">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>485</width>
+        <height>673</height>
+       </rect>
+      </property>
+      <attribute name="label">
+       <string>Syslogger</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <layout class="QFormLayout" name="formLayout_2">
+         <property name="labelAlignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         </property>
+         <property name="formAlignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+         </property>
+         <property name="horizontalSpacing">
+          <number>2</number>
+         </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Flags</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QFrame" name="frame_2">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <item>
+             <widget class="QCheckBox" name="checkBoxTraceThreads">
+              <property name="toolTip">
+               <string>can be specified to disable tracing of threads (runtime and CPU asignment), and therefore to minimize overhead when only wanting to trace e.g. power consumption</string>
+              </property>
+              <property name="text">
+               <string>Trace Threads</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxChromeGovernor">
+              <property name="toolTip">
+               <string>instructs trace-cmd to also enable and trace tracepoints implemented by the chrome governor</string>
+              </property>
+              <property name="text">
+               <string>Chrome Governor</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Manal Syslogger&lt;br&gt; Commands</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0">
+            <widget class="QPushButton" name="pushButtonSysloggerSetup">
+             <property name="text">
+              <string>Setup</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pushButtonSysloggerStart">
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pushButtonSysloggerStop">
+             <property name="text">
+              <string>Stop</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="pushButtonSysloggerFinish">
+             <property name="text">
+              <string>Finish</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Pull Syslogger &lt;br&gt;Data to File</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLineEdit" name="lineEditSysLogDataLoc">
+             <property name="placeholderText">
+              <string>Destination file</string>
+             </property>
+             <property name="clearButtonEnabled">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButtonChoosePullFile">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <normaloff>../icons/folder.png</normaloff>../icons/folder.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButtonSysloggerPull">
+             <property name="text">
+              <string>Pull</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string>Process Tracecmd&lt;br&gt;File</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QFrame" name="frame_3">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <item>
+               <widget class="QLineEdit" name="lineEditConvertSource">
+                <property name="placeholderText">
+                 <string>Input file</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonFileToConvert">
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/folder.png</normaloff>../icons/folder.png</iconset>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <item>
+               <widget class="QLineEdit" name="lineEditConvertDestination">
+                <property name="placeholderText">
+                 <string>Destination file</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonFileToConvertDestination">
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/folder.png</normaloff>../icons/folder.png</iconset>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonConvertTrace">
+              <property name="text">
+               <string>Process</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_10">
+           <property name="toolTip">
+            <string>CPU to run/pin the logging thread on</string>
+           </property>
+           <property name="text">
+            <string>Logging Thread &lt;br&gt;CPU</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QSpinBox" name="spinBoxCPU">
+           <property name="maximum">
+            <number>7</number>
+           </property>
+           <property name="value">
+            <number>2</number>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Interval</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QSpinBox" name="spinBoxInterval"/>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_12">
+           <property name="text">
+            <string>System Properties&lt;br&gt;to Trace</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QFrame" name="frame_4">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_7">
+            <item>
+             <widget class="QCheckBox" name="checkBoxCPUInfo">
+              <property name="toolTip">
+               <string>Log CPU system/user/idle time and state</string>
+              </property>
+              <property name="text">
+               <string>CPU Information</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxCPUFrequency">
+              <property name="toolTip">
+               <string>Log CPU frequency for each first CPU in a policy group</string>
+              </property>
+              <property name="text">
+               <string>CPU Frequency</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxPower">
+              <property name="toolTip">
+               <string>Log Power consumption via ina231 sensors</string>
+              </property>
+              <property name="text">
+               <string>INA231 Power</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxMali">
+              <property name="toolTip">
+               <string>Log mali GPU information</string>
+              </property>
+              <property name="text">
+               <string>Mali GPU</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxTemp">
+              <property name="toolTip">
+               <string>Log CPU and GPU temperature on Exynos boards</string>
+              </property>
+              <property name="text">
+               <string>CPU and GPU Temperature</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxNetwork">
+              <property name="toolTip">
+               <string>Log network interface rx/tx stats</string>
+              </property>
+              <property name="text">
+               <string>Network Rx/Tx</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -153,14 +535,14 @@
    </hints>
   </connection>
   <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
+   <sender>pushButtonSysloggerPull</sender>
+   <signal>clicked()</signal>
    <receiver>DialogSettings</receiver>
-   <slot>reject()</slot>
+   <slot>sysloggerpull_clicked()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>421</x>
+     <y>261</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
@@ -168,5 +550,144 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>pushButtonChoosePullFile</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>sysloggerpullfile_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>226</x>
+     <y>261</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>199</x>
+     <y>181</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButtonSysloggerStart</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>sysloggerstart_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>381</x>
+     <y>183</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButtonSysloggerSetup</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>sysloggersetup_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>203</x>
+     <y>183</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButtonSysloggerStop</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>sysloggerstop_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>203</x>
+     <y>221</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButtonSysloggerFinish</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>sysloggerfinish_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>381</x>
+     <y>221</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButtonFileToConvert</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>sysloggerfiletoconvert_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>437</x>
+     <y>313</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButtonConvertTrace</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>sysloggerconverttrace_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>297</x>
+     <y>392</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButtonFileToConvertDestination</sender>
+   <signal>clicked()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>sysloggerfiletoconvertdestination_clicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>437</x>
+     <y>353</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>286</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
+ <slots>
+  <slot>sysloggerpull_clicked()</slot>
+  <slot>sysloggerpullfile_clicked()</slot>
+  <slot>sysloggerstart_clicked()</slot>
+  <slot>sysloggersetup_clicked()</slot>
+  <slot>sysloggerstop_clicked()</slot>
+  <slot>sysloggerfinish_clicked()</slot>
+  <slot>sysloggerfiletoconvert_clicked()</slot>
+  <slot>sysloggerfiletoconvertdestination_clicked()</slot>
+  <slot>sysloggerconverttrace_clicked()</slot>
+ </slots>
 </ui>

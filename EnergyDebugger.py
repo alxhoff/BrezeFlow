@@ -12,7 +12,7 @@ import SettingsDialog
 import AboutDialog
 
 from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QMainWindow, QApplication, QMessageBox, QTableWidgetItem, QDialog
+from PyQt5.QtWidgets import *
 
 from ADBInterface import ADBInterface
 from PIDTools import PIDTool
@@ -77,6 +77,43 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.checkBoxBinderTransaction.setChecked(bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
 
+    def sysloggerstart_clicked(self):
+        pass
+
+    def sysloggersetup_clicked(self):
+        pass
+
+    def sysloggerstop_clicked(self):
+        pass
+
+    def sysloggerfinish_clicked(self):
+        pass
+
+    def sysloggerpull_clicked(self):
+        print "Pulled"
+
+    def sysloggerpullfile_clicked(self):
+        options = QFileDialog.Options()
+        filename, _= QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
+                                                 "","All Files (*)", options=options)
+        self.lineEditSysLogDataLoc.setText(filename)
+
+    def sysloggerfiletoconvert_clicked(self):
+        options = QFileDialog.Options()
+        filename, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
+                                                  "", "All Files (*)", options=options)
+        self.lineEditConvertSource.setText(filename)
+        pass
+
+    def sysloggerfiletoconvertdestination_clicked(self):
+        options = QFileDialog.Options()
+        filename, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
+                                                  "", "All Files (*)", options=options)
+        self.lineEditConvertDestination.setText(filename)
+        pass
+
+    def sysloggerconverttrace_clicked(self):
+        pass
 
     def accept(self):
         self.settings.setValue("DefaultApplication", self.lineEditApplicationName.text())
