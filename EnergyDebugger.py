@@ -108,9 +108,17 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
     def sysloggerpullfile_clicked(self):
         options = QFileDialog.Options()
-        filename, _= QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
-                                                 "","All Files (*)", options=options)
-        self.lineEditSysLogDataLoc.setText(filename)
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+        filename = dialog.getExistingDirectory(self, options=options)
+        self.lineEditSyslogPullFolder.setText(filename)
+        if self.lineEditSyslogPullFilename.text():
+            pull_location = self.lineEditSyslogPullFolder.text() + "/" + self.lineEditSyslogPullFilename.text()
+        else:
+            pull_location = self.lineEditSyslogPullFolder.text() + "/trace.dat"
+        adb = ADBInterface()
+        adb.pull_file("/data/local/tmp/trace.dat", pull_location)
+
 
     def sysloggerfiletoconvert_clicked(self):
         options = QFileDialog.Options()
@@ -121,10 +129,10 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
     def sysloggerfiletoconvertdestination_clicked(self):
         options = QFileDialog.Options()
-        filename, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
-                                                  "", "All Files (*)", options=options)
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+        filename = dialog.getExistingDirectory(self, options=options)
         self.lineEditConvertDestination.setText(filename)
-        pass
 
     def sysloggerconverttrace_clicked(self):
         error = False
@@ -186,7 +194,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.setupsettings()
         self.getsettings()
         self.show()
-
 
         self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
         self.trace_file = None

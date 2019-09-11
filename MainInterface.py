@@ -385,7 +385,7 @@ class Ui_MainWindow(object):
         self.checkBoxSubGraph.setText(_translate("MainWindow", "Draw Node Sub-graphs"))
         self.label_4.setText(_translate("MainWindow", "<b>Progress</b>"))
         self.pushButtonRun.setText(_translate("MainWindow", "Run"))
-        self.pushButtonKillADB.setText(_translate("MainWindow", "Manual Kill ADB"))
+        self.pushButtonKillADB.setText(_translate("MainWindow", "Manually Kill ADB"))
         self.tabWidgetShow.setTabText(self.tabWidgetShow.indexOf(self.tabResults), _translate("MainWindow", "Results"))
         self.tabWidgetShow.setTabText(self.tabWidgetShow.indexOf(self.tabGraph), _translate("MainWindow", "Graph"))
         self.label_8.setText(_translate("MainWindow", "Filter:"))

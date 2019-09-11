@@ -153,8 +153,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>485</width>
-        <height>673</height>
+        <width>473</width>
+        <height>706</height>
        </rect>
       </property>
       <attribute name="label">
@@ -268,41 +268,9 @@
          <item row="2" column="0">
           <widget class="QLabel" name="label_8">
            <property name="text">
-            <string>Pull Syslogger &lt;br&gt;Data to File</string>
+            <string>Pull Syslogger &lt;br&gt;Data to Folder</string>
            </property>
           </widget>
-         </item>
-         <item row="2" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QLineEdit" name="lineEditSysLogDataLoc">
-             <property name="placeholderText">
-              <string>Destination file</string>
-             </property>
-             <property name="clearButtonEnabled">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButtonChoosePullFile">
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>../icons/folder.png</normaloff>../icons/folder.png</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pushButtonSysloggerPull">
-             <property name="text">
-              <string>Pull</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
          </item>
          <item row="3" column="0">
           <widget class="QLabel" name="label_9">
@@ -347,7 +315,7 @@
               <item>
                <widget class="QLineEdit" name="lineEditConvertDestination">
                 <property name="placeholderText">
-                 <string>Destination file</string>
+                 <string>Destination folder</string>
                 </property>
                </widget>
               </item>
@@ -494,6 +462,61 @@
                <string>Network Rx/Tx</string>
               </property>
              </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QFrame" name="frame_5">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_8">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
+               <widget class="QLineEdit" name="lineEditSyslogPullFolder">
+                <property name="placeholderText">
+                 <string>Destination folder</string>
+                </property>
+                <property name="clearButtonEnabled">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonChoosePullFile">
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/folder.png</normaloff>../icons/folder.png</iconset>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonSysloggerPull">
+                <property name="text">
+                 <string>Pull</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <item>
+               <widget class="QLineEdit" name="lineEditSyslogPullFilename">
+                <property name="placeholderText">
+                 <string>New file name</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>
