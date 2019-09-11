@@ -167,7 +167,7 @@
               <item>
                <layout class="QGridLayout" name="gridLayout">
                 <item row="0" column="0">
-                 <widget class="QCheckBox" name="checkBoxSysLogger">
+                 <widget class="QCheckBox" name="checkBoxSyslogger">
                   <property name="text">
                    <string>Syslogger</string>
                   </property>

@@ -70,9 +70,6 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.checkBoxBinderTransaction.setChecked(bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
 
-        wake_up = settings.value("DefaultEventWakeUp")
-
-        pass
 
     def accept(self):
         self.settings.setValue("DefaultApplication", self.lineEditApplicationName.text())
@@ -84,8 +81,6 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.settings.setValue("DefaultEventBinderTransaction", int(self.checkBoxBinderTransaction.isChecked()))
         self.settings.setValue("DefaultEventSyslogger", int(self.checkBoxSyslogger.isChecked()))
         self.settings.setValue("DefaultEventWakeUp", int(self.checkBoxWakeUp.isChecked()))
-
-        wake_uo = int(self.checkBoxWakeUp.isChecked())
 
         super(SettingsMenu, self).accept()
 
@@ -103,6 +98,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.setupmenu()
         self.settings = None
         self.setupsettings()
+        self.getsettings()
         self.show()
 
 
@@ -127,12 +123,15 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.lineEditApplicationName.setText(self.settings.value("DefaultApplication", defaultValue=""))
         self.doubleSpinBoxDuration.setValue(float(self.settings.value("DefaultDuration", defaultValue=0.0)))
         self.doubleSpinBoxPreamble.setValue(float(self.settings.value("DefaultPreamble", defaultValue=0.0)))
-        self.checkBoxDrawGraph.setChecked(self.settings.value("DefaultDrawGraph", defaultValue=False))
-        self.checkBoxWakeUp.setChecked(self.settings.value("DefaultEventWakeUp", defaultValue=False))
-        self.checkBoxSchedSwitch.setChecked(self.settings.value("DefaultEventSchedSwitch", defaultValue=True))
-        self.checkBoxCPUIdle.setChecked(self.settings.value("DefaultEventCPUIdle", defaultValue=False))
-        self.checkBoxBinderTransaction.setChecked(self.settings.value("DefaultEventBinderTransaction", defaultValue=True))
-        self.checkBoxSyslogger.setChecked(self.settings.value("DefaultEventSyslogger", defaultValue=True))
+        if float(self.settings.value("DefaultPreamble", defaultValue=0.0)) != 0.0:
+            self.checkBoxPreamble.setChecked(True)
+        self.checkBoxDrawGraph.setChecked(bool(int(self.settings.value("DefaultDrawGraph", defaultValue=0))))
+        self.checkBoxWakeUp.setChecked(bool(int(self.settings.value("DefaultEventWakeUp", defaultValue=0))))
+        self.checkBoxSchedSwitch.setChecked(bool(int(self.settings.value("DefaultEventSchedSwitch", defaultValue=1))))
+        self.checkBoxCPUIdle.setChecked(bool(int(self.settings.value("DefaultEventCPUIdle", defaultValue=0))))
+        self.checkBoxBinderTransaction.setChecked(
+            bool(int(self.settings.value("DefaultEventBinderTransaction", defaultValue=1))))
+        self.checkBoxSyslogger.setChecked(bool(int(self.settings.value("DefaultEventSyslogger", defaultValue=1))))
 
     def setupsettings(self):
         self.settings = QSettings("HoffSoft", "Android Energy Debugger")
