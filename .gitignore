@@ -22,9 +22,6 @@ __pycache__/
 *.png
 check/
 
-# C extensions
-*.so
-
 # Distribution / packaging
 .Python
 build/
