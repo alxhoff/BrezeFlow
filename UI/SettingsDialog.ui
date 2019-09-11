@@ -30,8 +30,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>485</width>
-        <height>673</height>
+        <width>334</width>
+        <height>326</height>
        </rect>
       </property>
       <attribute name="label">
@@ -698,6 +698,22 @@
     <hint type="destinationlabel">
      <x>243</x>
      <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>DialogSettings</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>251</x>
+     <y>763</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>251</x>
+     <y>394</y>
     </hint>
    </hints>
   </connection>

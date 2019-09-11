@@ -24,7 +24,7 @@ class Ui_DialogSettings(object):
         self.toolBox.setSizePolicy(sizePolicy)
         self.toolBox.setObjectName("toolBox")
         self.pageApp = QtWidgets.QWidget()
-        self.pageApp.setGeometry(QtCore.QRect(0, 0, 485, 673))
+        self.pageApp.setGeometry(QtCore.QRect(0, 0, 334, 326))
         self.pageApp.setObjectName("pageApp")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.pageApp)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
@@ -277,6 +277,7 @@ class Ui_DialogSettings(object):
         self.pushButtonFileToConvert.clicked.connect(DialogSettings.sysloggerfiletoconvert_clicked)
         self.pushButtonConvertTrace.clicked.connect(DialogSettings.sysloggerconverttrace_clicked)
         self.pushButtonFileToConvertDestination.clicked.connect(DialogSettings.sysloggerfiletoconvertdestination_clicked)
+        self.buttonBox.rejected.connect(DialogSettings.reject)
         QtCore.QMetaObject.connectSlotsByName(DialogSettings)
 
     def retranslateUi(self, DialogSettings):
