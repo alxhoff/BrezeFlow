@@ -41,7 +41,7 @@
             <x>0</x>
             <y>0</y>
             <width>332</width>
-            <height>692</height>
+            <height>684</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -236,6 +236,12 @@
            </item>
            <item>
             <widget class="QFrame" name="frame_5">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="frameShape">
               <enum>QFrame::StyledPanel</enum>
              </property>
@@ -252,7 +258,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Display Options</string>
+                 <string>&lt;b&gt;Display Options&lt;/b&gt;</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignHCenter|Qt::AlignTop</set>
@@ -383,14 +389,23 @@
              <property name="frameShadow">
               <enum>QFrame::Raised</enum>
              </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <layout class="QVBoxLayout" name="verticalLayout_6">
               <item>
                <widget class="QLabel" name="label_4">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
-                 <string>Progress:</string>
+                 <string>&lt;b&gt;Progress&lt;/b&gt;</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignHCenter|Qt::AlignTop</set>
                 </property>
                 <property name="margin">
-                 <number>20</number>
+                 <number>0</number>
                 </property>
                </widget>
               </item>
@@ -420,7 +435,7 @@
          <item>
           <widget class="QPushButton" name="pushButtonKillADB">
            <property name="text">
-            <string>Manual Kill ADB</string>
+            <string>Manually Kill ADB</string>
            </property>
           </widget>
          </item>
