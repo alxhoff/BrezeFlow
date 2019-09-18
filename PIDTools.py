@@ -215,9 +215,11 @@ class PIDTool:
         :param pid: PID whose child threads should be found
         :return: A list of all child binder PIDs
         """
-
-        res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(pid))
-        res = res.splitlines()
+        try:
+            res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(pid))
+            res = res.splitlines()
+        except Exception:
+            pass
 
         child_pids = []
         for line in res:

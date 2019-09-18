@@ -222,9 +222,13 @@ def main():
     start_time = time.time()
 
     adb = ADBInterface()
+    print "ADB interface created"
     pid_tool = PIDTool(adb, args.app)
+    print "PID tool created"
     trace_processor = TraceProcessor(pid_tool, args.app)
+    print "Trace processor created"
     sys_metrics = SystemMetrics(adb)
+    print "System metrics created"
 
     """ The tracer object stores the configuration for the ftrace trace that is to be performed on the
     target system.
@@ -250,11 +254,11 @@ def main():
         print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
               "limitations"
 
-    sys_logger = SysLogger(adb)
-    sys_logger.start()
-    tracer.run_tracer(preamble)
-    sys_logger.stop()
-    tracer.get_trace_results()
+    # sys_logger = SysLogger(adb)
+    # sys_logger.start()
+    # tracer.run_tracer(preamble)
+    # sys_logger.stop()
+    # tracer.get_trace_results()
 
     """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
     processed. Results are generated into a CSV file, saved to the working directory under the same name as the target

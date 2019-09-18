@@ -393,7 +393,10 @@ class SystemMetrics:
         return int(self.adb.command("cat /sys/class/misc/mali0/device/utilization"))
 
     def get_cpu_core_freq(self, core):
-        return self.current_core_freqs[core]
+        try:
+            return self.current_core_freqs[core]
+        except Exception:
+            print "wait here"
 
     def _get_gpu_core_freq(self):
         return self.current_gpu_freq

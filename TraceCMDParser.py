@@ -116,22 +116,23 @@ class TracecmdProcessor:
             name = event.str_field("prev_comm")
             next_pid = event.num_field("next_pid")
             next_name = event.str_field("next_comm")
-            self.processed_events.append(EventSchedSwitch(event.pid, int(round(event.ts / 1000.0)),
-                                                          event.cpu, name, prev_state, next_pid, next_name))
+            self.processed_events.append(EventSchedSwitch(pid=event.pid, ts=int(round(event.ts / 1000.0)),
+                                                          cpu=event.cpu, name=name, prev_state=prev_state,
+                                                          next_pid=next_pid, next_name=next_name))
         elif event.name == "cpu_idle":
             self.event_count.cpu_idle += 1
 
             state = event.num_field("state")
-            self.processed_preprocess_events.append(EventIdle(int(round(event.ts / 1000.0)), event.cpu, event.name,
-                                                              state))
+            self.processed_preprocess_events.append(EventIdle(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
+                                                              name=event.name, state=state))
 
         elif event.name == "cpu_freq":
             self.event_count.cpu_freq += 1
 
             target_cpu = event.num_field("cpu")
             freq = event.num_field("freq") * 1000
-            self.processed_events.append(EventFreqChange(event.pid, int(round(event.ts / 1000.0)),
-                                                         event.cpu, freq, 0, target_cpu))
+            self.processed_events.append(EventFreqChange(pid=event.pid, ts=int(round(event.ts / 1000.0)),
+                                                         cpu=event.cpu, freq=freq, util=0, target_cpu=target_cpu))
 
         elif event.name == "binder_transaction":
             self.event_count.binder_transaction += 1
@@ -145,9 +146,10 @@ class TracecmdProcessor:
                 to_thread = to_proc
             trans_num = event.num_field("debug_id")
 
-            self.processed_events.append(EventBinderTransaction(event.pid, int(round(event.ts / 1000.0)),
-                                                                event.cpu, event.name, reply, to_proc, to_thread, flags,
-                                                                code, trans_num))
+            self.processed_events.append(EventBinderTransaction(pid=event.pid, ts=int(round(event.ts / 1000.0)),
+                                                                cpu=event.cpu, name=event.name, reply=reply,
+                                                                dest_proc=to_proc, target_pid=to_thread, flags=flags,
+                                                                code=code, tran_num=trans_num))
 
         elif event.name == "mali":
             self.event_count.mali += 1
@@ -155,8 +157,8 @@ class TracecmdProcessor:
             util = event.num_field("load")
             freq = event.num_field("freq") * 1000000
 
-            self.processed_events.append(EventMaliUtil(event.pid, int(round(event.ts / 1000.0)), event.cpu,
-                                                       util, freq))
+            self.processed_events.append(EventMaliUtil(pid=event.pid, ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
+                                                       util=util, freq=freq))
 
         elif event.name == "exynos_temp":
             self.event_count.temp += 1
@@ -168,8 +170,9 @@ class TracecmdProcessor:
             little = (big0 + big1 + big2 + big3) / 4.0
             gpu = event.num_field("t4") / 1000
 
-            self.processed_preprocess_events.append(EventTempInfo(int(round(event.ts / 1000.0)), big0,
-                                                                  big1, big2, big3, little, gpu))
+            self.processed_preprocess_events.append(EventTempInfo(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
+                                                                  big0=big0, big1=big1, big2=big2, big3=big3,
+                                                                  little=little, gpu=gpu))
 
         else:
             print "Unknown event %s" % event.name

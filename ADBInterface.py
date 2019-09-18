@@ -40,7 +40,6 @@ class ADBInterface:
         :param command: String literal of the command that is to be run
         :return: The text output that would otherwise be displayed on stdout
         """
-
         return self.device.Shell(command)
 
     def write_file(self, filename, contents):

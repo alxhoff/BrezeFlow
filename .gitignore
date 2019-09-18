@@ -23,7 +23,6 @@ __pycache__/
 check/
 
 # C extensions
-*.so
 
 # Distribution / packaging
 .Python
