@@ -12,6 +12,7 @@ between tasks being able to be co-ordinated with the sched_switch events that tr
 """
 
 import csv
+import numpy as np
 
 import networkx as nx
 from pydispatch import dispatcher
@@ -59,16 +60,18 @@ class BinderType(Enum):
     def __str__(self):
         return "%s" % self.name
 
-class OptimizationError(Enum):
+class OptimizationInfoType(Enum):
     NONE = 0
-    LONG_EXEC_DURATION = 1
+    LONG_EXEC_DURATION = 0b1
+    POSSIBLE_DVFS = 0b10
+    POSSIBLE_REALLOC = 0b100
 
     def __str__(self):
         return "%s" % self.name
 
 class OptimizationInfo:
 
-    def __init__(self, graph_node, error_type=OptimizationError.NONE, message=""):
+    def __init__(self, graph_node, error_type=OptimizationInfoType.NONE, message=""):
         self.graph_node = graph_node
         self.error_type = error_type
         self.message = message
@@ -950,62 +953,107 @@ class ProcessTree:
                 writer.writerow([branch.pid, branch.pname, branch.tname, str(len(branch.tasks)),
                                  branch.energy, branch.duration])
 
+                mf = SystemMetrics.current_metrics.energy_profile.migration_factor
+
                 ### OPTIMAL EVALUATION
+                try:
+                    for task in branch.tasks:
 
-                for task in branch.tasks:
-
-                    # task = self.tasks[-1]
-                    try:
-                        normalized_time_util = float(task.duration) / (task.finish_time - task.start_time)
-                    except ZeroDivisionError:  # Tasks of zero length
-                        continue
-
-                    cores = SystemMetrics.current_metrics.sys_util_history
-                    cores_utils = [0.0] * 8
-                    cores_utils[0] = cores.cpu[0].get_util(task.finish_time)
-                    cores_utils[1] = cores.cpu[1].get_util(task.finish_time)
-                    cores_utils[2] = cores.cpu[2].get_util(task.finish_time)
-                    cores_utils[3] = cores.cpu[3].get_util(task.finish_time)
-                    cores_utils[4] = cores.cpu[4].get_util(task.finish_time)
-                    cores_utils[5] = cores.cpu[5].get_util(task.finish_time)
-                    cores_utils[6] = cores.cpu[6].get_util(task.finish_time)
-                    cores_utils[7] = cores.cpu[7].get_util(task.finish_time)
-
-                    # for event in task.events:
-
-                    if task.events[-1].cpu > 3:  # big TODO fix the use of the last event's CPU
+                        cores = SystemMetrics.current_metrics.sys_util_history
+                        cores_utils = [0.0] * 8
+                        cores_utils[0] = cores.cpu[0].get_util(task.finish_time)
+                        cores_utils[1] = cores.cpu[1].get_util(task.finish_time)
+                        cores_utils[2] = cores.cpu[2].get_util(task.finish_time)
+                        cores_utils[3] = cores.cpu[3].get_util(task.finish_time)
+                        cores_utils[4] = cores.cpu[4].get_util(task.finish_time)
+                        cores_utils[5] = cores.cpu[5].get_util(task.finish_time)
+                        cores_utils[6] = cores.cpu[6].get_util(task.finish_time)
+                        cores_utils[7] = cores.cpu[7].get_util(task.finish_time)
 
 
+                        if task.events[0].cpu > 3:  # big TODO fix the use of the last event's CPU
 
-                        # Util on little @ max: current frequency
-                        util_capacity_on_max_little = float(task.events[0].cpu_freq) / \
-                                                      SystemMetrics.current_metrics.energy_profile.little_freqs[4] * \
-                                                      normalized_time_util * \
-                                                      SystemMetrics.current_metrics.energy_profile.migration_factor
+                            little_core_index = np.argmin(cores_utils[:4])
+                            optim_type = OptimizationInfoType.NONE
 
-                        # duration_on_little = util_capacity_on_max_little * task.duration
-                        #
-                        # finish_time_on_little = int(round(task.start_time + duration_on_little))
-                        #
-                        # depender_start_time = task.dependency.depender.start_time
-                        #
-                        # if finish_time_on_little < depender_start_time:
-                        #     task.optimization_info.set_info(OptimizationError.LONG_EXEC_DURATION, "Execution of task "
-                        #                                                                           "would clash with "
-                        #                                                                           "depender task")
-                        #     continue
-                        pass
+                            if little_core_index != task.events[0].cpu:
+                                OptimizationInfoType.POSSIBLE_REALLOC
 
-                    else:  # little
-                        pass
+                            for freq in reversed(SystemMetrics.current_metrics.energy_profile.little_freqs):
 
-                            # allocation possible from a time perspective
+                                # Util on little @ max: current frequency
+                                util_capacity_on_max_little = float(task.events[0].cpu_freq) / freq * cores_utils[task.events[0].cpu] * mf
 
-                            # find point in time when the job will finish executing
+                                if util_capacity_on_max_little <= 1.0:
 
-                            # Are all dependencies satisfied by this timing
+                                    duration_on_little = util_capacity_on_max_little * task.duration
 
-                        # else: #  little
+                                    finish_time_on_little = int(round(task.start_time + duration_on_little))
+
+                                    try:
+                                        depender_start_time = task.dependency.depender.start_time
+                                    except Exception as e:
+                                        depender_start_time = 0
+                                        print "Task %s at time %d has no depender".format(task.events[0].name,
+                                                                                          task.events[0].time)
+
+                                    if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
+                                        task.optimization_info.set_info(OptimizationInfoType.LONG_EXEC_DURATION,
+                                                                        "Execution of task would clash with depender task")
+                                        continue
+
+                                    task.optimization_info.set_info(optim_type, "Task can be reallocated")  #TODO
+
+                                else:
+                                    break
+
+                        # If not running on the minimum DVFS of given cluster
+                        if (task.events[0].cpu <= 3 and task.events[0].cpu_freq !=
+                            SystemMetrics.current_metrics.energy_profile.little_freqs[0]) or \
+                                (task.events[0].cpu >= 4 and task.events[0].cpu_freq !=
+                                 SystemMetrics.current_metrics.energy_profile.big_freqs[0]):
+
+                            if task.events[0].cpu <= 3:
+                                freq_index = SystemMetrics.current_metrics.energy_profile.little_freqs.index(
+                                    task.events[0].cpu_freq)
+                                freqs = SystemMetrics.current_metrics.energy_profile.little_freqs[:freq_index]
+                                core_index = np.argmin(cores_utils[:4])
+                            else:
+                                freq_index = SystemMetrics.current_metrics.energy_profile.big_freqs.index(
+                                        task.events[0].cpu_freq)
+                                freqs = SystemMetrics.current_metrics.energy_profile.big_freqs[:freq_index]
+                                core_index = np.argmin(cores_utils[4:])
+
+                            for freq in freqs:
+                                # Util on little @ max: current frequency
+                                util_capacity_new_freq = float(task.events[0].cpu_freq) / freq * cores_utils[core_index] * mf
+
+                                if util_capacity_new_freq <= 1.0:
+                                    new_duration = util_capacity_new_freq * task.duration
+
+                                    finish_time_on_little = int(round(task.start_time + new_duration))
+
+                                    try:
+                                        depender_start_time = task.dependency.depender.start_time
+                                    except Exception as e:
+                                        depender_start_time = 0
+                                        print "Task {} at time {} has no depender".format(task.events[0].name,
+                                                                                          task.events[0].time)
+
+                                    if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
+                                        task.optimization_info.set_info(OptimizationInfoType.LONG_EXEC_DURATION,
+                                                                        "Execution of task would clash with depender task")
+
+                                        continue
+
+                                    task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS,
+                                                                    "Task can be reallocated")  # TODO
+                            print "wait here"
+
+                except Exception as e:
+                    print e
+
+
 
             writer.writerow([])
             writer.writerow(["Total Energy", total_energy])
@@ -1049,48 +1097,6 @@ class ProcessTree:
                                  str(second[4])])
 
 
-
-            # if event.cpu > 3:  # Big core being underutilized
-            #     if self.tasks[-1].util < 40:
-            #         cores = SystemMetrics.current_metrics.sys_util_history
-            #         cores_utils = [0.0] * 4
-            #         cores_utils.append(cores.cpu[0].get_util(self.tasks[-1].finish_time))
-            #         cores_utils.append(cores.cpu[1].get_util(self.tasks[-1].finish_time))
-            #         cores_utils.append(cores.cpu[2].get_util(self.tasks[-1].finish_time))
-            #         cores_utils.append(cores.cpu[3].get_util(self.tasks[-1].finish_time))
-            #         label += "\n\n***************"
-            #         freq = SystemMetrics.current_metrics.get_cpu_core_freq(0)
-            #         label += "\n Little cores under utilized, current utils: %d %d %d %d @ %dHz" % (
-            #                 cores_utils[0],
-            #                 cores_utils[1],
-            #                 cores_utils[2],
-            #                 cores_utils[3],
-            #                 freq)
-            #         capacity = 1.7058 * 1.2 * 10 ** 9 * self.tasks[-1].util / 100
-            #         req_util = capacity / float(SystemMetrics.current_metrics.get_cpu_core_freq(0))
-            #         label += "\nNeeded capacity is %d cycles (%f Util needed on a little core)" % (capacity,
-            #                                                                                        req_util *
-            #                                                                                        100)
-            #         for i, core in enumerate(cores_utils):
-            #             if (100 - core) > (req_util * 100):
-            #                 label += "\nCores %s able to run work" % str(i)
-            #                 energy_profile = SystemMetrics.current_metrics.energy_profile
-            #                 voltage = energy_profile.little_voltages[freq]
-            #                 temp = self.tasks[-1].temp
-            #                 a1 = energy_profile.little_reg_const["a1"]
-            #                 a2 = energy_profile.little_reg_const["a2"]
-            #                 a3 = energy_profile.little_reg_const["a3"]
-            #                 energy = voltage * (a1 * voltage * freq * (req_util * 100 + core) + a2 * temp +
-            #                                     a3) / freq
-            #
-            #                 little_energy = capacity * energy
-            #                 energy_difference = self.tasks[-1].energy - little_energy
-            #                 label += "\nSaving %f Joules" % energy_difference
-            #
-            # ## TASK NODE EVALUATION
-            #
-
-
     def handle_event(self, event, subgraph, start_time, finish_time):
         """
         An event is handled by and added to the current trace tree, handled depending on event type.
@@ -1121,8 +1127,7 @@ class ProcessTree:
                     pass  # PID not of interest to program
 
             # Task being switched in, again ignoring idle task and binder threads
-            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids: # and "GLThread" not in \
-                    #event.next_name:
+            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids:
 
                 for x, pending_binder_node in reversed(
                         list(enumerate(self.completed_binder_calls))):  # Most recent
