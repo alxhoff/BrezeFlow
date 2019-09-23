@@ -109,12 +109,12 @@ class Event:
     the timestamp of the event, the CPU on which the event occurred and the name of the event.
     """
 
-    def __init__(self, pid, ts, name, cpu=0, freq=0):
+    def __init__(self, pid, ts, name, cpu=0, freq_l=0, freq_b=0):
         self.pid = pid
         self.time = ts
         self.cpu = cpu
         self.name = name
-        self.cpu_freq = freq
+        self.cpu_freq = [freq_l, freq_b]
 
 
 class EventSchedSwitch(Event):
@@ -982,7 +982,9 @@ class ProcessTree:
                             for freq in reversed(SystemMetrics.current_metrics.energy_profile.little_freqs):
 
                                 # Util on little @ max: current frequency
-                                util_capacity_on_max_little = float(task.events[0].cpu_freq) / freq * cores_utils[task.events[0].cpu] * mf
+                                util_capacity_on_max_little = \
+                                    float(task.events[0].cpu_freq[1]) / freq * \
+                                    cores_utils[task.events[0].cpu] * mf
 
                                 if util_capacity_on_max_little <= 1.0:
 
@@ -1003,30 +1005,31 @@ class ProcessTree:
                                         continue
 
                                     task.optimization_info.set_info(optim_type, "Task can be reallocated")  #TODO
-
+                                    print("Possible realloc")
                                 else:
                                     break
 
                         # If not running on the minimum DVFS of given cluster
-                        if (task.events[0].cpu <= 3 and task.events[0].cpu_freq !=
+                        if (task.events[0].cpu <= 3 and task.events[0].cpu_freq[0] !=
                             SystemMetrics.current_metrics.energy_profile.little_freqs[0]) or \
-                                (task.events[0].cpu >= 4 and task.events[0].cpu_freq !=
+                                (task.events[0].cpu >= 4 and task.events[0].cpu_freq[1] !=
                                  SystemMetrics.current_metrics.energy_profile.big_freqs[0]):
 
                             if task.events[0].cpu <= 3:
                                 freq_index = SystemMetrics.current_metrics.energy_profile.little_freqs.index(
-                                    task.events[0].cpu_freq)
+                                    task.events[0].cpu_freq[0])
                                 freqs = SystemMetrics.current_metrics.energy_profile.little_freqs[:freq_index]
                                 core_index = np.argmin(cores_utils[:4])
                             else:
                                 freq_index = SystemMetrics.current_metrics.energy_profile.big_freqs.index(
-                                        task.events[0].cpu_freq)
+                                        task.events[0].cpu_freq[1])
                                 freqs = SystemMetrics.current_metrics.energy_profile.big_freqs[:freq_index]
                                 core_index = np.argmin(cores_utils[4:])
 
                             for freq in freqs:
                                 # Util on little @ max: current frequency
-                                util_capacity_new_freq = float(task.events[0].cpu_freq) / freq * cores_utils[core_index] * mf
+                                util_capacity_new_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1]) / freq * cores_utils[
+                                    core_index] * mf
 
                                 if util_capacity_new_freq <= 1.0:
                                     new_duration = util_capacity_new_freq * task.duration
@@ -1048,8 +1051,7 @@ class ProcessTree:
 
                                     task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS,
                                                                     "Task can be reallocated")  # TODO
-                            print "wait here"
-
+                                    print("Possible DVFS")
                 except Exception as e:
                     print e
 
@@ -1109,7 +1111,8 @@ class ProcessTree:
         """
 
         # Set event freq
-        event.cpu_freq = SystemMetrics.current_metrics.get_cpu_core_freq(event.cpu)
+        event.cpu_freq[0] = SystemMetrics.current_metrics.get_cpu_core_freq(0)
+        event.cpu_freq[1] = SystemMetrics.current_metrics.get_cpu_core_freq(4)
 
         if event.time < start_time or event.time > finish_time:  # Event time window
             return 1
