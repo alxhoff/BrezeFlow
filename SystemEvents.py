@@ -956,104 +956,113 @@ class ProcessTree:
                 mf = SystemMetrics.current_metrics.energy_profile.migration_factor
 
                 ### OPTIMAL EVALUATION
-                try:
-                    for task in branch.tasks:
+                with open(filename + "_optimizations.csv", "w+") as f_op:
+                    op_writer = csv.writer(f_op, delimiter=',')
 
-                        cores = SystemMetrics.current_metrics.sys_util_history
-                        cores_utils = [0.0] * 8
-                        cores_utils[0] = cores.cpu[0].get_util(task.finish_time)
-                        cores_utils[1] = cores.cpu[1].get_util(task.finish_time)
-                        cores_utils[2] = cores.cpu[2].get_util(task.finish_time)
-                        cores_utils[3] = cores.cpu[3].get_util(task.finish_time)
-                        cores_utils[4] = cores.cpu[4].get_util(task.finish_time)
-                        cores_utils[5] = cores.cpu[5].get_util(task.finish_time)
-                        cores_utils[6] = cores.cpu[6].get_util(task.finish_time)
-                        cores_utils[7] = cores.cpu[7].get_util(task.finish_time)
+                    try:
+                        for task in branch.tasks:
+
+                            cores = SystemMetrics.current_metrics.sys_util_history
+                            cores_utils = [0.0] * 8
+                            cores_utils[0] = cores.cpu[0].get_util(task.finish_time)
+                            cores_utils[1] = cores.cpu[1].get_util(task.finish_time)
+                            cores_utils[2] = cores.cpu[2].get_util(task.finish_time)
+                            cores_utils[3] = cores.cpu[3].get_util(task.finish_time)
+                            cores_utils[4] = cores.cpu[4].get_util(task.finish_time)
+                            cores_utils[5] = cores.cpu[5].get_util(task.finish_time)
+                            cores_utils[6] = cores.cpu[6].get_util(task.finish_time)
+                            cores_utils[7] = cores.cpu[7].get_util(task.finish_time)
+
+                            task_util = float(task.duration) / (task.finish_time - task.start_time)
 
 
-                        if task.events[0].cpu > 3:  # big TODO fix the use of the last event's CPU
+                            if task.events[0].cpu > 3:  # big TODO fix the use of the last event's CPU
 
-                            little_core_index = np.argmin(cores_utils[:4])
-                            optim_type = OptimizationInfoType.NONE
+                                little_core_index = np.argmin(cores_utils[:4])
+                                optim_type = OptimizationInfoType.NONE
 
-                            if little_core_index != task.events[0].cpu:
-                                OptimizationInfoType.POSSIBLE_REALLOC
+                                for freq in reversed(SystemMetrics.current_metrics.energy_profile.little_freqs):
 
-                            for freq in reversed(SystemMetrics.current_metrics.energy_profile.little_freqs):
+                                    if freq != task.events[0].cpu_freq[0]:
+                                        optim_type = OptimizationInfoType.POSSIBLE_DVFS
 
-                                # Util on little @ max: current frequency
-                                util_capacity_on_max_little = \
-                                    float(task.events[0].cpu_freq[1]) / freq * \
-                                    cores_utils[task.events[0].cpu] * mf
+                                    # Util on little @ max: current frequency
+                                    util_capacity_on_max_little = float(task.events[0].cpu_freq[1]) / freq * \
+                                        task_util * mf
 
-                                if util_capacity_on_max_little <= 1.0:
+                                    if (cores_utils[little_core_index] / 100 + util_capacity_on_max_little) <= 100.0:
 
-                                    duration_on_little = util_capacity_on_max_little * task.duration
+                                        duration_on_little = util_capacity_on_max_little * task.duration
 
-                                    finish_time_on_little = int(round(task.start_time + duration_on_little))
+                                        finish_time_on_little = int(round(task.start_time + duration_on_little))
 
-                                    try:
-                                        depender_start_time = task.dependency.depender.start_time
-                                    except Exception as e:
-                                        depender_start_time = 0
-                                        print "Task %s at time %d has no depender".format(task.events[0].name,
-                                                                                          task.events[0].time)
+                                        try:
+                                            depender_start_time = task.dependency.depender.start_time
+                                        except Exception as e:
+                                            depender_start_time = 0
+                                            print "Task {} at time {} has no depender".format(task.events[0].name,
+                                                                                              task.events[0].time)
 
-                                    if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
-                                        task.optimization_info.set_info(OptimizationInfoType.LONG_EXEC_DURATION,
-                                                                        "Execution of task would clash with depender task")
-                                        continue
+                                        if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
+                                            task.optimization_info.set_info(
+                                                    OptimizationInfoType.LONG_EXEC_DURATION.value,
+                                                                            "Execution of task would clash with depender task")
+                                            continue
 
-                                    task.optimization_info.set_info(optim_type, "Task can be reallocated")  #TODO
-                                    print("Possible realloc")
-                                else:
-                                    break
+                                        task.optimization_info.set_info( optim_type.value |
+                                                                         OptimizationInfoType.POSSIBLE_REALLOC.value,
+                                                                         "Task can be reallocated")  #TODO
+                                        print("Possible realloc")
+                                    else:
+                                        break
 
-                        # If not running on the minimum DVFS of given cluster
-                        if (task.events[0].cpu <= 3 and task.events[0].cpu_freq[0] !=
-                            SystemMetrics.current_metrics.energy_profile.little_freqs[0]) or \
-                                (task.events[0].cpu >= 4 and task.events[0].cpu_freq[1] !=
-                                 SystemMetrics.current_metrics.energy_profile.big_freqs[0]):
+                            # If not running on the minimum DVFS of given cluster
+                            if (task.events[0].cpu <= 3 and task.events[0].cpu_freq[0] !=
+                                SystemMetrics.current_metrics.energy_profile.little_freqs[0]) or \
+                                    (task.events[0].cpu >= 4 and task.events[0].cpu_freq[1] !=
+                                     SystemMetrics.current_metrics.energy_profile.big_freqs[0]):
 
-                            if task.events[0].cpu <= 3:
-                                freq_index = SystemMetrics.current_metrics.energy_profile.little_freqs.index(
-                                    task.events[0].cpu_freq[0])
-                                freqs = SystemMetrics.current_metrics.energy_profile.little_freqs[:freq_index]
-                                core_index = np.argmin(cores_utils[:4])
-                            else:
-                                freq_index = SystemMetrics.current_metrics.energy_profile.big_freqs.index(
-                                        task.events[0].cpu_freq[1])
-                                freqs = SystemMetrics.current_metrics.energy_profile.big_freqs[:freq_index]
-                                core_index = np.argmin(cores_utils[4:])
+                                if task.events[0].cpu <= 3:  # LITTLE
+                                    freq_index = SystemMetrics.current_metrics.energy_profile.little_freqs.index(
+                                        task.events[0].cpu_freq[0])
+                                    freqs = SystemMetrics.current_metrics.energy_profile.little_freqs[:freq_index]
+                                    core_index = np.argmin(cores_utils[:4])
+                                else:  # BIG
+                                    freq_index = SystemMetrics.current_metrics.energy_profile.big_freqs.index(
+                                            task.events[0].cpu_freq[1])
+                                    freqs = SystemMetrics.current_metrics.energy_profile.big_freqs[:freq_index]
+                                    core_index = np.argmin(cores_utils[4:])
 
-                            for freq in freqs:
-                                # Util on little @ max: current frequency
-                                util_capacity_new_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1]) / freq * cores_utils[
-                                    core_index] * mf
+                                for freq in freqs:
+                                    # Util on little @ max: current frequency
+                                    util_capacity_new_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu <
+                                                                                                4 else 1]) / freq * task_util * mf
 
-                                if util_capacity_new_freq <= 1.0:
-                                    new_duration = util_capacity_new_freq * task.duration
+                                    if util_capacity_new_freq <= 1.0:
+                                        new_duration = util_capacity_new_freq * task.duration
 
-                                    finish_time_on_little = int(round(task.start_time + new_duration))
+                                        finish_time_on_little = int(round(task.start_time + new_duration))
 
-                                    try:
-                                        depender_start_time = task.dependency.depender.start_time
-                                    except Exception as e:
-                                        depender_start_time = 0
-                                        print "Task {} at time {} has no depender".format(task.events[0].name,
-                                                                                          task.events[0].time)
+                                        try:
+                                            depender_start_time = task.dependency.depender.start_time
+                                        except Exception as e:
+                                            depender_start_time = 0
+                                            print "Task {} at time {} has no depender".format(task.events[0].name,
+                                                                                              task.events[0].time)
 
-                                    if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
-                                        task.optimization_info.set_info(OptimizationInfoType.LONG_EXEC_DURATION,
-                                                                        "Execution of task would clash with depender task")
+                                        if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
+                                            task.optimization_info.set_info(
+                                                    OptimizationInfoType.LONG_EXEC_DURATION.value,
+                                                                            "Execution of task would clash with depender task")
+                                            print("Clash")
 
-                                        continue
+                                            continue
 
-                                    task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS,
-                                                                    "Task can be reallocated")  # TODO
-                                    print("Possible DVFS")
-                except Exception as e:
-                    print e
+                                        task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS.value,
+                                                                        "Task can be reallocated")  # TODO
+                                        print("Possible DVFS")
+                    except Exception as e:
+                        print e
 
 
 
