@@ -1047,15 +1047,21 @@ class ProcessTree:
                                 freqs = SystemMetrics.current_metrics.energy_profile.big_freqs[:freq_index]
                                 core_index = np.argmin(cores_utils[4:])
 
-                            for freq in freqs:
-                                # Util on little @ max: current frequency
-                                util_capacity_new_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu <
-                                                                            4 else 1]) / freq * task_util * mf
+                            cur_cpu_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1])
 
-                                new_core_util = cores_utils[core_index] / 100 + util_capacity_new_freq
+                            for freq in freqs:
+
+                                util_scaling_factor = cur_cpu_freq / freq
+
+                                task_util_new_freq = util_scaling_factor * task_util
+
+                                existing_util = util_scaling_factor * cores_utils[core_index]
+
+                                new_core_util = existing_util + task_util_new_freq
+
                                 if new_core_util <= 100.0:
 
-                                    new_duration = util_capacity_new_freq * task.duration
+                                    new_duration = task_util_new_freq * task.duration
                                     finish_time_on_little = int(round(task.start_time + new_duration))
 
                                     try:
