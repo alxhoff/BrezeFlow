@@ -975,6 +975,8 @@ class ProcessTree:
                         cores_utils[6] = cores.cpu[6].get_util(task.finish_time)
                         cores_utils[7] = cores.cpu[7].get_util(task.finish_time)
 
+                        lf = SystemMetrics.current_metrics.energy_profile.little_freqs
+
                         if (task.finish_time - task.start_time) > 0:
                             task_util = float(task.duration) / (task.finish_time - task.start_time) * 100
                         else:
@@ -985,7 +987,7 @@ class ProcessTree:
                             little_core_index = np.argmin(cores_utils[:4])
                             optim_type = OptimizationInfoType.NONE
 
-                            for freq in SystemMetrics.current_metrics.energy_profile.little_freqs:
+                            for freq in lf:
 
                                 if freq != task.events[0].cpu_freq[0]:
                                     optim_type = OptimizationInfoType.POSSIBLE_DVFS
@@ -994,7 +996,12 @@ class ProcessTree:
                                 util_capacity_on_max_little = float(task.events[0].cpu_freq[1]) / freq * \
                                     task_util * mf
 
-                                new_core_util = (cores_utils[little_core_index] + util_capacity_on_max_little)
+                                # if little currently not at max the util needs to be scaled down
+                                cur_little_util_at_max = \
+                                    cores_utils[little_core_index] if task.events[0].cpu_freq[0] == lf[-1] \
+                                        else (cores_utils[little_core_index] * task.events[0].cpu_freq[0] / lf[-1])
+
+                                new_core_util = (cur_little_util_at_max + util_capacity_on_max_little)
 
                                 if new_core_util <= 100.0:
 
