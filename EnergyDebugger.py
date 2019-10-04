@@ -1,9 +1,18 @@
 #!/usr/bin/env python
 
 import argparse
-import os
-import re
 import time
+import os
+import sys
+
+import csv
+
+import MainInterface
+import SettingsDialog
+import AboutDialog
+
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import *
 
 from ADBInterface import ADBInterface
 from PIDTools import PIDTool
@@ -11,6 +20,7 @@ from SysLoggerInterface import SysLogger
 from SystemMetrics import SystemMetrics
 from TraceCMDParser import TracecmdProcessor
 from TraceProcessor import TraceProcessor
+from Tracer import Tracer
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"
@@ -22,11 +32,13 @@ __status__ = "Beta"
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-a", "--app", required=True,
+parser.add_argument("-c", "--commandline", required=False,
+                    help="Enables the use of command line arguments")
+parser.add_argument("-a", "--app", required=False,
                     help="Specifies the name of the game to be traced")
-parser.add_argument("-d", "--duration", required=True, type=float,
+parser.add_argument("-d", "--duration", required=False, type=float,
                     help="The duration to trace")
-parser.add_argument("-e", "--events", required=True,
+parser.add_argument("-e", "--events", required=False,
                     help="Events that are to be traced")
 parser.add_argument("-s", "--skip-clear", action='store_true',
                     help="Skip clearing trace settings")
@@ -36,244 +48,411 @@ parser.add_argument("-te", "--test", action='store_true',
                     help="Tests only a few hundred events to speed up testing")
 parser.add_argument("-sub", "--subgraph", action='store_true',
                     help="Enable the drawing of node subgraphs")
-parser.add_argument("-p", "--preamble", required=True,
+parser.add_argument("-p", "--preamble", required=False,
                     help="Specifies the number of seconds that be discarded at the begining of tracing")
 
 args = parser.parse_args()
 
 
-class Tracer:
-    """ A tracer is responsible for setting up the underlying system to perform a trace for a certain duration,
-    then retrieving the results. What and for how long the tracer traces is given through the program's
-    arguments.
+class AboutDialog(QDialog, AboutDialog.Ui_Dialog):
 
-    """
-    tracing_path = '/d/tracing/'
+    def __init__(self, parent=None):
+        super(QDialog, self).__init__(parent)
+        self.setupUi(self)
 
-    def __init__(self, adb_device, name, functions=None, events=None,
-                 trace_type="nop", duration=1, metrics=None):
 
-        if functions is None:
-            functions = []
-        if events is None:
-            events = []
+class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
-        self.metrics = metrics
-        self.adb = adb_device
-        self.name = name
-        self.filename = os.path.dirname(os.path.realpath(__file__)) + '/' + name + "_tracer.trace"
-        self.trace_type = trace_type
-        self.functions = functions
-        self.events = events
+    def __init__(self, settings, parent=None):
+        super(QDialog, self).__init__(parent)
+        self.setupUi(self)
+
+        self.settings = settings
+
+        # Application
+        self.lineEditApplicationName.setText(settings.value("DefaultApplication", defaultValue=""))
+        self.doubleSpinBoxDuration.setValue(float(settings.value("DefaultDuration", defaultValue=0.0)))
+        self.doubleSpinBoxPreamble.setValue(float(settings.value("DefaultPreamble", defaultValue=0.0)))
+        self.checkBoxDrawGraph.setChecked(bool(int(settings.value("DefaultDrawGraph", defaultValue=0))))
+        self.checkBoxWakeUp.setChecked(bool(int(settings.value("DefaultEventWakeUp", defaultValue=0))))
+        self.checkBoxSchedSwitch.setChecked(bool(int(settings.value("DefaultEventSchedSwitch", defaultValue=1))))
+        self.checkBoxCPUIdle.setChecked(bool(int(settings.value("DefaultEventCPUIdle", defaultValue=0))))
+        self.checkBoxBinderTransaction.setChecked(bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
+        self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
+
+        # Syslogger
+        self.spinBoxCPU.setValue(int(settings.value("DefaultSysloggerCPU", defaultValue=2)))
+        self.spinBoxInterval.setValue(int(settings.value("DefaultSysloggerInterval", defaultValue=5)))
+        self.checkBoxCPUInfo.setChecked(bool(int(settings.value("DefaultSysloggerCPUInfo", defaultValue=1))))
+        self.checkBoxCPUFrequency.setChecked(bool(int(settings.value("DefaultSysloggerCPUFreq",
+                                                                     defaultValue=1))))
+        self.checkBoxPower.setChecked(bool(int(settings.value("DefaultSysloggerPower", defaultValue=1))))
+        self.checkBoxMali.setChecked(bool(int(settings.value("DefaultSysloggerMali", defaultValue=1))))
+        self.checkBoxTemp.setChecked(bool(int(settings.value("DefaultSysloggerTemp", defaultValue=1))))
+        self.checkBoxNetwork.setChecked(bool(int(settings.value("DefaultSysloggerNetwork",
+                                                                defaultValue=0))))
+
+    def sysloggerstart_clicked(self):
+        pass
+
+    def sysloggersetup_clicked(self):
+        pass
+
+    def sysloggerstop_clicked(self):
+        pass
+
+    def sysloggerfinish_clicked(self):
+        pass
+
+    def sysloggerpull_clicked(self):
+        if self.lineEditSyslogPullFilename.text():
+            pull_location = self.lineEditSyslogPullFolder.text() + "/" + self.lineEditSyslogPullFilename.text()
+        else:
+            pull_location = self.lineEditSyslogPullFolder.text() + "/trace.dat"
+        try:
+            adb = ADBInterface()
+            adb.pull_file("/data/local/tmp/trace.dat", pull_location)
+        except Exception, e:
+            QMessageBox.critical(self, "Error", "Pulling file via ADB failed\n\n Error: {}".format(e))
+
+    def sysloggerpullfile_clicked(self):
+        options = QFileDialog.Options()
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+        filename = dialog.getExistingDirectory(self, options=options)
+        self.lineEditSyslogPullFolder.setText(filename)
+
+    def sysloggerfiletoconvert_clicked(self):
+        options = QFileDialog.Options()
+        filename, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()",
+                                                  "", "All Files (*)", options=options)
+        self.lineEditConvertSource.setText(filename)
+
+    def sysloggerfiletoconvertdestination_clicked(self):
+        options = QFileDialog.Options()
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+        filename = dialog.getExistingDirectory(self, options=options)
+        self.lineEditConvertDestination.setText(filename)
+
+    def sysloggerconverttrace_clicked(self):
+        error = False
+        error_str = "The following required parameters are missing:\n\n"
+        if not self.lineEditConvertSource.text():
+            error = True
+            error_str += "Application Name\n"
+        if self.lineEditConvertDestination.text():
+            error = True
+            error_str += "Duration"
+
+        if error:
+            QMessageBox.warning(self, "Error", error_str, QMessageBox.Ok)
+
+        if not os.path.isfile(self.lineEditConvertSource.text()):
+            QMessageBox.critical(self, "Error", "The trace source file does not exist", QMessageBox.Ok)
+
+        os.system("trace_conv.py -i " + self.lineEditConvertSource.text() + " -o " + self.lineEditConvertDestination.text())
+        QMessageBox.information(self, "Trace convert", "Converting trace complete", QMessageBox.Ok)
+
+    def accept(self):
+
+        # Application
+        self.settings.setValue("DefaultApplication", self.lineEditApplicationName.text())
+        self.settings.setValue("DefaultDuration", self.doubleSpinBoxDuration.value())
+        self.settings.setValue("DefaultPreamble", self.doubleSpinBoxPreamble.value())
+        self.settings.setValue("DefaultDrawGraph", int(self.checkBoxDrawGraph.isChecked()))
+        self.settings.setValue("DefaultEventSchedSwitch", int(self.checkBoxSchedSwitch.isChecked()))
+        self.settings.setValue("DefaultEventCPUIdle", int(self.checkBoxCPUIdle.isChecked()))
+        self.settings.setValue("DefaultEventBinderTransaction", int(self.checkBoxBinderTransaction.isChecked()))
+        self.settings.setValue("DefaultEventSyslogger", int(self.checkBoxSyslogger.isChecked()))
+        self.settings.setValue("DefaultEventWakeUp", int(self.checkBoxWakeUp.isChecked()))
+
+        # Syslogger
+        self.settings.setValue("DefaultSysloggerCPU", self.spinBoxCPU.value())
+        self.settings.setValue("DefaultSysloggerInterval", self.spinBoxInterval.value())
+        self.settings.setValue("DefaultSysloggerCPUInfo", int(self.checkBoxCPUInfo.isChecked()))
+        self.settings.setValue("DefaultSysloggerCPUFreq", int(self.checkBoxCPUFrequency.isChecked()))
+        self.settings.setValue("DefaultSysloggerPower", int(self.checkBoxPower.isChecked()))
+        self.settings.setValue("DefaultSysloggerMali", int(self.checkBoxMali.isChecked()))
+        self.settings.setValue("DefaultSysloggerTemp", int(self.checkBoxTemp.isChecked()))
+        self.settings.setValue("DefaultSysloggerNetwork", int(self.checkBoxNetwork.isChecked()))
+
+        super(SettingsMenu, self).accept()
+
+    def reject(self):
+        super(SettingsMenu, self).reject()
+
+
+class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
+
+    def __init__(self, parent=None):
+        super(QMainWindow, self).__init__(parent)
+
+        self.setupUi(self)
+        self.setupbuttons()
+        self.setupmenu()
+        self.settings = None
+        self.setupsettings()
+        self.getsettings()
+        self.show()
+
+        self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
+        self.trace_file = None
+        self.results_file = None
+        self.graph_file = None
+        self.binder_log_file = None
+        self.binder_log = []
+
+        self.current_debugger = None
+
+        self.application_name = None
+        self.events = []
+        self.duration = 0  # TODO defaults
+        self.events_to_process = 0
+        self.preamble = 2
+        self.graph = False
+        self.subgraph = False
+
+    def getsettings(self):
+        self.lineEditApplicationName.setText(self.settings.value("DefaultApplication", defaultValue=""))
+        self.doubleSpinBoxDuration.setValue(float(self.settings.value("DefaultDuration", defaultValue=0.0)))
+        self.doubleSpinBoxPreamble.setValue(float(self.settings.value("DefaultPreamble", defaultValue=0.0)))
+        if float(self.settings.value("DefaultPreamble", defaultValue=0.0)) != 0.0:
+            self.checkBoxPreamble.setChecked(True)
+        self.checkBoxDrawGraph.setChecked(bool(int(self.settings.value("DefaultDrawGraph", defaultValue=0))))
+        self.checkBoxWakeUp.setChecked(bool(int(self.settings.value("DefaultEventWakeUp", defaultValue=0))))
+        self.checkBoxSchedSwitch.setChecked(bool(int(self.settings.value("DefaultEventSchedSwitch", defaultValue=1))))
+        self.checkBoxCPUIdle.setChecked(bool(int(self.settings.value("DefaultEventCPUIdle", defaultValue=0))))
+        self.checkBoxBinderTransaction.setChecked(
+            bool(int(self.settings.value("DefaultEventBinderTransaction", defaultValue=1))))
+        self.checkBoxSyslogger.setChecked(bool(int(self.settings.value("DefaultEventSyslogger", defaultValue=1))))
+
+    def setupsettings(self):
+        self.settings = QSettings("HoffSoft", "Android Energy Debugger")
+
+    def setupbuttons(self):
+        self.pushButtonRun.clicked.connect(self.buttonrun)
+        self.pushButtonKillADB.clicked.connect(self.buttonkilladb)
+
+    def setupmenu(self):
+        self.actionOpenResults.triggered.connect(self.openresults)
+        self.actionOpenBinderLog.triggered.connect(self.openbinderlog)
+        self.actionOpenSettings.triggered.connect(self.opensettingsmenu)
+        self.actionAbout.triggered.connect(self.openaboutdialog)
+
+    def openresults(self):
+        if self.lineEditApplicationName.text() is None:
+            QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
+            return
+
+        self.application_name = self.lineEditApplicationName.text()
+        results_filename = os.path.join(self.results_path, self.application_name + "_results.csv")
+
+        col_count = 0
+        row_count = 0
+        with open(results_filename, "r") as fileInput:
+            for row in csv.reader(fileInput):
+                row_count += 1
+                if len(row) > col_count:
+                    col_count = len(row)
+
+            fileInput.seek(0)
+            self.tableWidgetResults.setColumnCount(col_count)
+            self.tableWidgetResults.setRowCount(row_count)
+
+            for i, row in enumerate(csv.reader(fileInput)):
+                for j, col in enumerate(row):
+                    self.tableWidgetResults.setItem(i, j, QTableWidgetItem(col))
+
+    def opensettingsmenu(self):
+        settings_menu = SettingsMenu(self.settings)
+        settings_menu.exec_()
+
+    def openaboutdialog(self):
+        dialog = AboutDialog()
+        dialog.exec_()
+
+    def opengraph(self):
+        pass
+
+    def openbinderlog(self):
+        if self.lineEditApplicationName.text() is None:
+            QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
+            return
+
+        self.application_name = self.lineEditApplicationName.text()
+
+        try:
+            self.binder_log_file = open(os.path.join(self.results_path, self.application_name + ".tlog"), "r")
+        except Exception:
+            QMessageBox.warning(self, "Error", "Binder log does not exist", QMessageBox.Ok)
+            return
+
+        self.binder_log = []
+        for line in self.binder_log_file:
+            self.binder_log.append(line)
+            self.textBrowserBinderLog.append(line)
+
+        self.textBrowserBinderLog.verticalScrollBar().setValue(0)
+
+    def checkrun(self):
+
+        error = False
+        error_str = "The following required parameters are missing:\n\n"
+        if not self.lineEditApplicationName.text():
+            error = True
+            error_str += "Application Name\n"
+        if self.doubleSpinBoxDuration.value() == 0.0:
+            error = True
+            error_str += "Duration"
+
+        if error:
+            QMessageBox.warning(self, "Error", error_str, QMessageBox.Ok)
+
+        return error
+
+    def buttonrun(self):
+        if self.checkrun():
+            return
+        if self.current_debugger:
+            self.current_debugger.clear()
+
+        self.application_name = self.lineEditApplicationName.text()
+        self.duration = self.doubleSpinBoxDuration.value()
+        self.events = []
+        if self.checkBoxBinderTransaction.isCheckable():
+            self.events.append("binder_transaction")
+        if self.checkBoxCPUIdle.isChecked():
+            self.events.append("cpu_idle")
+        if self.checkBoxSchedSwitch.isChecked():
+            self.events.append("sched_switch")
+        if self.checkBoxSysLogger.isChecked():
+            self.events.append("sys_logger")
+        if self.checkBoxWakeUp.isChecked():
+            self.events.append("sched_wakeup")
+        if self.checkBoxEvents.isChecked():
+            self.events_to_process = self.spinBoxEvents.value()
+        else:
+            self.events_to_process = 0
+        self.preamble = self.doubleSpinBoxPreamble.value()
+        self.subgraph = self.checkBoxSubGraph.isChecked()
+        self.graph = self.checkBoxDrawGraph.isChecked()
+
+        self.current_debugger = EnergyDebugger(
+            application=self.application_name,
+            duration=self.duration,
+            events=self.events,
+            event_count=self.events_to_process,
+            preamble=self.preamble,
+            graph=self.graph,
+            subgraph=self.subgraph
+        )
+
+        self.current_debugger.run()
+
+    def buttonkilladb(self):
+        os.system("killall adb")
+
+
+class CommandInterface:
+
+    def __init__(self):
+        pass
+
+    def checkrun(self):
+        if not args.app:
+            return False
+        if not args.duration:
+            return False
+
+    def run(self):
+        pass
+
+
+class EnergyDebugger:
+
+    def __init__(self, application, duration, events, event_count, preamble, graph, subgraph):
+
+        self.application = application
         self.duration = duration
+        self.events = []
+        self.event_count = event_count
+        self.preamble = preamble
+        self.graph = graph
+        self.subgraph = subgraph
 
-    def run_tracer(self, preamble):
-        """ Runs the tracer by getting all of the appropriate flags set in the /d/tracing directory on the
-        target system, then starting the trace by writing to the tracing_on file in the tracing directory.
+        """ Required objects for tracking system metrics and interfacing with a target system, connected
+        via an ADB connection.
+        """
+        self.adb = ADBInterface()
+        self.pid_tool = PIDTool(self.adb, self.application)
+        self.trace_processor = TraceProcessor(self.pid_tool, self.application)
+        self.sys_metrics = SystemMetrics(self.adb)
+
+        """ The tracer object stores the configuration for the ftrace trace that is to be performed on the
+        target system.
         """
 
-        if not args.skip_clear:
-            self._clear_tracer()
-            self.adb.clear_file(self.tracing_path + "set_event")
-        self._set_available_events(self.events)
-        self._set_available_tracer(self.trace_type)
-        self._trace_for_time(self.duration, preamble)
+        print "Creating tracer, starting sys_logger and running trace"
 
-    def _enable_tracing(self, on=True):
-        """ Enables tracing on the system connected to the current ADB connection.
 
-        :param on: Boolean to set if tracing should be on or off
+        self.tracer = Tracer(adb_device=self.adb,
+                             name=application,
+                             metrics=self.sys_metrics,
+                             events=events,
+                             duration=duration
+                             )
+
+        if self.duration > 6:
+            print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
+                "limitations"
+            QMessageBox.warning(self, "Warning", "Running traces over 6 seconds can cause issue due to data loss from trace buffer size limitations",
+                                QMessageBox.Ok)
+
+        self.sys_logger = SysLogger(self.adb)
+
+        self.run()
+
+    def clear(self):
+        # TODO
+        pass
+
+    def run(self):
+        """ Entry point into the debugging tool.
         """
-        if on is True:
-            self.adb.write_file(self.tracing_path + "tracing_on", "1")
-        else:
-            self.adb.write_file(self.tracing_path + "tracing_on", "0")
-
-    def _trace_for_time(self, duration, preamble):
-        """ The system time is firstly recorded such that the start time is known in system time.
-        The trace is then let to run for the specified duration.
-
-        :param duration: Time for which the trace should run
+        """ As the energy debugger depends on the custom trace points implemented in the syslogger module,
+        it must be loaded before tracing begins. It must then be unloaded and finished before the results
+        are pulled from the target system.
         """
-        start_time = self._get_device_time()
-        self._enable_tracing(True)
-        while (self._get_device_time() - start_time) < (duration * 1000000 + preamble * 1000000):
-            time.sleep(0.1)
+        self.start_time = time.time()
 
-        print ("Traced for %s seconds" % ((self._get_device_time() - start_time) / 1000000.0))
-        self._enable_tracing(False)
+        self.sys_logger.start()
+        self.tracer.run_tracer(self.preamble, args.skip_clear)
+        self.sys_logger.stop()
+        self.tracer.get_trace_results()
 
-    def _get_device_time(self):
-        sys_time = self.adb.command("cat /proc/uptime")  # Get timestamp when test started
-        return int(float(re.findall(r"(\d+.\d{2})", sys_time)[0]) * 1000000)
-
-    def get_trace_results(self):
-        """ Retrieves, through the ADB connection, both the tracecmd binary data and the ASCII ftrace data
-        generated by tracecmd.
+        """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
+        processed. Results are generated into a CSV file, saved to the working directory under the same name as the target
+        application with the suffix _results.csv.
         """
-        print "Pulling /data/local/tmp/trace.dat"
-        self.adb.pull_file("/data/local/tmp/trace.dat", self.name + ".dat")
-        print "Completed"
-        print "Pulling /data/local/tmp/trace.report"
-        self.adb.pull_file("/data/local/tmp/trace.report", self.name + ".report")
-        print "Completed"
-        print "Pulling /d/binder/transaction_log"
-        self.adb.pull_file("/d/binder/transaction_log", self.name + ".tlog")
-        print "Completed"
 
-    def _get_available_events(self):
-        """ Retrieves all the events that are able to be traced on the target system
+        print "Loading tracecmd data and processing"
 
-        :return: A list of traceable events
-        """
-        return self.adb.read_file(self.tracing_path + "available_events")
+        dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + self.application + ".dat")
+        self.tc_processor = TracecmdProcessor(dat_path, self.preamble)
 
-    def _set_available_events(self, events):
-        """ Checks that the specified events are valid, if so then the events are set to be traced.
+        self.tc_processor.print_event_count()
+        self.trace_processor.process_trace(self.sys_metrics, self.tc_processor,
+                                           self.duration, self.graph, self.event_count, self.subgraph)
 
-        :param events: List of event name strings that are to be traced
-        """
-        if events is None:
-            return
+        print "Run took a total of %s seconds to run" % (time.time() - self.start_time)
 
-        avail_events = self._get_available_events()
-
-        if isinstance(events, list):
-            for f in range(0, len(events)):
-                if events[f] in avail_events:
-                    self.adb.append_to_file(self.tracing_path + "set_event",
-                                            events[f])
-        else:
-            if events in avail_events:
-                self.adb.append_to_file(self.tracing_path + "set_event", events)
-
-    def _set_event_filter(self, event, filter_contents):
-        """ Sets the ftrace event filter for a particular event.
-
-        :param event: The string representation of the event that is to be filtered
-        :param filter_contents: State of the event filter to be set
-        """
-        event_dir = self.adb.command(
-                "find " + self.tracing_path + "/events -name " + event)
-        if event_dir is None:
-            return
-
-        self.adb.append_to_file(self.tracing_path + event_dir + "/filter",
-                                filter_contents)
-
-    def _clear_event_filter(self, event):
-        """ Clears the ftrace event filter for a particular event.
-
-        :param event: Event whoes filter is to be cleared
-        """
-        event_dir = self.adb.command(
-                "find " + self.tracing_path + "/events -name " + event)
-        if event_dir is None:
-            return
-
-        self.adb.clear_file(self.tracing_path + event_dir + "/filter")
-
-    def _get_event_format(self, event):
-        """ Retrieves the format string for a particular event.
-
-        :param event: Event whoes format string is to be retrieved
-        :return: String representation of the event's format. Empty string otherwise.
-        """
-        event_dir = self.adb.command(
-                "find " + self.tracing_path + "/events -name " + event)
-        if event_dir is None:
-            return ""
-
-        return self.adb.read_file(self.tracing_path
-                                  + event_dir + "/format")
-
-    def _get_available_tracer(self):
-        """ Gets a list of the available tracers on the target system.
-
-        :return: An unprocessed string of all the available tracers on the target system
-        """
-        return self.adb.read_file(self.tracing_path + "available_tracers")
-
-    def _set_available_tracer(self, tracer):
-        """ Checks if the desired tracers is valid before setting the given tracer.
-
-        :param tracer: The tracer that is to be set on the target system.
-        """
-        available_tracers = self._get_available_tracer()
-        if tracer in available_tracers:
-            self.adb.write_file(self.tracing_path
-                                + "current_tracer", tracer)
-
-    def _clear_tracer(self):
-        """ Resets the current tracer by setting the current tracer to 'nop'.
-        """
-        self.adb.write_file(self.tracing_path + "current_tracer", "nop")
-        self.adb.clear_file(self.tracing_path + "trace")
-
-
-def main():
-    """ Entry point into the debugging tool.
-    """
-
-    """ Required objects for tracking system metrics and interfacing with a target system, connected
-    via an ADB connection.
-    """
-
-    start_time = time.time()
-
-    adb = ADBInterface()
-    print "ADB interface created"
-    pid_tool = PIDTool(adb, args.app)
-    print "PID tool created"
-    trace_processor = TraceProcessor(pid_tool, args.app)
-    print "Trace processor created"
-    sys_metrics = SystemMetrics(adb)
-    print "System metrics created"
-
-    """ The tracer object stores the configuration for the ftrace trace that is to be performed on the
-    target system.
-    """
-
-    print "Creating tracer, starting sys_logger and running trace"
-
-    preamble = int(args.preamble)
-
-    tracer = Tracer(adb,
-                    args.app,
-                    metrics=sys_metrics,
-                    events=args.events.split(','),
-                    duration=args.duration
-                    )
-
-    """ As the energy debugger depends on the custom trace points implemented in the syslogger module,
-    it must be loaded before tracing begins. It must then be unloaded and finished before the results
-    are pulled from the target system.
-    """
-
-    if args.duration > 6:
-        print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
-              "limitations"
-
-    sys_logger = SysLogger(adb)
-    sys_logger.start()
-    tracer.run_tracer(preamble)
-    sys_logger.stop()
-    tracer.get_trace_results()
-
-    """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
-    processed. Results are generated into a CSV file, saved to the working directory under the same name as the target
-    application with the suffix _results.csv.
-    """
-
-    print "Loading tracecmd data and processing"
-
-    dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), args.app + ".dat")
-
-    tc_processor = TracecmdProcessor(dat_path, preamble)
-    tc_processor.print_event_count()
-    trace_processor.process_trace(sys_metrics, tc_processor, args.duration, args.draw, args.test, args.subgraph)
-
-    print("Run took a total of %s seconds to run" % (time.time() - start_time))
 
 if __name__ == '__main__':
-    main()
+    if not args.commandline:
+        app = QApplication(sys.argv)
+        interface = MainInterface()
+        sys.exit(app.exec_())
+    else:
+        app = CommandInterface()
+        app.run()

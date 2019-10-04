@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os.path as op
-import time
 
 from adb import adb_commands
 from adb import sign_m2crypto

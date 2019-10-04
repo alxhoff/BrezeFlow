@@ -67,7 +67,7 @@ class TraceProcessor:
         for x, event in enumerate(tracecmd.processed_preprocess_events):
             process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time)
 
-        print ("Util trees took %s seconds to build" % (time.time() - start_time))
+        print("Util trees took %s seconds to build" % (time.time() - start_time))
 
         start_time = time.time()
         print "Compiling cluster util tables"
@@ -75,7 +75,7 @@ class TraceProcessor:
         for x, cluster in enumerate(metrics.sys_util_history.clusters):  # Compile cluster utilizations
             cluster.compile_table(metrics.sys_util_history.cpu[x * 4: x * 4 + 4])
 
-        print ("Cluster util table generated in %s seconds" % (time.time() - start_time))
+        print("Cluster util table generated in %s seconds" % (time.time() - start_time))
 
         num_events = len(tracecmd.processed_events)
         print "Total events: " + str(num_events)
@@ -87,7 +87,7 @@ class TraceProcessor:
         metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
 
         if test:
-            for x, event in enumerate(tracecmd.processed_events[:300]):
+            for x, event in enumerate(tracecmd.processed_events[:test]):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
                 if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                     break
@@ -97,14 +97,14 @@ class TraceProcessor:
                 if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                     break
 
-        print ("All events handled in %s seconds" % (time.time() - start_time))
+        print("All events handled in %s seconds" % (time.time() - start_time))
 
         start_time = time.time()
         print "Finishing process tree"
 
         process_tree.finish_tree(self.filename)
 
-        print ("Finished tree in %s seconds" % (time.time() - start_time))
+        print("Finished tree in %s seconds" % (time.time() - start_time))
 
         if draw:
 
@@ -112,6 +112,6 @@ class TraceProcessor:
             draw_graph = Grapher(process_tree)
             draw_graph.draw_graph()
 
-            print ("Graph drawn in %s seconds" % (time.time() - start_time))
+            print("Graph drawn in %s seconds" % (time.time() - start_time))
 
-        print ("Processing finished in %s seconds" % (time.time() - process_start_time))
+        print("Processing finished in %s seconds" % (time.time() - process_start_time))

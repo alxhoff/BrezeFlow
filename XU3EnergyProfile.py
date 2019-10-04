@@ -19,52 +19,51 @@ class XU3RegressionModel:
     migration_factor = 1.7058
 
     little_freqs = [
-            1000000000,
-            1100000000,
-            1200000000,
-            1300000000,
-            1400000000
-            ]
+        1000000000,
+        1100000000,
+        1200000000,
+        1300000000,
+        1400000000
+    ]
 
     big_freqs = [
-            1200000000,
-            1300000000,
-            1400000000,
-            1500000000,
-            1600000000,
-            1700000000,
-            1800000000,
-            1900000000,
-            2000000000
-            ]
+        1200000000,
+        1300000000,
+        1400000000,
+        1500000000,
+        1600000000,
+        1700000000,
+        1800000000,
+        1900000000,
+        2000000000
+    ]
 
     little_reg_const = {
-            "static": -0.515404251699599,
-            "freq": (5.41174112348747 * pow(10, -10)),
-            "util0": 0.00118267259901383,
-            "util1": 0.00116622315262943,
-            "util2": 0.00115205526392148,
-            "util3": 0.00108948440210533
-            }
+        "static": -0.515404251699599,
+        "freq": (5.41174112348747 * pow(10, -10)),
+        "util0": 0.00118267259901383,
+        "util1": 0.00116622315262943,
+        "util2": 0.00115205526392148,
+        "util3": 0.00108948440210533
+    }
     big_reg_const = {
-            "static": -7.67667467145384,
-            "temp0": 0.0118551114030958,
-            "temp1": 0.0394152249258119,
-            "temp2": 0.0207884463414066,
-            "temp3": 0.0626956921220951,
-            "freq": (6.35765269142093 * pow(10, -10)),
-            "util0": 0.00373561226058925,
-            "util1": 0.000708146964380524,
-            "util2": 0.00176904935507961,
-            "util3": 0.00231972698040632
-            }
+        "static": -7.67667467145384,
+        "temp0": 0.0118551114030958,
+        "temp1": 0.0394152249258119,
+        "temp2": 0.0207884463414066,
+        "temp3": 0.0626956921220951,
+        "freq": (6.35765269142093 * pow(10, -10)),
+        "util0": 0.00373561226058925,
+        "util1": 0.000708146964380524,
+        "util2": 0.00176904935507961,
+        "util3": 0.00231972698040632
+    }
     GPU_reg_const = {
-            "static": -1.979703742,
-            "util": 0.011911485,
-            "freq": (1.73811 * pow(10, -9)),
-            "temp": 0.026603022
-            }
-
+        "static": -1.979703742,
+        "util": 0.011911485,
+        "freq": (1.73811 * pow(10, -9)),
+        "temp": 0.026603022
+    }
 
     @staticmethod
     def get_cpu_per_second_energy(cpu, freq, util, temp):
@@ -88,8 +87,8 @@ class XU3RegressionModel:
                 reg_const = XU3RegressionModel.little_reg_const
 
                 energy[0] = reg_const["static"] + reg_const["freq"] * freq + \
-                         reg_const["util0"] * util[0] + reg_const["util1"] * util[1] + reg_const["util2"] * util[2] + \
-                         reg_const["util3"] * util[3]
+                    reg_const["util0"] * util[0] + reg_const["util1"] * util[1] + reg_const["util2"] * util[2] + \
+                    reg_const["util3"] * util[3]
 
                 return energy
 
@@ -98,9 +97,9 @@ class XU3RegressionModel:
                 reg_const = XU3RegressionModel.big_reg_const
 
                 energy[1] = reg_const["static"] + reg_const["temp0"] * temp[0] + reg_const["temp1"] * temp[1] + \
-                         reg_const["temp2"] * temp[2] + reg_const["temp3"] * temp[3] + reg_const["freq"] * freq + \
-                         reg_const["util0"] * util[0] + reg_const["util1"] * util[1] + reg_const["util2"] * util[2] + \
-                         reg_const["util3"] * util[3]
+                    reg_const["temp2"] * temp[2] + reg_const["temp3"] * temp[3] + reg_const["freq"] * freq + \
+                    reg_const["util0"] * util[0] + reg_const["util1"] * util[1] + reg_const["util2"] * util[2] + \
+                    reg_const["util3"] * util[3]
 
                 return energy
 
