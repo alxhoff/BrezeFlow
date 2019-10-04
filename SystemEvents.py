@@ -980,7 +980,6 @@ class ProcessTree:
                         else:
                             continue
 
-
                         if task.events[0].cpu > 3:  # big TODO fix the use of the last event's CPU
 
                             little_core_index = np.argmin(cores_utils[:4])
@@ -1018,10 +1017,10 @@ class ProcessTree:
                                     task.optimization_info.set_info( optim_type.value |
                                                                      OptimizationInfoType.POSSIBLE_REALLOC.value,
                                                                      "Task can be reallocated")  #TODO
-                                    print("Possible realloc")
                                     op_writer.writerow([task.pid, task.start_time, task.duration, task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else
                                                         1], little_core_index, freq, new_core_util])
+                                    print("Possible realloc")
                                     break
 
                         # If not running on the minimum DVFS of given cluster
@@ -1073,7 +1072,7 @@ class ProcessTree:
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else
                                                         1], core_index, freq, new_core_util])
                                     print("Possible DVFS")
-
+                                    break
 
             writer.writerow([])
             writer.writerow(["Total Energy", total_energy])
