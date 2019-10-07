@@ -1129,7 +1129,6 @@ class ProcessTree:
                                  str(second[0][0] + second[0][1] + second[1]), str(second[2]), str(second[3]),
                                  str(second[4])])
 
-
     def handle_event(self, event, subgraph, start_time, finish_time):
         """
         An event is handled by and added to the current trace tree, handled depending on event type.

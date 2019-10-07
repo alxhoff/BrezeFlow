@@ -2,6 +2,7 @@
 
 import re
 import sys
+import time
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"
@@ -33,20 +34,30 @@ class PIDTool:
         self.adb_device = adb_device
         self.name = name
         main_pid = self._find_main_pid()
-        self.app_pids = dict()
-        self.app_pids[main_pid.pid] = main_pid
-        self.app_pids[0] = PID(0, "idle_proc", "idle_thread")
-        self.system_pids = dict()
-        self.binder_pids = dict()
+        if main_pid is None:
+            print("Failed to find main PID for given application: {}".format(name))
+            raise Exception('Valid application not given')
+        else:
+            print("---- Main PID found --- %d" % main_pid.pid)
+            self.app_pids = dict()
+            self.app_pids[main_pid.pid] = main_pid
+            self.app_pids[0] = PID(0, "idle_proc", "idle_thread")
+            self.system_pids = dict()
+            self.binder_pids = dict()
 
-        self._find_all_pid()
+            self._find_all_pid()
 
     def _find_all_pid(self):
 
-        self._find_main_pid()
+        start_time = time.time()
         self._find_all_app_pids()
+        print("---- Found application PIDs --- %s Sec" % (time.time() - start_time))
+        start_time = time.time()
         self._find_system_server_pids()
+        print("---- Found system server PIDs --- %s Sec" % (time.time() - start_time))
+        start_time = time.time()
         self._find_binder_pids()
+        print("---- Found Binder PIDs --- %s Sec" % (time.time() - start_time))
 
     def _find_main_pid(self):
         """ Will find the parent PID of the target application.
@@ -56,7 +67,7 @@ class PIDTool:
 
         res = self.adb_device.command("ps | grep " + self.name)
         if res == "":
-            sys.exit('Need valid application name')
+            return None
 
         regex_line = re.findall(r" +(\d+) +\d+ +\d+ .+ ([^ ]+)$", res)
         pid = int(regex_line[0][0])

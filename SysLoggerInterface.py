@@ -37,12 +37,12 @@ class SysLogger:
         self.stop()
         self._setup()
         self.adb.command("./data/local/tmp/sys_logger.sh start")
-        print "Syslogger started"
+        print "--- Syslogger started"
         self.status = SysLoggerStatus.START
 
     def stop(self):
         self.adb.command("./data/local/tmp/sys_logger.sh stop")
-        print "Syslogger stopped"
+        print "--- Syslogger stopped"
         self.status = SysLoggerStatus.STOP
         time.sleep(0.5)
         self._finish()
@@ -50,10 +50,8 @@ class SysLogger:
     def _setup(self):
         self._get_da_buffers_up(17000)
         self.adb.command("./data/local/tmp/sys_logger.sh setup -nt")
-        print "Syslogger setup"
         self.status = SysLoggerStatus.SETUP
 
     def _finish(self):
         self.adb.command("./data/local/tmp/sys_logger.sh finish")
-        print "Syslogger finished"
         self.status = SysLoggerStatus.FINISH

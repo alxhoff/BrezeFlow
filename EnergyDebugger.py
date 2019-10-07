@@ -11,8 +11,9 @@ import MainInterface
 import SettingsDialog
 import AboutDialog
 
-from PyQt5.QtCore import QSettings
+from PyQt5.QtCore import QSettings, QObject, pyqtSignal
 from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QTextCursor
 import threading
 
 from ADBInterface import ADBInterface
@@ -200,10 +201,19 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         super(SettingsMenu, self).reject()
 
 
+class EmittingStream(QObject):
+
+    textWritten = pyqtSignal(str)
+
+    def write(self, text):
+        self.textWritten.emit(str(text))
+
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
+        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+        sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
 
         self.running = False
 
@@ -231,6 +241,17 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.preamble = 2
         self.graph = False
         self.subgraph = False
+
+    def __del__(self):
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+
+    def normalOutputWritten(self, text):
+        cursor = self.textEditConsole.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(text)
+        self.textEditConsole.setTextCursor(cursor)
+        self.textEditConsole.ensureCursorVisible()
 
     def getsettings(self):
         self.lineEditApplicationName.setText(self.settings.value("DefaultApplication", defaultValue=""))
@@ -339,10 +360,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         if not self.running:
             self.running = True
             self.pushButtonRun.setEnabled(False)
-            self.running = self.buttonrunprocess()
+            fut = self.buttonrunprocess()
         else:
             print("Already running")
-
 
     @threaded
     def buttonrunprocess(self):
@@ -372,22 +392,26 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.subgraph = self.checkBoxSubGraph.isChecked()
         self.graph = self.checkBoxDrawGraph.isChecked()
 
-        self.current_debugger = EnergyDebugger(
-            application=self.application_name,
-            duration=self.duration,
-            events=self.events,
-            event_count=self.events_to_process,
-            preamble=self.preamble,
-            graph=self.graph,
-            subgraph=self.subgraph
-        )
+        try:
+            self.current_debugger = EnergyDebugger(
+                application=self.application_name,
+                duration=self.duration,
+                events=self.events,
+                event_count=self.events_to_process,
+                preamble=self.preamble,
+                graph=self.graph,
+                subgraph=self.subgraph
+            )
+            self.current_debugger.run(self.progressBar, False if not self.checkBoxSkipTracing.isChecked() else True)
+        except Exception, e:
+            QMessageBox.critical(self, "Error", "{}".format(e), QMessageBox.Ok)
 
         self.progressBar.setValue(0)
-        self.current_debugger.run(self.progressBar, False if not self.checkBoxSkipTracing.isChecked() else True)
 
         self.pushButtonRun.setEnabled(True)
+        self.running = False
         self.openresults()
-        return False
+        print(" ------ FINISHED ------")
 
     def buttonkilladb(self):
         os.system("killall adb")
@@ -425,23 +449,34 @@ class EnergyDebugger:
         """ Required objects for tracking system metrics and interfacing with a target system, connected
         via an ADB connection.
         """
+        start_time = time.time()
         self.adb = ADBInterface()
-        self.pid_tool = PIDTool(self.adb, self.application)
+        print("ADB interface created --- %s Sec" % (time.time() - start_time))
+        start_time = time.time()
+        try:
+            self.pid_tool = PIDTool(self.adb, self.application)
+        except Exception, e:
+            raise Exception("Trace failed: {}".format(e))
+        print("PIDs gathered --- %s Sec" % (time.time() - start_time))
+        start_time = time.time()
         self.trace_processor = TraceProcessor(self.pid_tool, self.application)
+        print("Trace processor created --- %s Sec" % (time.time() - start_time))
+        start_time = time.time()
         self.sys_metrics = SystemMetrics(self.adb)
+        print("System metrics initialized --- %s Sec" % (time.time() - start_time))
 
         """ The tracer object stores the configuration for the ftrace trace that is to be performed on the
         target system.
         """
 
-        print "Creating tracer, starting sys_logger and running trace"
-
+        start_time = time.time()
         self.tracer = Tracer(adb_device=self.adb,
                              name=application,
                              metrics=self.sys_metrics,
                              events=events,
                              duration=duration
                              )
+        print("Tracer created --- %s Sec" % (time.time() - start_time))
 
         if self.duration > 6:
             print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
@@ -449,7 +484,9 @@ class EnergyDebugger:
             QMessageBox.warning(self, "Warning", "Running traces over 6 seconds can cause issue due to data loss from trace buffer size limitations",
                                 QMessageBox.Ok)
 
+        start_time = time.time()
         self.sys_logger = SysLogger(self.adb)
+        print("Syslogger created --- %s Sec" % (time.time() - start_time))
 
     def clear(self):
         # TODO
