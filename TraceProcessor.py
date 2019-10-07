@@ -88,16 +88,18 @@ class TraceProcessor:
 
         if test:
             for x, event in enumerate(tracecmd.processed_events[:test]):
-                print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
-                progress_bar.setValue(round(float(x) / num_events * 100, 2))
+                print str(x) + "/" + str(test) + " " + str(round(float(x) / test * 100, 2)) + "%\r",
+                progress_bar.setValue(round(float(x) / test * 100, 2))
                 if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                     break
         else:
             for x, event in enumerate(tracecmd.processed_events):
-                print str(x) + "/" + str(tracecmd.processed_events) + " " + str(round(float(x) / tracecmd.processed_events * 100, 2)) + "%\r",
+                print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
                 progress_bar.setValue(round(float(x) / num_events * 100, 2))
                 if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                     break
+
+        progress_bar.setValue(100)
 
         print("All events handled in %s seconds" % (time.time() - start_time))
 
