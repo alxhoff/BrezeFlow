@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-import time
 
 from enum import Enum
 
@@ -100,8 +99,8 @@ class CPUUtilizationTable(UtilizationTable):
                 self.core_state = not event.state
         else:
             self.events.append(UtilizationSlice(
-                self.last_event_time, event.time - self.start_time,
-                SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
+                    self.last_event_time, event.time - self.start_time,
+                    SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
 
             self.last_event_time = event.time - self.start_time
             self.calc_util_last_event()
@@ -172,8 +171,8 @@ class GPUUtilizationTable(UtilizationTable):
 
     def add_event(self, event):
         self.events.append(UtilizationSlice(
-            self.last_event_time, event.time - self.start_time,
-            freq=event.freq, util=self.current_util))
+                self.last_event_time, event.time - self.start_time,
+                freq=event.freq, util=self.current_util))
 
         self.current_util = event.util
         self.last_event_time = event.time - self.start_time
@@ -370,8 +369,8 @@ class SystemMetrics:
         for core in range(self.core_count):
             try:
                 frequencies.append(
-                    int(self.adb.command("cat /sys/devices/system/cpu/cpu"
-                                         + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
+                        int(self.adb.command("cat /sys/devices/system/cpu/cpu"
+                                             + str(core) + "/cpufreq/scaling_cur_freq")) * 1000)
             except ValueError:  # Big is off
                 frequencies.append(0)
 

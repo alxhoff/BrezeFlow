@@ -1,23 +1,21 @@
 #!/usr/bin/env python
 
 import argparse
-import time
+import csv
 import os
 import sys
-
-import csv
-
-import MainInterface
-import SettingsDialog
-import AboutDialog
+import threading
+import time
 
 from PyQt5.QtCore import QSettings, QObject, pyqtSignal
-from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QTextCursor
-import threading
+from PyQt5.QtWidgets import *
 
+import AboutDialog
+import MainInterface
+import SettingsDialog
 from ADBInterface import ADBInterface
-from PIDTools import PIDTool
+from PIDTool import PIDTool
 from SysLoggerInterface import SysLogger
 from SystemMetrics import SystemMetrics
 from TraceCMDParser import TracecmdProcessor
@@ -61,6 +59,7 @@ def threaded(fn):
         future = Future()
         threading.Thread(target=call_with_future, args=(fn, future, args, kwargs)).start()
         return future
+
     return wrapper
 
 
@@ -95,7 +94,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.checkBoxWakeUp.setChecked(bool(int(settings.value("DefaultEventWakeUp", defaultValue=0))))
         self.checkBoxSchedSwitch.setChecked(bool(int(settings.value("DefaultEventSchedSwitch", defaultValue=1))))
         self.checkBoxCPUIdle.setChecked(bool(int(settings.value("DefaultEventCPUIdle", defaultValue=0))))
-        self.checkBoxBinderTransaction.setChecked(bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
+        self.checkBoxBinderTransaction.setChecked(
+            bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
 
         # Syslogger
@@ -169,7 +169,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         if not os.path.isfile(self.lineEditConvertSource.text()):
             QMessageBox.critical(self, "Error", "The trace source file does not exist", QMessageBox.Ok)
 
-        os.system("trace_conv.py -i " + self.lineEditConvertSource.text() + " -o " + self.lineEditConvertDestination.text())
+        os.system(
+            "trace_conv.py -i " + self.lineEditConvertSource.text() + " -o " + self.lineEditConvertDestination.text())
         QMessageBox.information(self, "Trace convert", "Converting trace complete", QMessageBox.Ok)
 
     def accept(self):
@@ -202,11 +203,11 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
 
 class EmittingStream(QObject):
-
     textWritten = pyqtSignal(str)
 
     def write(self, text):
         self.textWritten.emit(str(text))
+
 
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
@@ -264,7 +265,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.checkBoxSchedSwitch.setChecked(bool(int(self.settings.value("DefaultEventSchedSwitch", defaultValue=1))))
         self.checkBoxCPUIdle.setChecked(bool(int(self.settings.value("DefaultEventCPUIdle", defaultValue=0))))
         self.checkBoxBinderTransaction.setChecked(
-            bool(int(self.settings.value("DefaultEventBinderTransaction", defaultValue=1))))
+                bool(int(self.settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(self.settings.value("DefaultEventSyslogger", defaultValue=1))))
 
     def setupsettings(self):
@@ -394,14 +395,14 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         try:
             self.current_debugger = EnergyDebugger(
-                application=self.application_name,
-                duration=self.duration,
-                events=self.events,
-                event_count=self.events_to_process,
-                preamble=self.preamble,
-                graph=self.graph,
-                subgraph=self.subgraph
-            )
+                    application=self.application_name,
+                    duration=self.duration,
+                    events=self.events,
+                    event_count=self.events_to_process,
+                    preamble=self.preamble,
+                    graph=self.graph,
+                    subgraph=self.subgraph
+                    )
             self.current_debugger.run(self.progressBar, False if not self.checkBoxSkipTracing.isChecked() else True)
         except Exception, e:
             QMessageBox.critical(self, "Error", "{}".format(e), QMessageBox.Ok)
@@ -415,7 +416,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     def buttonkilladb(self):
         os.system("killall adb")
-
 
 
 class CommandInterface:
@@ -480,8 +480,10 @@ class EnergyDebugger:
 
         if self.duration > 6:
             print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " \
-                "limitations"
-            QMessageBox.warning(self, "Warning", "Running traces over 6 seconds can cause issue due to data loss from trace buffer size limitations",
+                  "limitations"
+            QMessageBox.warning(self, "Warning",
+                                "Running traces over 6 seconds can cause issue due to data loss from trace buffer "
+                                "size limitations",
                                 QMessageBox.Ok)
 
         start_time = time.time()
@@ -492,7 +494,7 @@ class EnergyDebugger:
         # TODO
         pass
 
-    def run(self, progress_bar, skip = False):
+    def run(self, progress_bar, skip=False):
         """ Entry point into the debugging tool.
         """
         """ As the energy debugger depends on the custom trace points implemented in the syslogger module,
@@ -508,7 +510,8 @@ class EnergyDebugger:
             self.tracer.get_trace_results()
 
         """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
-        processed. Results are generated into a CSV file, saved to the working directory under the same name as the target
+        processed. Results are generated into a CSV file, saved to the working directory under the same name as the 
+        target
         application with the suffix _results.csv.
         """
 
@@ -525,6 +528,7 @@ class EnergyDebugger:
 
 
 class Future(object):
+
     def __init__(self):
         self._ev = threading.Event()
 

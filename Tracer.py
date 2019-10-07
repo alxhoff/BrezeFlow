@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-import re
 import os
-import time
+import re
 import sys
+import time
+
 
 class Tracer:
     """ A tracer is responsible for setting up the underlying system to perform a trace for a certain duration,
@@ -117,7 +118,7 @@ class Tracer:
         :param filter_contents: State of the event filter to be set
         """
         event_dir = self.adb.command(
-            "find " + self.tracing_path + "/events -name " + event)
+                "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return
 
@@ -130,7 +131,7 @@ class Tracer:
         :param event: Event whoes filter is to be cleared
         """
         event_dir = self.adb.command(
-            "find " + self.tracing_path + "/events -name " + event)
+                "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return
 
@@ -143,7 +144,7 @@ class Tracer:
         :return: String representation of the event's format. Empty string otherwise.
         """
         event_dir = self.adb.command(
-            "find " + self.tracing_path + "/events -name " + event)
+                "find " + self.tracing_path + "/events -name " + event)
         if event_dir is None:
             return ""
 

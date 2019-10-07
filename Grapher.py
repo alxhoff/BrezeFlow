@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import networkx as nx
 import os
+
+import networkx as nx
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"

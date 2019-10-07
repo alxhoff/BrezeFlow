@@ -12,9 +12,9 @@ between tasks being able to be co-ordinated with the sched_switch events that tr
 """
 
 import csv
-import numpy as np
 
 import networkx as nx
+import numpy as np
 from pydispatch import dispatcher
 
 from SystemMetrics import *
@@ -43,6 +43,7 @@ class DependencyType(Enum):
     def __str__(self):
         return "%s" % self.name
 
+
 class Dependency:
 
     def __init__(self, dependee=None, depender=None, type=DependencyType.NONE):
@@ -60,6 +61,7 @@ class BinderType(Enum):
     def __str__(self):
         return "%s" % self.name
 
+
 class OptimizationInfoType(Enum):
     NONE = 0
     LONG_EXEC_DURATION = 0b1
@@ -68,6 +70,7 @@ class OptimizationInfoType(Enum):
 
     def __str__(self):
         return "%s" % self.name
+
 
 class OptimizationInfo:
 
@@ -313,13 +316,19 @@ class TaskNode:
                         # calc time is the point until which the energy has been calculated
                         new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency)
 
-                        #TODO Streamline this
+                        # TODO Streamline this
                         # self.util = SystemMetrics.current_metrics.sys_util_history.cpu[pe.cpu].get_util(pe.time)
                         self.util = [SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 0].get_util(
                                 pe.time)]
-                        self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 1].get_util(pe.time))
-                        self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 2].get_util(pe.time))
-                        self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 3].get_util(pe.time))
+                        self.util.append(
+                                SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 1].get_util(
+                                        pe.time))
+                        self.util.append(
+                                SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 2].get_util(
+                                        pe.time))
+                        self.util.append(
+                                SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 3].get_util(
+                                        pe.time))
 
                         # self.temp = SystemMetrics.current_metrics.get_temp(pe.time, pe.cpu)
                         self.temp = [SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 0)]
@@ -328,7 +337,7 @@ class TaskNode:
                         self.temp.append(SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 3))
 
                         cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(pe.cpu, pe.cpu_frequency, self.util,
-                                                                       self.temp)
+                                                                                    self.temp)
                         cycle_energy = [component / pe.cpu_frequency for component in cycle_energy]
 
                         self.cpu_cycles += new_cycles
@@ -349,10 +358,17 @@ class TaskNode:
                     # self.util = SystemMetrics.current_metrics.sys_util_history.cpu[event.cpu].get_util(event.time)
                     # self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
 
-                    self.util = [SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 0].get_util(event.time)]
-                    self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 1].get_util(event.time))
-                    self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 2].get_util(event.time))
-                    self.util.append(SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 3].get_util(event.time))
+                    self.util = [SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 0].get_util(
+                            event.time)]
+                    self.util.append(
+                            SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 1].get_util(
+                                    event.time))
+                    self.util.append(
+                            SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 2].get_util(
+                                    event.time))
+                    self.util.append(
+                            SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 3].get_util(
+                                    event.time))
 
                     self.temp = [SystemMetrics.current_metrics.get_temp(event.time, (event.cpu / 4) * 4 + 0)]
                     self.temp.append(SystemMetrics.current_metrics.get_temp(event.time, (event.cpu / 4) * 4 + 1))
@@ -381,11 +397,11 @@ class TaskNode:
             if isinstance(event, EventSchedSwitch):
                 self.graph.add_node(event,
                                     label=str(event.time)[:-6] + "." + str(event.time)[-6:]
-                                    + " CPU: " + str(event.cpu) + "\n" + str(event.pid)
-                                    + " ==> " + str(event.next_pid)
-                                    + "\nPrev state: " + str(event.prev_state)
-                                    + "\n" + event.name + " --> " + event.next_name + "\n"
-                                    + str(event.__class__.__name__),
+                                          + " CPU: " + str(event.cpu) + "\n" + str(event.pid)
+                                          + " ==> " + str(event.next_pid)
+                                          + "\nPrev state: " + str(event.prev_state)
+                                          + "\n" + event.name + " --> " + event.next_name + "\n"
+                                          + str(event.__class__.__name__),
                                     fillcolor='bisque1', style='filled', shape='box')
 
             if len(self.events) >= 2:  # Inter-job edges
@@ -413,6 +429,7 @@ class TaskNode:
         :return:
         """
         self.sys_metric_change_events.append(FreqPowerEvent(ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util))
+
 
 class BinderNode(TaskNode):
 
@@ -720,24 +737,24 @@ class ProcessBranch:
                     self.tasks[-1].finish()
                     self.active = False  # Current task has ended and new one will be needed
                     label = str(self.tasks[-1].start_time)[:-6] + "." \
-                                        + str(self.tasks[-1].start_time)[-6:] \
-                                        + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "." \
-                                        + str(self.tasks[-1].finish_time)[-6:] \
-                                        + "\nCPU: " + str(event.cpu) + " @ " + str(
+                            + str(self.tasks[-1].start_time)[-6:] \
+                            + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "." \
+                            + str(self.tasks[-1].finish_time)[-6:] \
+                            + "\nCPU: " + str(event.cpu) + " @ " + str(
                             SystemMetrics.current_metrics.get_cpu_core_freq(event.cpu)) + "Hz" \
-                                        + "\nUtil: " + str(self.tasks[-1].util) + "%" \
-                                        + "   Temp: " + str(self.tasks[-1].temp) \
-                                        + "   PID: " + str(event.pid) \
-                                        + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   " \
-                                        + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util" \
-                                        + "\nDuration: " + str(self.tasks[-1].duration) \
-                                        + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
-                                        + "\nEnergy: " + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
-                                                                                                       -1].energy[0]) \
-                                        + "\n Dependency: " + str(self.tasks[-1].dependency.type) \
-                                        + "\n" + self.tname \
-                                        + "\n" + self.pname \
-                                        + "\n" + str(self.tasks[-1].__class__.__name__)
+                            + "\nUtil: " + str(self.tasks[-1].util) + "%" \
+                            + "   Temp: " + str(self.tasks[-1].temp) \
+                            + "   PID: " + str(event.pid) \
+                            + "\nGPU: " + str(SystemMetrics.current_metrics.current_gpu_freq) + "Hz   " \
+                            + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util" \
+                            + "\nDuration: " + str(self.tasks[-1].duration) \
+                            + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
+                            + "\nEnergy: " + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
+                                                                                             -1].energy[0]) \
+                            + "\n Dependency: " + str(self.tasks[-1].dependency.type) \
+                            + "\n" + self.tname \
+                            + "\n" + self.pname \
+                            + "\n" + str(self.tasks[-1].__class__.__name__)
 
                     self.graph.add_node(self.tasks[-1],
                                         label=label,
@@ -792,14 +809,14 @@ class ProcessBranch:
             self.binder_tasks[-1].finish()
             self.graph.add_node(self.binder_tasks[-1],
                                 label=str(self.binder_tasks[-1].events[0].time)[:-6]
-                                + "." + str(self.binder_tasks[-1].events[0].time)[-6:]
-                                + " ==> " + str(self.binder_tasks[-1].events[-1].time)[:-6]
-                                + "." + str(self.binder_tasks[-1].events[-1].time)[-6:]
-                                + "\nPID: " + str(event.pid)
-                                + "  dest PID: " + str(event.target_pid)
-                                + "\nType: " + str(self.binder_tasks[-1].events[0].trans_type)
-                                + "\n" + str(event.name)
-                                + "\n" + str(self.binder_tasks[-1].__class__.__name__),
+                                      + "." + str(self.binder_tasks[-1].events[0].time)[-6:]
+                                      + " ==> " + str(self.binder_tasks[-1].events[-1].time)[:-6]
+                                      + "." + str(self.binder_tasks[-1].events[-1].time)[-6:]
+                                      + "\nPID: " + str(event.pid)
+                                      + "  dest PID: " + str(event.target_pid)
+                                      + "\nType: " + str(self.binder_tasks[-1].events[0].trans_type)
+                                      + "\n" + str(event.name)
+                                      + "\n" + str(self.binder_tasks[-1].__class__.__name__),
                                 fillcolor='coral', style='filled,bold', shape='box')
 
             return
@@ -996,7 +1013,7 @@ class ProcessTree:
 
                                 # Util on little @ max: current frequency
                                 util_capacity_on_max_little = float(task.events[0].cpu_freq[1]) / freq * \
-                                    task_util * mf
+                                                              task_util * mf
 
                                 # if little currently not at max the util needs to be scaled down
                                 cur_little_util_at_max = \
@@ -1020,12 +1037,12 @@ class ProcessTree:
                                     if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
                                         task.optimization_info.set_info(
                                                 OptimizationInfoType.LONG_EXEC_DURATION.value,
-                                                                        "Execution of task would clash with depender task")
+                                                "Execution of task would clash with depender task")
                                         continue
 
-                                    task.optimization_info.set_info( optim_type.value |
-                                                                     OptimizationInfoType.POSSIBLE_REALLOC.value,
-                                                                     "Task can be reallocated")  #TODO
+                                    task.optimization_info.set_info(optim_type.value |
+                                                                    OptimizationInfoType.POSSIBLE_REALLOC.value,
+                                                                    "Task can be reallocated")  # TODO
                                     op_writer.writerow([task.pid, task.start_time, task.duration, task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else
                                                         1], little_core_index, freq, new_core_util])
@@ -1040,7 +1057,7 @@ class ProcessTree:
 
                             if task.events[0].cpu <= 3:  # LITTLE
                                 freq_index = SystemMetrics.current_metrics.energy_profile.little_freqs.index(
-                                    task.events[0].cpu_freq[0])
+                                        task.events[0].cpu_freq[0])
                                 freqs = SystemMetrics.current_metrics.energy_profile.little_freqs[:freq_index]
                                 core_index = np.argmin(cores_utils[:4])
                             else:  # BIG
@@ -1076,7 +1093,7 @@ class ProcessTree:
                                     if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
                                         task.optimization_info.set_info(
                                                 OptimizationInfoType.LONG_EXEC_DURATION.value,
-                                                                        "Execution of task would clash with depender task")
+                                                "Execution of task would clash with depender task")
                                         print("Clash")
 
                                         continue
@@ -1101,7 +1118,7 @@ class ProcessTree:
 
             timeline_interval = 0.05
             energy_timeline = [[(0.0, 0.0), 0.0, (0.0, 0.0, 0.0), 0.0, 0] for _ in range(int(
-            duration/timeline_interval) + 1)]
+                    duration / timeline_interval) + 1)]
 
             for i, second in enumerate(energy_timeline):
 
@@ -1153,8 +1170,8 @@ class ProcessTree:
         elif isinstance(event, EventSchedSwitch):  # PID context swap
 
             # Task being switched out, ignoring idle task and binder threads
-            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids: # and "GLThread" not in event.name:
-            # TODO why do GLThreads run rampant in some games?
+            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids:  # and "GLThread" not in event.name:
+                # TODO why do GLThreads run rampant in some games?
                 try:
                     process_branch = self.process_branches[event.pid]
                     process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
