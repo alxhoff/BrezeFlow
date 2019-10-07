@@ -96,8 +96,9 @@ class TraceProcessor:
 
         start_time = time.time()
         sys.stdout.write("Finishing process tree")
-        process_tree.finish_tree(self.filename)
-        print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+        optimizations_found = process_tree.finish_tree(self.filename)
+        print(" --- COMPLETED in {} seconds, found {} optimizations".format((time.time() - start_time),
+                                                                        optimizations_found))
 
         if draw:
             sys.stdout.write("Drawing graph")
@@ -106,4 +107,4 @@ class TraceProcessor:
             draw_graph.draw_graph()
             print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
 
-        print("Processing finished in %s seconds" % (time.time() - process_start_time))
+        print("** Processing finished in %s seconds **" % (time.time() - process_start_time))

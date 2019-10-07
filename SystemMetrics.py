@@ -137,21 +137,16 @@ class TotalUtilizationTable(UtilizationTable):
 
         self.start_time = min(core.start_time for core in cores)
         self.end_time = 0
-        start_time = time.time()
 
         # get the starting and finishing time of the events on each core
         for core in cores:
             if len(core.events) != 0:
                 if (self.start_time + core.events[-1].start_time + core.events[-1].duration) > self.end_time:
                     self.end_time = self.start_time + core.events[-1].start_time + core.events[-1].duration
-        print("Start and finish times took %s seconds" % (time.time() - start_time))
-
-        start_time = time.time()
 
         # Compile util lookup tables for each core
         for core in cores:
             core.compile_lookup(self.start_time, self.end_time)
-        print("Lookup tables took %s seconds" % (time.time() - start_time))
 
         return
 

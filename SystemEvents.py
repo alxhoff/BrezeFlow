@@ -962,7 +962,8 @@ class ProcessTree:
                     mf = SystemMetrics.current_metrics.energy_profile.migration_factor
 
                     ### OPTIMAL EVALUATION
-                    # try:
+                    optimizations_found = 0
+
                     for task in branch.tasks:
 
                         cores = SystemMetrics.current_metrics.sys_util_history
@@ -1028,7 +1029,7 @@ class ProcessTree:
                                     op_writer.writerow([task.pid, task.start_time, task.duration, task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else
                                                         1], little_core_index, freq, new_core_util])
-                                    print("Possible realloc")
+                                    optimizations_found += 1
                                     break
 
                         # If not running on the minimum DVFS of given cluster
@@ -1085,7 +1086,7 @@ class ProcessTree:
                                     op_writer.writerow([task.pid, task.start_time, task.duration, task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else
                                                         1], core_index, freq, new_core_util])
-                                    print("Possible DVFS")
+                                    optimizations_found += 1
                                     break
 
             writer.writerow([])
@@ -1128,6 +1129,8 @@ class ProcessTree:
                                  str(second[0][0] + second[0][1]), str(second[0][1]), str(second[0][0]), str(second[1]),
                                  str(second[0][0] + second[0][1] + second[1]), str(second[2]), str(second[3]),
                                  str(second[4])])
+
+            return optimizations_found
 
     def handle_event(self, event, subgraph, start_time, finish_time):
         """
