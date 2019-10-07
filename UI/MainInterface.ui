@@ -460,7 +460,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tabResults">
        <attribute name="title">
@@ -469,6 +469,17 @@
        <layout class="QVBoxLayout" name="verticalLayout_8">
         <item>
          <widget class="QTableWidget" name="tableWidgetResults"/>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item alignment="Qt::AlignRight">
+           <widget class="QPushButton" name="pushButtonDisplayResults">
+            <property name="text">
+             <string>Display Results</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -513,6 +524,17 @@
         <item>
          <widget class="QTextBrowser" name="textBrowserBinderLog"/>
         </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <item alignment="Qt::AlignRight">
+           <widget class="QPushButton" name="pushButtonDisplayBinderLog">
+            <property name="text">
+             <string>Display Log</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
        </layout>
       </widget>
      </widget>
@@ -536,7 +558,6 @@
     <addaction name="separator"/>
     <addaction name="actionOpenGraph"/>
     <addaction name="actionOpenBinderLog"/>
-    <addaction name="actionOpenTrace"/>
     <addaction name="actionOpenResults"/>
     <addaction name="actionOpenSettings"/>
     <addaction name="actionQuitProgram"/>

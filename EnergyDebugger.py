@@ -252,6 +252,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
     def setupbuttons(self):
         self.pushButtonRun.clicked.connect(self.buttonrun)
         self.pushButtonKillADB.clicked.connect(self.buttonkilladb)
+        self.pushButtonDisplayResults.clicked.connect(self.openresults)
+        self.pushButtonDisplayBinderLog.clicked.connect(self.openbinderlog)
 
     def setupmenu(self):
         self.actionOpenResults.triggered.connect(self.openresults)
@@ -267,21 +269,24 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.application_name = self.lineEditApplicationName.text()
         results_filename = os.path.join(self.results_path, self.application_name + "_results.csv")
 
-        col_count = 0
-        row_count = 0
-        with open(results_filename, "r") as fileInput:
-            for row in csv.reader(fileInput):
-                row_count += 1
-                if len(row) > col_count:
-                    col_count = len(row)
+        try:
+            col_count = 0
+            row_count = 0
+            with open(results_filename, "r") as fileInput:
+                for row in csv.reader(fileInput):
+                    row_count += 1
+                    if len(row) > col_count:
+                        col_count = len(row)
 
-            fileInput.seek(0)
-            self.tableWidgetResults.setColumnCount(col_count)
-            self.tableWidgetResults.setRowCount(row_count)
+                fileInput.seek(0)
+                self.tableWidgetResults.setColumnCount(col_count)
+                self.tableWidgetResults.setRowCount(row_count)
 
-            for i, row in enumerate(csv.reader(fileInput)):
-                for j, col in enumerate(row):
-                    self.tableWidgetResults.setItem(i, j, QTableWidgetItem(col))
+                for i, row in enumerate(csv.reader(fileInput)):
+                    for j, col in enumerate(row):
+                        self.tableWidgetResults.setItem(i, j, QTableWidgetItem(col))
+        except Exception, e:
+            QMessageBox.warning(self, "Error", "{}".format(e), QMessageBox.Ok)
 
     def opensettingsmenu(self):
         settings_menu = SettingsMenu(self.settings)
@@ -381,6 +386,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.current_debugger.run(self.progressBar, False if not self.checkBoxSkipTracing.isChecked() else True)
 
         self.pushButtonRun.setEnabled(True)
+        self.openresults()
         return False
 
     def buttonkilladb(self):

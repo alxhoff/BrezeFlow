@@ -898,7 +898,7 @@ class ProcessTree:
 
         :param filename: Filename prefix which is used to differentiate the current trace
         """
-        with open(filename + "_results.csv", "w+") as f:
+        with open("results/" + filename + "_results.csv", "w+") as f:
 
             writer = csv.writer(f, delimiter=',')
 
@@ -920,6 +920,7 @@ class ProcessTree:
             writer.writerow(["Finish", finish_time / 1000000.0])
             duration = (finish_time - start_time) * 0.000001
             writer.writerow(["Duration", duration])
+            writer.writerow([])
 
             writer.writerow([PL_PID, PL_PID_PNAME, PL_PID_TNAME, PL_TASK_COUNT,
                              PL_ENERGY, PL_DURATION])
@@ -932,7 +933,7 @@ class ProcessTree:
 
             total_energy += gpu_energy
 
-            with open(filename + "_optimizations.csv", "w+") as f_op:
+            with open("results/" + filename + "_optimizations.csv", "w+") as f_op:
                 op_writer = csv.writer(f_op, delimiter=',')
                 op_writer.writerow(["Task PID", "TS", "Duration", "Core", "Freq", "New Core", "New Freq",
                                     "New Util"])
