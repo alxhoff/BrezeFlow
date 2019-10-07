@@ -13,6 +13,7 @@ import AboutDialog
 
 from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import *
+import threading
 
 from ADBInterface import ADBInterface
 from PIDTools import PIDTool
@@ -52,6 +53,22 @@ parser.add_argument("-p", "--preamble", required=False,
                     help="Specifies the number of seconds that be discarded at the begining of tracing")
 
 args = parser.parse_args()
+
+
+def threaded(fn):
+    def wrapper(*args, **kwargs):
+        future = Future()
+        threading.Thread(target=call_with_future, args=(fn, future, args, kwargs)).start()
+        return future
+    return wrapper
+
+
+def call_with_future(fn, future, args, kwargs):
+    try:
+        result = fn(*args, **kwargs)
+        future.set_result(result)
+    except Exception as exc:
+        future.set_exception(exc)
 
 
 class AboutDialog(QDialog, AboutDialog.Ui_Dialog):
@@ -188,6 +205,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
 
+        self.running = False
+
         self.setupUi(self)
         self.setupbuttons()
         self.setupmenu()
@@ -312,6 +331,16 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         return error
 
     def buttonrun(self):
+        if not self.running:
+            self.running = True
+            self.pushButtonRun.setEnabled(False)
+            self.running = self.buttonrunprocess()
+        else:
+            print("Already running")
+
+
+    @threaded
+    def buttonrunprocess(self):
         if self.checkrun():
             return
         if self.current_debugger:
@@ -326,7 +355,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             self.events.append("cpu_idle")
         if self.checkBoxSchedSwitch.isChecked():
             self.events.append("sched_switch")
-        if self.checkBoxSysLogger.isChecked():
+        if self.checkBoxSyslogger.isChecked():
             self.events.append("sys_logger")
         if self.checkBoxWakeUp.isChecked():
             self.events.append("sched_wakeup")
@@ -348,10 +377,15 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             subgraph=self.subgraph
         )
 
-        self.current_debugger.run()
+        self.progressBar.setValue(0)
+        self.current_debugger.run(self.progressBar, False if not self.checkBoxSkipTracing.isChecked() else True)
+
+        self.pushButtonRun.setEnabled(True)
+        return False
 
     def buttonkilladb(self):
         os.system("killall adb")
+
 
 
 class CommandInterface:
@@ -380,6 +414,7 @@ class EnergyDebugger:
         self.preamble = preamble
         self.graph = graph
         self.subgraph = subgraph
+        self.tc_processor = None
 
         """ Required objects for tracking system metrics and interfacing with a target system, connected
         via an ADB connection.
@@ -394,7 +429,6 @@ class EnergyDebugger:
         """
 
         print "Creating tracer, starting sys_logger and running trace"
-
 
         self.tracer = Tracer(adb_device=self.adb,
                              name=application,
@@ -411,25 +445,24 @@ class EnergyDebugger:
 
         self.sys_logger = SysLogger(self.adb)
 
-        self.run()
-
     def clear(self):
         # TODO
         pass
 
-    def run(self):
+    def run(self, progress_bar, skip = False):
         """ Entry point into the debugging tool.
         """
         """ As the energy debugger depends on the custom trace points implemented in the syslogger module,
         it must be loaded before tracing begins. It must then be unloaded and finished before the results
         are pulled from the target system.
         """
-        self.start_time = time.time()
+        start_time = time.time()
 
-        self.sys_logger.start()
-        self.tracer.run_tracer(self.preamble, args.skip_clear)
-        self.sys_logger.stop()
-        self.tracer.get_trace_results()
+        if not skip:
+            self.sys_logger.start()
+            self.tracer.run_tracer(self.preamble, args.skip_clear)
+            self.sys_logger.stop()
+            self.tracer.get_trace_results()
 
         """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
         processed. Results are generated into a CSV file, saved to the working directory under the same name as the target
@@ -442,10 +475,29 @@ class EnergyDebugger:
         self.tc_processor = TracecmdProcessor(dat_path, self.preamble)
 
         self.tc_processor.print_event_count()
-        self.trace_processor.process_trace(self.sys_metrics, self.tc_processor,
+        self.trace_processor.process_trace(progress_bar, self.sys_metrics, self.tc_processor,
                                            self.duration, self.graph, self.event_count, self.subgraph)
 
-        print "Run took a total of %s seconds to run" % (time.time() - self.start_time)
+        print "Run took a total of %s seconds to run" % (time.time() - start_time)
+
+
+class Future(object):
+    def __init__(self):
+        self._ev = threading.Event()
+
+    def set_result(self, result):
+        self._result = result
+        self._ev.set()
+
+    def set_exception(self, exc):
+        self._exc = exc
+        self._ev.set()
+
+    def result(self):
+        self._ev.wait()
+        if hasattr(self, '_exc'):
+            raise self._exc
+        return self._result
 
 
 if __name__ == '__main__':

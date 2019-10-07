@@ -41,7 +41,7 @@ class TracecmdProcessor:
         self.processed_events = []
         self.processed_preprocess_events = []
         try:
-            self.trace = Trace(filename)
+            self.trace = Trace(str(filename))
         except Exception, e:
             print "Tracecmd file could not be read: %s" % str(e)
             sys.exit(1)

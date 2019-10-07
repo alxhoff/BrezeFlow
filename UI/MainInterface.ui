@@ -40,8 +40,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>332</width>
-            <height>684</height>
+            <width>340</width>
+            <height>710</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -320,7 +320,7 @@
                  </sizepolicy>
                 </property>
                 <property name="frameShape">
-                 <enum>QFrame::HLine</enum>
+                 <enum>QFrame::NoFrame</enum>
                 </property>
                 <property name="text">
                  <string>&lt;b&gt;Debug Options&lt;/b&gt;</string>
@@ -369,6 +369,13 @@
                <widget class="QCheckBox" name="checkBoxSubGraph">
                 <property name="text">
                  <string>Draw Node Sub-graphs</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="checkBoxSkipTracing">
+                <property name="text">
+                 <string>Skip tracing (assumed previously done)</string>
                 </property>
                </widget>
               </item>
@@ -518,7 +525,7 @@
      <x>0</x>
      <y>0</y>
      <width>1109</width>
-     <height>28</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFike">

@@ -27,7 +27,7 @@ class TraceProcessor:
         self.pidt = pidt
         self.filename = filename
 
-    def process_trace(self, metrics, tracecmd, duration, draw=None, test=None, subgraph=False):
+    def process_trace(self, progress_bar, metrics, tracecmd, duration, draw=None, test=None, subgraph=False):
         """ There are a number of steps required in processing a given trace. This is outlined below.
 
         - Idle and temperature events are preprocessed and removed from the pending events to be processed. This
@@ -89,11 +89,13 @@ class TraceProcessor:
         if test:
             for x, event in enumerate(tracecmd.processed_events[:test]):
                 print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
+                progress_bar.setValue(round(float(x) / num_events * 100, 2))
                 if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                     break
         else:
             for x, event in enumerate(tracecmd.processed_events):
-                print str(x) + "/" + str(num_events) + " " + str(round(float(x) / num_events * 100, 2)) + "%\r",
+                print str(x) + "/" + str(tracecmd.processed_events) + " " + str(round(float(x) / tracecmd.processed_events * 100, 2)) + "%\r",
+                progress_bar.setValue(round(float(x) / num_events * 100, 2))
                 if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                     break
 
