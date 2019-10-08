@@ -66,6 +66,8 @@ class TraceProcessor:
         for x, event in enumerate(tracecmd.processed_preprocess_events):
             process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time)
         print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+        print(" ------ Idle events in %s seconds" % process_tree.idle_time)
+        print(" ------ Temp events in %s seconds" % process_tree.temp_time)
 
         start_time = time.time()
         sys.stdout.write("Building cluster utilization table")
@@ -94,6 +96,10 @@ class TraceProcessor:
 
         progress_bar.setValue(100)
         print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+        print(" ------ Sched switch events in %s seconds" % process_tree.sched_switch_time)
+        print(" ------ Binder events in %s seconds" % process_tree.binder_time)
+        print(" ------ Freq events in %s seconds" % process_tree.freq_time)
+
 
         start_time = time.time()
         sys.stdout.write("Finishing process tree")

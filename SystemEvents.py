@@ -12,7 +12,7 @@ between tasks being able to be co-ordinated with the sched_switch events that tr
 """
 
 import csv
-
+import time
 import networkx as nx
 import numpy as np
 from pydispatch import dispatcher
@@ -884,6 +884,13 @@ class ProcessTree:
         self.gpu = GPUBranch(self.metrics.current_gpu_freq, self.metrics.current_gpu_util, self.graph)
         self._create_pid_branches()
 
+        self.idle_time = 0
+        self.temp_time = 0
+        self.binder_time = 0
+        self.mali_time = 0
+        self.sched_switch_time = 0
+        self.freq_time = 0
+
     def _create_cpu_branches(self):
         """ Creates a CPU branch for each CPU found in a system
         """
@@ -1159,6 +1166,7 @@ class ProcessTree:
         :param finish_time: Time before which events must happens if they are to be processed
         :return 0 on success
         """
+        start_time = time.time()
 
         # Set event freq
         event.cpu_freq[0] = SystemMetrics.current_metrics.get_cpu_core_freq(0)
@@ -1257,6 +1265,7 @@ class ProcessTree:
                         # remove binder task that is now complete
                         del self.completed_binder_calls[x]
 
+                        self.sched_switch_time += time.time() - start_time
                         return 0
 
                 try:
@@ -1265,6 +1274,7 @@ class ProcessTree:
                 except KeyError:
                     pass  # Branch (PID) is not of interest and as such can be passed
 
+            self.sched_switch_time += time.time() - start_time
             return 0
 
         elif isinstance(event, EventBinderTransaction):
@@ -1277,8 +1287,6 @@ class ProcessTree:
 
                     self.pending_binder_calls.append(
                             FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
-
-                    return 0
 
             elif event.trans_type == BinderType.ASYNC:
 
@@ -1302,14 +1310,17 @@ class ProcessTree:
 
                                 del self.pending_binder_calls[x]  # Remove completed first half
 
-                                return 0
+            self.binder_time += time.time() - start_time
+            return 0
 
         elif isinstance(event, EventFreqChange):
+
             for i in range(event.target_cpu, event.target_cpu + 4):
                 self.metrics.current_core_freqs[i] = event.freq
                 self.metrics.current_core_utils[i] = event.util
                 self.cpus[i].add_event(event)
 
+            self.freq_time += time.time() - start_time
             return 0
 
         elif isinstance(event, EventMaliUtil):
@@ -1319,21 +1330,23 @@ class ProcessTree:
             self.metrics.sys_util_history.gpu.add_event(event)
             self.gpu.add_event(event)
 
+            self.mali_time += time.time() - start_time
+            return 0
+
         elif isinstance(event, EventIdle):
 
             self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)
-
+            self.idle_time += time.time() - start_time
             return 0
 
         elif isinstance(event, EventTempInfo):
 
             if self.metrics.sys_temp_history.initial_time == 0:
                 self.metrics.sys_temp_history.initial_time = event.time
-            self.metrics.sys_temp_history.end_time = self.metrics.sys_temp_history.end_time = event.time
+            self.metrics.sys_temp_history.end_time = event.time
 
             if len(self.metrics.sys_temp_history.temps) >= 1:
-                for t in \
-                        range(self.metrics.sys_temp_history.temps[-1].time - self.metrics.sys_temp_history.initial_time,
+                for t in range(self.metrics.sys_temp_history.temps[-1].time - self.metrics.sys_temp_history.initial_time,
                               event.time - self.metrics.sys_temp_history.initial_time):
                     self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
                                                                             event.big2, event.big3, event.little,
@@ -1342,6 +1355,8 @@ class ProcessTree:
                 self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
                                                                         event.big2, event.big3, event.little,
                                                                         event.gpu))
+
+            self.temp_time += time.time() - start_time
 
             return 0
 
