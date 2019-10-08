@@ -151,7 +151,7 @@ class PIDTool:
                     else:
                         tname = regex_line[0][2]
 
-                    self.binder_pids[pid] = PID(pid, pname, tname)
+                    self.system_pids[pid] = PID(pid, pname, tname)
 
     def find_pid_info(self, pid):
         res = self.adb_device.command("busybox ps -T | grep " + str(pid))

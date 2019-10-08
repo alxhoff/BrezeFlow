@@ -395,8 +395,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 threading.Thread(target=self.buttonrunprocess, args=(self.application_name, self.duration,
                                                                      self.events, self.events_to_process,
                                                                      self.preamble, self.subgraph, self.graph,
-                                                                     self.progressBar, self.skip_tracing,
-                                                                     self.pushButtonRun, self.openresults)).start()
+                                                                     self.progressBar, self.skip_tracing)).start()
             else:
                 print("Running debugger with multiprocessing, outputing to system console")
                 # Separate processes means that the generated process cannot access the UI console created in the
@@ -406,13 +405,13 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 proc = multiprocessing.Process(target=self.buttonrunprocess, args=(self.application_name, self.duration,
                                                                      self.events, self.events_to_process,
                                                                      self.preamble, self.subgraph, self.graph,
-                                                                     self.progressBar, self.skip_tracing,
-                                                                     self.pushButtonRun, self.openresults))
+                                                                     self.progressBar, self.skip_tracing))
                 self.jobs.append(proc)
                 proc.start()
                 if self.UI_console:
                     sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
                     sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
+            self.openresults()
 
         except Exception, e:
             QMessageBox.critical(self, "Error", e, QMessageBox.Ok)
@@ -423,7 +422,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     @staticmethod
     def buttonrunprocess(application_name, duration, events, events_to_process, preamble, subgraph, graph, progress_bar,
-                         skip_tracing, run_button, open_results):
+                         skip_tracing):
         print("Button process started")
         try:
             current_debugger = EnergyDebugger(
@@ -440,9 +439,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             print("Error: {}".format(e))
 
         progress_bar.setValue(0)
-
-        run_button.setEnabled(True)
-        open_results()
         print(" ------ FINISHED ------")
         return False
 
@@ -562,7 +558,7 @@ class EnergyDebugger:
                                            self.duration, self.graph, self.event_count, self.subgraph)
 
         print "Run took a total of %s seconds to run" % (time.time() - start_time)
-        
+
 
 if __name__ == '__main__':
     if not args.commandline:
