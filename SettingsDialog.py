@@ -290,7 +290,7 @@ class Ui_DialogSettings(object):
         self.verticalLayout.addWidget(self.buttonBox)
 
         self.retranslateUi(DialogSettings)
-        self.toolBox.setCurrentIndex(1)
+        self.toolBox.setCurrentIndex(0)
         self.buttonBox.accepted.connect(DialogSettings.accept)
         self.pushButtonSysloggerPull.clicked.connect(DialogSettings.sysloggerpull_clicked)
         self.pushButtonChoosePullFile.clicked.connect(DialogSettings.sysloggerpullfile_clicked)
