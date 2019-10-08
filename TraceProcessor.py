@@ -2,6 +2,7 @@
 
 from Grapher import Grapher
 from SystemEvents import *
+import time
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"

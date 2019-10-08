@@ -5,10 +5,11 @@ import csv
 import os
 import sys
 import threading
+import multiprocessing
 import time
 
 from PyQt5.QtCore import QSettings, QObject, pyqtSignal
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QTextCursor, QPalette, QColor
 from PyQt5.QtWidgets import *
 
 import AboutDialog
@@ -53,16 +54,6 @@ parser.add_argument("-p", "--preamble", required=False,
 
 args = parser.parse_args()
 
-
-def threaded(fn):
-    def wrapper(*args, **kwargs):
-        future = Future()
-        threading.Thread(target=call_with_future, args=(fn, future, args, kwargs)).start()
-        return future
-
-    return wrapper
-
-
 def call_with_future(fn, future, args, kwargs):
     try:
         result = fn(*args, **kwargs)
@@ -97,6 +88,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.checkBoxBinderTransaction.setChecked(
             bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
+        self.radioButtonMultiThreaded.setChecked(bool(int(settings.value("OptimizeWithThreads", defaultValue=1))))
+        self.checkBoxUseUIConsole.setChecked(bool(int(settings.value("UseUIConsole", defaultValue=1))))
 
         # Syslogger
         self.spinBoxCPU.setValue(int(settings.value("DefaultSysloggerCPU", defaultValue=2)))
@@ -185,6 +178,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.settings.setValue("DefaultEventBinderTransaction", int(self.checkBoxBinderTransaction.isChecked()))
         self.settings.setValue("DefaultEventSyslogger", int(self.checkBoxSyslogger.isChecked()))
         self.settings.setValue("DefaultEventWakeUp", int(self.checkBoxWakeUp.isChecked()))
+        self.settings.setValue("OptimizeWithThreads", int(self.radioButtonMultiThreaded.isChecked()))
+        self.settings.setValue("UseUIConsole", int(self.checkBoxUseUIConsole.isChecked()))
 
         # Syslogger
         self.settings.setValue("DefaultSysloggerCPU", self.spinBoxCPU.value())
@@ -208,15 +203,15 @@ class EmittingStream(QObject):
     def write(self, text):
         self.textWritten.emit(str(text))
 
+    def flush(self):
+        sys.stdout.flush()
+        sys.stderr.flush()
+
 
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
-        sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
-        sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
-
-        self.running = False
 
         self.setupUi(self)
         self.setupbuttons()
@@ -225,6 +220,17 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.setupsettings()
         self.getsettings()
         self.show()
+        console_colour = QPalette(QColor(255,255,255,255), QColor(0,0,0,255))
+        self.textEditConsole.setPalette(console_colour)
+        self.UI_console = bool(int(self.settings.value("UseUIConsole", defaultValue=1)))
+        if self.UI_console:
+            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+            sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
+        else:
+            self.textEditConsole.setText("Standard console being used, this console can be enabled in the settings "
+                                         "menu")
+
+        self.jobs = []
 
         self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
         self.trace_file = None
@@ -233,8 +239,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.binder_log_file = None
         self.binder_log = []
 
-        self.current_debugger = None
-
         self.application_name = None
         self.events = []
         self.duration = 0  # TODO defaults
@@ -242,10 +246,13 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.preamble = 2
         self.graph = False
         self.subgraph = False
+        self.skip_tracing = False
 
     def __del__(self):
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
+        for job in self.jobs:
+            job.terminate()
 
     def normalOutputWritten(self, text):
         cursor = self.textEditConsole.textCursor()
@@ -353,69 +360,91 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             error_str += "Duration"
 
         if error:
-            QMessageBox.warning(self, "Error", error_str, QMessageBox.Ok)
+            raise Exception(error_str)
 
         return error
 
     def buttonrun(self):
-        if not self.running:
-            self.running = True
-            self.pushButtonRun.setEnabled(False)
-            fut = self.buttonrunprocess()
-        else:
-            print("Already running")
-
-    @threaded
-    def buttonrunprocess(self):
-        if self.checkrun():
-            return
-        if self.current_debugger:
-            self.current_debugger.clear()
-
-        self.application_name = self.lineEditApplicationName.text()
-        self.duration = self.doubleSpinBoxDuration.value()
-        self.events = []
-        if self.checkBoxBinderTransaction.isCheckable():
-            self.events.append("binder_transaction")
-        if self.checkBoxCPUIdle.isChecked():
-            self.events.append("cpu_idle")
-        if self.checkBoxSchedSwitch.isChecked():
-            self.events.append("sched_switch")
-        if self.checkBoxSyslogger.isChecked():
-            self.events.append("sys_logger")
-        if self.checkBoxWakeUp.isChecked():
-            self.events.append("sched_wakeup")
-        if self.checkBoxEvents.isChecked():
-            self.events_to_process = self.spinBoxEvents.value()
-        else:
-            self.events_to_process = 0
-        self.preamble = self.doubleSpinBoxPreamble.value()
-        self.subgraph = self.checkBoxSubGraph.isChecked()
-        self.graph = self.checkBoxDrawGraph.isChecked()
-
         try:
-            self.current_debugger = EnergyDebugger(
-                    application=self.application_name,
-                    duration=self.duration,
-                    events=self.events,
-                    event_count=self.events_to_process,
-                    preamble=self.preamble,
-                    graph=self.graph,
-                    subgraph=self.subgraph
-                    )
-            self.current_debugger.run(self.progressBar, False if not self.checkBoxSkipTracing.isChecked() else True)
+            self.checkrun()
+
+            self.application_name = self.lineEditApplicationName.text()
+            self.duration = self.doubleSpinBoxDuration.value()
+            self.events = []
+            if self.checkBoxBinderTransaction.isCheckable():
+                self.events.append("binder_transaction")
+            if self.checkBoxCPUIdle.isChecked():
+                self.events.append("cpu_idle")
+            if self.checkBoxSchedSwitch.isChecked():
+                self.events.append("sched_switch")
+            if self.checkBoxSyslogger.isChecked():
+                self.events.append("sys_logger")
+            if self.checkBoxWakeUp.isChecked():
+                self.events.append("sched_wakeup")
+            if self.checkBoxEvents.isChecked():
+                self.events_to_process = self.spinBoxEvents.value()
+            else:
+                self.events_to_process = 0
+            self.preamble = self.doubleSpinBoxPreamble.value()
+            self.subgraph = self.checkBoxSubGraph.isChecked()
+            self.graph = self.checkBoxDrawGraph.isChecked()
+            self.skip_tracing = self.checkBoxSkipTracing.isChecked()
+
+            if bool(int(self.settings.value("OptimizeWithThreads", defaultValue=1))):
+                print("Running debugger with multithreading")
+                threading.Thread(target=self.buttonrunprocess, args=(self.application_name, self.duration,
+                                                                     self.events, self.events_to_process,
+                                                                     self.preamble, self.subgraph, self.graph,
+                                                                     self.progressBar, self.skip_tracing,
+                                                                     self.pushButtonRun, self.openresults)).start()
+            else:
+                print("Running debugger with multiprocessing, outputing to system console")
+                # Separate processes means that the generated process cannot access the UI console created in the
+                # main program's process
+                sys.stdout = sys.__stdout__
+                sys.stderr = sys.__stderr__
+                proc = multiprocessing.Process(target=self.buttonrunprocess, args=(self.application_name, self.duration,
+                                                                     self.events, self.events_to_process,
+                                                                     self.preamble, self.subgraph, self.graph,
+                                                                     self.progressBar, self.skip_tracing,
+                                                                     self.pushButtonRun, self.openresults))
+                self.jobs.append(proc)
+                proc.start()
+                if self.UI_console:
+                    sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
+                    sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
+
         except Exception, e:
-            QMessageBox.critical(self, "Error", "{}".format(e), QMessageBox.Ok)
+            QMessageBox.critical(self, "Error", e, QMessageBox.Ok)
 
-        self.progressBar.setValue(0)
-
-        self.pushButtonRun.setEnabled(True)
-        self.running = False
-        self.openresults()
-        print(" ------ FINISHED ------")
-
-    def buttonkilladb(self):
+    @staticmethod
+    def buttonkilladb():
         os.system("killall adb")
+
+    @staticmethod
+    def buttonrunprocess(application_name, duration, events, events_to_process, preamble, subgraph, graph, progress_bar,
+                         skip_tracing, run_button, open_results):
+        print("Button process started")
+        try:
+            current_debugger = EnergyDebugger(
+                    application=application_name,
+                    duration=duration,
+                    events=events,
+                    event_count=events_to_process,
+                    preamble=preamble,
+                    graph=graph,
+                    subgraph=subgraph
+                    )
+            current_debugger.run(progress_bar, skip_tracing)
+        except Exception, e:
+            print("Error: {}".format(e))
+
+        progress_bar.setValue(0)
+
+        run_button.setEnabled(True)
+        open_results()
+        print(" ------ FINISHED ------")
+        return False
 
 
 class CommandInterface:
@@ -435,7 +464,7 @@ class CommandInterface:
 
 class EnergyDebugger:
 
-    def __init__(self, application, duration, events, event_count, preamble, graph, subgraph):
+    def __init__(self, application, duration, events, event_count, preamble, graph, subgraph, GUI_console=False):
 
         self.application = application
         self.duration = duration
@@ -445,6 +474,7 @@ class EnergyDebugger:
         self.graph = graph
         self.subgraph = subgraph
         self.tc_processor = None
+
 
         """ Required objects for tracking system metrics and interfacing with a target system, connected
         via an ADB connection.
@@ -490,6 +520,13 @@ class EnergyDebugger:
         self.sys_logger = SysLogger(self.adb)
         print("Syslogger created --- %s Sec" % (time.time() - start_time))
 
+    def normalOutputWritten(self, text):
+        cursor = self.textEditConsole.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(text)
+        self.textEditConsole.setTextCursor(cursor)
+        self.textEditConsole.ensureCursorVisible()
+
     def clear(self):
         # TODO
         pass
@@ -525,27 +562,7 @@ class EnergyDebugger:
                                            self.duration, self.graph, self.event_count, self.subgraph)
 
         print "Run took a total of %s seconds to run" % (time.time() - start_time)
-
-
-class Future(object):
-
-    def __init__(self):
-        self._ev = threading.Event()
-
-    def set_result(self, result):
-        self._result = result
-        self._ev.set()
-
-    def set_exception(self, exc):
-        self._exc = exc
-        self._ev.set()
-
-    def result(self):
-        self._ev.wait()
-        if hasattr(self, '_exc'):
-            raise self._exc
-        return self._result
-
+        
 
 if __name__ == '__main__':
     if not args.commandline:

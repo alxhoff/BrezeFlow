@@ -30,8 +30,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>334</width>
-        <height>326</height>
+        <width>485</width>
+        <height>685</height>
        </rect>
       </property>
       <attribute name="label">
@@ -153,8 +153,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>473</width>
-        <height>706</height>
+        <width>485</width>
+        <height>685</height>
        </rect>
       </property>
       <attribute name="label">
@@ -270,6 +270,61 @@
            <property name="text">
             <string>Pull Syslogger &lt;br&gt;Data to Folder</string>
            </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QFrame" name="frame_5">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_8">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
+               <widget class="QLineEdit" name="lineEditSyslogPullFolder">
+                <property name="placeholderText">
+                 <string>Destination folder</string>
+                </property>
+                <property name="clearButtonEnabled">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonChoosePullFile">
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../icons/folder.png</normaloff>../icons/folder.png</iconset>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonSysloggerPull">
+                <property name="text">
+                 <string>Pull</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <item>
+               <widget class="QLineEdit" name="lineEditSyslogPullFilename">
+                <property name="placeholderText">
+                 <string>New file name</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
           </widget>
          </item>
          <item row="3" column="0">
@@ -466,59 +521,57 @@
            </layout>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QFrame" name="frame_5">
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_13">
+           <property name="text">
+            <string>Speed Optimizations</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="1">
+          <widget class="QFrame" name="frame_6">
            <property name="frameShape">
             <enum>QFrame::StyledPanel</enum>
            </property>
            <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_8">
+           <layout class="QVBoxLayout" name="verticalLayout_9">
             <item>
-             <layout class="QHBoxLayout" name="horizontalLayout">
-              <item>
-               <widget class="QLineEdit" name="lineEditSyslogPullFolder">
-                <property name="placeholderText">
-                 <string>Destination folder</string>
-                </property>
-                <property name="clearButtonEnabled">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pushButtonChoosePullFile">
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="icon">
-                 <iconset>
-                  <normaloff>../icons/folder.png</normaloff>../icons/folder.png</iconset>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pushButtonSysloggerPull">
-                <property name="text">
-                 <string>Pull</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             <widget class="QRadioButton" name="radioButtonMultiThreaded">
+              <property name="text">
+               <string>Multi threaded</string>
+              </property>
+             </widget>
             </item>
             <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_4">
-              <item>
-               <widget class="QLineEdit" name="lineEditSyslogPullFilename">
-                <property name="placeholderText">
-                 <string>New file name</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             <widget class="QRadioButton" name="radioButtonMultiProcessing">
+              <property name="text">
+               <string>Multi processing</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
             </item>
            </layout>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_14">
+           <property name="text">
+            <string>Use UI Console&lt;br&gt;Only usable with mutlithreading</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="1">
+          <widget class="QCheckBox" name="checkBoxUseUIConsole">
+           <property name="text">
+            <string>Enabled (restart required)</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
           </widget>
          </item>
         </layout>
