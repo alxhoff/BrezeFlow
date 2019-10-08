@@ -26,7 +26,6 @@ class SysLogger:
             time.sleep(0.1)
             prev_val = cur_val
             cur_val = int(self.adb.command("cat /sys/kernel/debug/tracing/buffer_size_kb"))
-            print "Trace buffer set to " + str(cur_val)
             if prev_val == cur_val:
                 attempts += 1
                 if attempts == 3:

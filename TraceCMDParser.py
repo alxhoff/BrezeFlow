@@ -39,7 +39,8 @@ class TracecmdProcessor:
 
     def __init__(self, filename, preamble):
         self.processed_events = []
-        self.processed_preprocess_events = []
+        self.temp_events = []
+        self.idle_events = []
         try:
             self.trace = Trace(str(filename))
         except Exception, e:
@@ -123,8 +124,8 @@ class TracecmdProcessor:
             self.event_count.cpu_idle += 1
 
             state = event.num_field("state")
-            self.processed_preprocess_events.append(EventIdle(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
-                                                              name=event.name, state=state))
+            self.idle_events.append(EventIdle(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
+                                              name=event.name, state=state))
 
         elif event.name == "cpu_freq":
             self.event_count.cpu_freq += 1
@@ -170,7 +171,7 @@ class TracecmdProcessor:
             little = (big0 + big1 + big2 + big3) / 4.0
             gpu = event.num_field("t4") / 1000
 
-            self.processed_preprocess_events.append(EventTempInfo(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
+            self.temp_events.append(EventTempInfo(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
                                                                   big0=big0, big1=big1, big2=big2, big3=big3,
                                                                   little=little, gpu=gpu))
 

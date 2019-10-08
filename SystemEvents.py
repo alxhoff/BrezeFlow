@@ -1166,7 +1166,7 @@ class ProcessTree:
         :param finish_time: Time before which events must happens if they are to be processed
         :return 0 on success
         """
-        start_time = time.time()
+        proc_start_time = time.time()
 
         # Set event freq
         event.cpu_freq[0] = SystemMetrics.current_metrics.get_cpu_core_freq(0)
@@ -1265,7 +1265,7 @@ class ProcessTree:
                         # remove binder task that is now complete
                         del self.completed_binder_calls[x]
 
-                        self.sched_switch_time += time.time() - start_time
+                        self.sched_switch_time += time.time() - proc_start_time
                         return 0
 
                 try:
@@ -1274,7 +1274,7 @@ class ProcessTree:
                 except KeyError:
                     pass  # Branch (PID) is not of interest and as such can be passed
 
-            self.sched_switch_time += time.time() - start_time
+            self.sched_switch_time += time.time() - proc_start_time
             return 0
 
         elif isinstance(event, EventBinderTransaction):
@@ -1310,7 +1310,7 @@ class ProcessTree:
 
                                 del self.pending_binder_calls[x]  # Remove completed first half
 
-            self.binder_time += time.time() - start_time
+            self.binder_time += time.time() - proc_start_time
             return 0
 
         elif isinstance(event, EventFreqChange):
@@ -1320,7 +1320,7 @@ class ProcessTree:
                 self.metrics.current_core_utils[i] = event.util
                 self.cpus[i].add_event(event)
 
-            self.freq_time += time.time() - start_time
+            self.freq_time += time.time() - proc_start_time
             return 0
 
         elif isinstance(event, EventMaliUtil):
@@ -1330,33 +1330,14 @@ class ProcessTree:
             self.metrics.sys_util_history.gpu.add_event(event)
             self.gpu.add_event(event)
 
-            self.mali_time += time.time() - start_time
+            self.mali_time += time.time() - proc_start_time
             return 0
 
         elif isinstance(event, EventIdle):
 
-            self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)
-            self.idle_time += time.time() - start_time
             return 0
 
         elif isinstance(event, EventTempInfo):
-
-            if self.metrics.sys_temp_history.initial_time == 0:
-                self.metrics.sys_temp_history.initial_time = event.time
-            self.metrics.sys_temp_history.end_time = event.time
-
-            if len(self.metrics.sys_temp_history.temps) >= 1:
-                for t in range(self.metrics.sys_temp_history.temps[-1].time - self.metrics.sys_temp_history.initial_time,
-                              event.time - self.metrics.sys_temp_history.initial_time):
-                    self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
-                                                                            event.big2, event.big3, event.little,
-                                                                            event.gpu))
-            else:
-                self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
-                                                                        event.big2, event.big3, event.little,
-                                                                        event.gpu))
-
-            self.temp_time += time.time() - start_time
 
             return 0
 
@@ -1365,4 +1346,29 @@ class ProcessTree:
         if isinstance(event, EventWakeup):
             return 0
 
+    def handle_temp_event(self, event):
+
+        proc_start_time = time.time()
+
+        if len(self.metrics.sys_temp_history.temps) >= 1:
+            for t in range(self.metrics.sys_temp_history.temps[-1].time - self.metrics.sys_temp_history.initial_time,
+                           event.time - self.metrics.sys_temp_history.initial_time):
+                self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
+                                                                        event.big2, event.big3, event.little,
+                                                                        event.gpu))
+        else:
+            self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
+                                                                    event.big2, event.big3, event.little,
+                                                                    event.gpu))
+
+        self.temp_time += time.time() - proc_start_time
+
+        return 0
+
+    def handle_idle_event(self, event):
+
+        proc_start_time = time.time()
+
+        self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)
+        self.idle_time += time.time() - proc_start_time
         return 0

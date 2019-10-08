@@ -57,17 +57,30 @@ class TraceProcessor:
 
         process_tree = ProcessTree(self.pidt, metrics)
         trace_start_time = tracecmd.processed_events[0].time
-        if tracecmd.processed_preprocess_events[0].time < trace_start_time:
-            trace_start_time = tracecmd.processed_preprocess_events[0].time
+        if tracecmd.idle_events[0].time < trace_start_time:
+            trace_start_time = tracecmd.idle_events[0].time
+        if tracecmd.temp_events[0].time < trace_start_time:
+            trace_start_time = tracecmd.temp_events[0].time
         trace_finish_time = int(trace_start_time + float(duration) * 1000000)
 
         start_time = time.time()
-        sys.stdout.write("Building utilization trees")
-        for x, event in enumerate(tracecmd.processed_preprocess_events):
-            process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time)
+        sys.stdout.write("Building temp trees")
+
+        if len(tracecmd.temp_events):
+            metrics.sys_temp_history.initial_time = tracecmd.temp_events[0].time
+            metrics.sys_temp_history.end_time = tracecmd.temp_events[-1].time
+        else:
+            raise Exception("No temp events")
+
+        for x, event in enumerate(tracecmd.temp_events):
+            process_tree.handle_temp_event(event)
         print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
-        print(" ------ Idle events in %s seconds" % process_tree.idle_time)
-        print(" ------ Temp events in %s seconds" % process_tree.temp_time)
+
+        start_time = time.time()
+        sys.stdout.write("Building utilization trees")
+        for x, event in enumerate(tracecmd.idle_events):
+            process_tree.handle_idle_event(event)
+        print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
 
         start_time = time.time()
         sys.stdout.write("Building cluster utilization table")
