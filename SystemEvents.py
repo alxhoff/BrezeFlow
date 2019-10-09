@@ -12,9 +12,8 @@ between tasks being able to be co-ordinated with the sched_switch events that tr
 """
 
 import csv
-import time
+
 import networkx as nx
-import numpy as np
 from pydispatch import dispatcher
 
 from SystemMetrics import *
@@ -959,7 +958,7 @@ class ProcessTree:
 
             with open("results/" + filename + "_optimizations.csv", "w+") as f_op:
                 op_writer = csv.writer(f_op, delimiter=',')
-                op_writer.writerow(["Task PID", "TS", "Duration", "Core", "Freq", "New Core", "New Freq",
+                op_writer.writerow(["Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core", "New Freq",
                                     "New Util"])
 
                 for x in list(self.process_branches.keys()):
@@ -1050,9 +1049,9 @@ class ProcessTree:
                                     task.optimization_info.set_info(optim_type.value |
                                                                     OptimizationInfoType.POSSIBLE_REALLOC.value,
                                                                     "Task can be reallocated")  # TODO
-                                    op_writer.writerow([task.pid, task.start_time, task.duration, task.events[0].cpu,
-                                                        task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else
-                                                        1], little_core_index, freq, new_core_util])
+                                    op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
+                                                        task.events[0].cpu, task.events[0].cpu_freq[0 if task.events[0].cpu <
+                                                        4 else 1], little_core_index, freq, new_core_util])
                                     optimizations_found += 1
                                     break
 
@@ -1107,9 +1106,10 @@ class ProcessTree:
 
                                     task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS.value,
                                                                     "Task can be reallocated")  # TODO
-                                    op_writer.writerow([task.pid, task.start_time, task.duration, task.events[0].cpu,
-                                                        task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else
-                                                        1], core_index, freq, new_core_util])
+                                    op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
+                                                        task.events[0].cpu,
+                                                        task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
+                                                        core_index, freq, new_core_util])
                                     optimizations_found += 1
                                     break
 

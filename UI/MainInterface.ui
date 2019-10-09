@@ -50,7 +50,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>359</width>
+             <width>374</width>
              <height>714</height>
             </rect>
            </property>
@@ -503,7 +503,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QTabWidget" name="tabWidgetShow">
+      <widget class="QTabWidget" name="tabOptimizations">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>2</horstretch>
@@ -511,7 +511,7 @@
         </sizepolicy>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="tabResults">
         <attribute name="title">
@@ -531,6 +531,16 @@
             </widget>
            </item>
           </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tab">
+        <attribute name="title">
+         <string>Page</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_10">
+         <item>
+          <widget class="QTableWidget" name="tableWidgetOptimizations"/>
          </item>
         </layout>
        </widget>
