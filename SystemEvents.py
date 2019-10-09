@@ -1356,18 +1356,6 @@ class ProcessTree:
             duration = event.time - event_n_minus_1.time
             return np.full(duration, [value])
 
-        # if len(self.metrics.sys_temp_history.temps) >= 1:
-        #     for t in range(self.metrics.sys_temp_history.temps[-1].time - self.metrics.sys_temp_history.initial_time,
-        #                    event.time - self.metrics.sys_temp_history.initial_time):
-        #         self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
-        #                                                                 event.big2, event.big3, event.little,
-        #                                                                 event.gpu))
-        # else:
-        #     self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
-        #                                                             event.big2, event.big3, event.little,
-        #                                                             event.gpu))
-
     def handle_idle_event(self, event):
 
-        self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)
-        return 0
+        return self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)

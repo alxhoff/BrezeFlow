@@ -4,11 +4,12 @@ import argparse
 import csv
 import os
 import sys
+import Queue
 import threading
 import multiprocessing
 import time
 
-from PyQt5.QtCore import QSettings, QObject, pyqtSignal
+from PyQt5.QtCore import QSettings, QObject, pyqtSignal, QThread
 from PyQt5.QtGui import QTextCursor, QPalette, QColor
 from PyQt5.QtWidgets import *
 
@@ -53,14 +54,6 @@ parser.add_argument("-p", "--preamble", required=False,
                     help="Specifies the number of seconds that be discarded at the begining of tracing")
 
 args = parser.parse_args()
-
-def call_with_future(fn, future, args, kwargs):
-    try:
-        result = fn(*args, **kwargs)
-        future.set_result(result)
-    except Exception as exc:
-        future.set_exception(exc)
-
 
 class AboutDialog(QDialog, AboutDialog.Ui_Dialog):
 
@@ -233,8 +226,11 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         else:
             self.textEditConsole.setText("Standard console being used, this console can be enabled in the settings "
                                          "menu")
-
+        #Threading
         self.jobs = []
+        self.console_queue = Queue.Queue()
+        self.console_task = threading.Thread(target=self.console, args=()).start()
+        self.debug_task = None
 
         self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
         self.trace_file = None
@@ -255,15 +251,29 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
     def __del__(self):
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
+
         for job in self.jobs:
             job.terminate()
 
-    def normalOutputWritten(self, text):
+        self.console_task._stop_event.set()
+
+    def console(self):
         cursor = self.textEditConsole.textCursor()
-        cursor.movePosition(QTextCursor.End)
-        cursor.insertText(text)
-        self.textEditConsole.setTextCursor(cursor)
-        self.textEditConsole.ensureCursorVisible()
+        while True:
+            try:
+                new_line = self.console_queue.get()
+                cursor.movePosition(QTextCursor.End)
+                cursor.insertText(new_line)
+                self.textEditConsole.setTextCursor(cursor)
+                self.textEditConsole.ensureCursorVisible()
+            except Exception, e:
+                print("Updating console failed, %s" % e)
+
+    def normalOutputWritten(self, text):
+        try:
+            self.console_queue.put(str(text))
+        except Exception, e:
+            print("Writing to UI console failed, %s" % e)
 
     def getsettings(self):
         self.lineEditApplicationName.setText(self.settings.value("DefaultApplication", defaultValue=""))
@@ -295,6 +305,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.actionAbout.triggered.connect(self.openaboutdialog)
 
     def openresults(self):
+        self.tableWidgetResults.setRowCount(0)
+
         if self.lineEditApplicationName.text() is None:
             QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
             return
@@ -396,10 +408,18 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
             if bool(int(self.settings.value("OptimizeWithThreads", defaultValue=1))):
                 print("Running debugger with multithreading")
-                threading.Thread(target=self.buttonrunprocess, args=(self.application_name, self.duration,
-                                                                     self.events, self.events_to_process,
-                                                                     self.preamble, self.subgraph, self.graph,
-                                                                     self.progressBar, self.skip_tracing)).start()
+
+                if self.debug_task:
+                    try:
+                        self.debug_task.terminate()
+                    except Exception:
+                        print("Could not terminate current debug task")
+                        return
+                self.debug_task = QDebuggerThread(self.application_name, self.duration, self.events,
+                                                  self.events_to_process, self.preamble, self.subgraph, self.graph,
+                                                  self.skip_tracing)
+                self.debug_task.changed_progress.connect(self.progressBar.setValue)
+                self.debug_task.start()
 
             elif bool(int(self.settings.value("OptimizeWithProcesses", defaultValue=1))):
                 print("Running debugger with multiprocessing, outputing to system console")
@@ -407,20 +427,20 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 # main program's process
                 sys.stdout = sys.__stdout__
                 sys.stderr = sys.__stderr__
-                proc = multiprocessing.Process(target=self.buttonrunprocess, args=(self.application_name, self.duration,
+                proc = multiprocessing.Process(target=buttonrunprocess, args=(self.application_name, self.duration,
                                                                      self.events, self.events_to_process,
                                                                      self.preamble, self.subgraph, self.graph,
-                                                                     self.progressBar, self.skip_tracing))
+                                                                     self.skip_tracing))
                 self.jobs.append(proc)
                 proc.start()
                 if self.UI_console:
                     sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
                     sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
             else:
-                self.buttonrunprocess(self.application_name, self.duration,
+                buttonrunprocess(self.application_name, self.duration,
                                       self.events, self.events_to_process,
                                       self.preamble, self.subgraph, self.graph,
-                                      self.progressBar, self.skip_tracing)
+                                      self.skip_tracing)
             self.openresults()
 
         except Exception, e:
@@ -430,9 +450,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
     def buttonkilladb():
         os.system("killall adb")
 
-    @staticmethod
-    def buttonrunprocess(application_name, duration, events, events_to_process, preamble, subgraph, graph, progress_bar,
-                         skip_tracing):
+
+def buttonrunprocess(application_name, duration, events, events_to_process, preamble, subgraph, graph, skip_tracing,
+                     progress_signal=None):
         print("Button process started")
         try:
             current_debugger = EnergyDebugger(
@@ -442,15 +462,37 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     event_count=events_to_process,
                     preamble=preamble,
                     graph=graph,
-                    subgraph=subgraph
+                    subgraph=subgraph,
+                    skip_tracing=skip_tracing,
+                    progress_signal=progress_signal
                     )
-            current_debugger.run(progress_bar, skip_tracing)
+            current_debugger.run()
         except Exception, e:
             print("Error: {}".format(e))
 
-        progress_bar.setValue(0)
         print(" ------ FINISHED ------")
         return False
+
+class QDebuggerThread(QThread):
+
+    changed_progress = pyqtSignal(int)
+
+    def __init__(self, application_name, duration,events, events_to_process, preamble, subgraph, graph,
+                 skip_tracing):
+        QThread.__init__(self)
+        self.application_name = application_name
+        self.duration = duration
+        self.events = events
+        self.events_to_process = events_to_process
+        self.preamble = preamble
+        self.subgraph = subgraph
+        self.graph = graph
+        self.skip_tracing = skip_tracing
+
+    def run(self):
+
+        buttonrunprocess(self.application_name, self.duration, self.events, self.events_to_process, self.preamble,
+                         self.subgraph, self.graph, self.skip_tracing, self.changed_progress)
 
 
 class CommandInterface:
@@ -470,7 +512,8 @@ class CommandInterface:
 
 class EnergyDebugger:
 
-    def __init__(self, application, duration, events, event_count, preamble, graph, subgraph, GUI_console=False):
+    def __init__(self, application, duration, events, event_count, preamble, graph, subgraph, skip_tracing,
+                 progress_signal):
 
         self.application = application
         self.duration = duration
@@ -480,6 +523,8 @@ class EnergyDebugger:
         self.graph = graph
         self.subgraph = subgraph
         self.tc_processor = None
+        self.skip_tracing = skip_tracing
+        self.progress_signal = progress_signal
 
 
         """ Required objects for tracking system metrics and interfacing with a target system, connected
@@ -537,7 +582,7 @@ class EnergyDebugger:
         # TODO
         pass
 
-    def run(self, progress_bar, skip=False):
+    def run(self):
         """ Entry point into the debugging tool.
         """
         """ As the energy debugger depends on the custom trace points implemented in the syslogger module,
@@ -546,11 +591,14 @@ class EnergyDebugger:
         """
         start_time = time.time()
 
-        if not skip:
+        if not self.skip_tracing:
             self.sys_logger.start()
             self.tracer.run_tracer(self.preamble, args.skip_clear)
             self.sys_logger.stop()
-            self.tracer.get_trace_results()
+            try:
+                self.tracer.get_trace_results()
+            except Exception, e:
+                print("Getting trace results failed, %s" % e)
 
         """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
         processed. Results are generated into a CSV file, saved to the working directory under the same name as the 
@@ -558,13 +606,15 @@ class EnergyDebugger:
         application with the suffix _results.csv.
         """
 
-        print "Loading tracecmd data and processing"
+        print "Creating trace processor"
+        try:
+            dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + self.application + ".dat")
+            self.tc_processor = TracecmdProcessor(dat_path, self.preamble)
+            self.tc_processor.print_event_count()
+        except Exception, e:
+            print("Creating trace processor failed, %s" % e)
 
-        dat_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + self.application + ".dat")
-        self.tc_processor = TracecmdProcessor(dat_path, self.preamble)
-
-        self.tc_processor.print_event_count()
-        self.trace_processor.process_trace(progress_bar, self.sys_metrics, self.tc_processor,
+        self.trace_processor.process_trace(self.progress_signal, self.sys_metrics, self.tc_processor,
                                            self.duration, self.graph, self.event_count, self.subgraph)
 
         print "Run took a total of %s seconds to run" % (time.time() - start_time)

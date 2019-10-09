@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import time
 import numpy as np
 from enum import Enum
 
@@ -81,8 +82,6 @@ class CPUUtilizationTable(UtilizationTable):
                 util_array = np.full(event.duration + 1, [util])
                 utils.append(util_array)
             self.utils = np.block(utils)
-                # for x in range(event.duration + 1):
-                #     self.utils[x + event.start_time] = util
         return
 
     def get_util(self, ts):
@@ -95,24 +94,31 @@ class CPUUtilizationTable(UtilizationTable):
             return 0.0
 
     def add_idle_event(self, event):
+
         if self.start_time is 0:  # First event
             self.start_time = event.time
             if event.state == 4294967295:
                 self.core_state = IdleState.is_not_idle
             else:
                 self.core_state = not event.state
+            return 0
         else:
             self.events.append(UtilizationSlice(
                     self.last_event_time, event.time - self.start_time,
                     SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
 
             self.last_event_time = event.time - self.start_time
+
+            start_time = time.time()
             self.calc_util_last_event()
+            time_taken = time.time() - start_time
 
             if event.state == 4294967295:
                 self.core_state = not self.core_state
             else:
                 self.core_state = event.state
+
+            return time_taken
 
     def calc_util_last_event(self):
         # Iterate backwards until 250ms has been traversed or until first event hit

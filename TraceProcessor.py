@@ -28,7 +28,7 @@ class TraceProcessor:
         self.pidt = pidt
         self.filename = filename
 
-    def process_trace(self, progress_bar, metrics, tracecmd, duration, draw=None, test=None, subgraph=False):
+    def process_trace(self, progress_signal, metrics, tracecmd, duration, draw=None, test=None, subgraph=False):
         """ There are a number of steps required in processing a given trace. This is outlined below.
 
         - Idle and temperature events are preprocessed and removed from the pending events to be processed. This
@@ -77,9 +77,11 @@ class TraceProcessor:
             no_temp_events = len(tracecmd.temp_events)
             temp_history.append(process_tree.handle_temp_event(tracecmd.temp_events[0], None))
             for x in range(len(tracecmd.temp_events[1:])):
-                progress_bar.setValue(round(float(x) / no_temp_events * 100, 2))
+                if progress_signal:
+                    progress_signal.emit((round(float(x) / no_temp_events * 100, 2)))
                 temp_history.append(process_tree.handle_temp_event(tracecmd.temp_events[x+1], tracecmd.temp_events[x]))
-            progress_bar.setValue(100)
+            if progress_signal:
+                progress_signal.emit(100)
             metrics.sys_temp_history.temps = np.block(temp_history)
             print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
         except Exception, e:
@@ -88,13 +90,16 @@ class TraceProcessor:
 
         try:
             start_time = time.time()
+            calc_time = 0
             no_idle_events = len(tracecmd.idle_events)
             sys.stdout.write("Building utilization trees")
             for x, event in enumerate(tracecmd.idle_events):
-                progress_bar.setValue(round(float(x) / no_idle_events * 100, 2))
-                process_tree.handle_idle_event(event)
-            progress_bar.setValue(100)
-            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+                if progress_signal:
+                    progress_signal.emit(round(float(x) / no_idle_events * 100, 2))
+                calc_time += process_tree.handle_idle_event(event)
+            if progress_signal:
+                progress_signal.emit(100)
+            print(" --- COMPLETED in {} seconds, util time calc {}".format((time.time() - start_time), calc_time))
         except Exception, e:
             print("Error building utilization trees: %s" % e)
             return
@@ -104,9 +109,11 @@ class TraceProcessor:
             no_clusters = len(metrics.sys_util_history.clusters)
             sys.stdout.write("Building cluster utilization table")
             for x, cluster in enumerate(metrics.sys_util_history.clusters):  # Compile cluster utilizations
-                progress_bar.setValue(round(float(x) / no_clusters * 100, 2))
+                if progress_signal:
+                    progress_signal.emit(round(float(x) / no_clusters * 100, 2))
                 cluster.compile_table(metrics.sys_util_history.cpu[x * 4: x * 4 + 4])
-            progress_bar.setValue(100)
+            if progress_signal:
+                progress_signal.emit(100)
             print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
         except Exception, e:
             print("Error building cluster utilization table: %s" % e)
@@ -122,15 +129,18 @@ class TraceProcessor:
 
             if test:
                 for x, event in enumerate(tracecmd.processed_events[:test]):
-                    progress_bar.setValue(round(float(x) / test * 100, 2))
+                    if progress_signal:
+                        progress_signal.emit(round(float(x) / test * 100, 2))
                     if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                         break
             else:
                 for x, event in enumerate(tracecmd.processed_events):
-                    progress_bar.setValue(round(float(x) / num_events * 100, 2))
+                    if progress_signal:
+                        progress_signal.emit(round(float(x) / num_events * 100, 2))
                     if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
                         break
-            progress_bar.setValue(100)
+            if progress_signal:
+                progress_signal.emit(100)
             print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
             print(" ------ Sched switch events in %s seconds" % process_tree.sched_switch_time)
             print(" ------ Binder events in %s seconds" % process_tree.binder_time)
