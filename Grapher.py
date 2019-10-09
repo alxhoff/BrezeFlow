@@ -26,6 +26,7 @@ class Grapher:
         a_graph.graph_attr['packmode'] = 'node'
         a_graph.graph_attr['margin'] = 2
 
-        a_graph.draw(os.path.join(os.path.dirname(os.path.realpath(__file__)), self.pt.pidtracer.name) + ".xdot",
+        a_graph.draw(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/" + self.pt.pidtracer.name) + ".xdot",
                      format='xdot',
                      prog='dot')

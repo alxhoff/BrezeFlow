@@ -1049,7 +1049,7 @@ class ProcessTree:
                                     task.optimization_info.set_info(optim_type.value |
                                                                     OptimizationInfoType.POSSIBLE_REALLOC.value,
                                                                     "Task can be reallocated")  # TODO
-                                    op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
+                                    op_writer.writerow([task.pid, task.events[0].name, task.start_time, task.duration,
                                                         task.events[0].cpu, task.events[0].cpu_freq[0 if task.events[0].cpu <
                                                         4 else 1], little_core_index, freq, new_core_util])
                                     optimizations_found += 1
@@ -1106,7 +1106,7 @@ class ProcessTree:
 
                                     task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS.value,
                                                                     "Task can be reallocated")  # TODO
-                                    op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
+                                    op_writer.writerow([task.pid, task.events[0].name, task.start_time, task.duration,
                                                         task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
                                                         core_index, freq, new_core_util])

@@ -559,6 +559,19 @@
         <attribute name="title">
          <string>Graph</string>
         </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_11">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_13">
+           <item alignment="Qt::AlignRight">
+            <widget class="QPushButton" name="pushButtonDisplayGraph">
+             <property name="text">
+              <string>Display Graph</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
        <widget class="QWidget" name="tabBinderLog">
         <attribute name="title">
