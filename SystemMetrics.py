@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-
+import numpy as np
 from enum import Enum
 
 from XU3EnergyProfile import XU3RegressionModel
@@ -75,10 +75,14 @@ class CPUUtilizationTable(UtilizationTable):
         lookup_length = end_time - start_time + 1
         self.utils = [0.0] * lookup_length
         if len(self.events) != 0:
+            utils = []
             for event in self.events:
                 util = round(event.util, 2)
-                for x in range(event.duration + 1):
-                    self.utils[x + event.start_time] = util
+                util_array = np.full(event.duration + 1, [util])
+                utils.append(util_array)
+            self.utils = np.block(utils)
+                # for x in range(event.duration + 1):
+                #     self.utils[x + event.start_time] = util
         return
 
     def get_util(self, ts):

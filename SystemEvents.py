@@ -1346,29 +1346,28 @@ class ProcessTree:
         if isinstance(event, EventWakeup):
             return 0
 
-    def handle_temp_event(self, event):
+    def handle_temp_event(self, event, event_n_minus_1):
 
-        proc_start_time = time.time()
+        value = TempLogEntry(event.time, event.big0, event.big1, event.big2, event.big3, event.little, event.gpu)
 
-        if len(self.metrics.sys_temp_history.temps) >= 1:
-            for t in range(self.metrics.sys_temp_history.temps[-1].time - self.metrics.sys_temp_history.initial_time,
-                           event.time - self.metrics.sys_temp_history.initial_time):
-                self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
-                                                                        event.big2, event.big3, event.little,
-                                                                        event.gpu))
+        if not event_n_minus_1:
+            return np.full(1, value)
         else:
-            self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
-                                                                    event.big2, event.big3, event.little,
-                                                                    event.gpu))
+            duration = event.time - event_n_minus_1.time
+            return np.full(duration, [value])
 
-        self.temp_time += time.time() - proc_start_time
-
-        return 0
+        # if len(self.metrics.sys_temp_history.temps) >= 1:
+        #     for t in range(self.metrics.sys_temp_history.temps[-1].time - self.metrics.sys_temp_history.initial_time,
+        #                    event.time - self.metrics.sys_temp_history.initial_time):
+        #         self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
+        #                                                                 event.big2, event.big3, event.little,
+        #                                                                 event.gpu))
+        # else:
+        #     self.metrics.sys_temp_history.temps.append(TempLogEntry(event.time, event.big0, event.big1,
+        #                                                             event.big2, event.big3, event.little,
+        #                                                             event.gpu))
 
     def handle_idle_event(self, event):
 
-        proc_start_time = time.time()
-
         self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)
-        self.idle_time += time.time() - proc_start_time
         return 0

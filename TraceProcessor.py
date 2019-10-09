@@ -63,62 +63,91 @@ class TraceProcessor:
             trace_start_time = tracecmd.temp_events[0].time
         trace_finish_time = int(trace_start_time + float(duration) * 1000000)
 
-        start_time = time.time()
-        sys.stdout.write("Building temp trees")
 
-        if len(tracecmd.temp_events):
-            metrics.sys_temp_history.initial_time = tracecmd.temp_events[0].time
-            metrics.sys_temp_history.end_time = tracecmd.temp_events[-1].time
-        else:
-            raise Exception("No temp events")
+        try:
+            start_time = time.time()
+            sys.stdout.write("Building temp trees")
+            if len(tracecmd.temp_events):
+                metrics.sys_temp_history.initial_time = tracecmd.temp_events[0].time
+                metrics.sys_temp_history.end_time = tracecmd.temp_events[-1].time
+            else:
+                raise Exception("No temp events")
 
-        for x, event in enumerate(tracecmd.temp_events):
-            process_tree.handle_temp_event(event)
-        print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+            temp_history = []
+            no_temp_events = len(tracecmd.temp_events)
+            temp_history.append(process_tree.handle_temp_event(tracecmd.temp_events[0], None))
+            for x in range(len(tracecmd.temp_events[1:])):
+                progress_bar.setValue(round(float(x) / no_temp_events * 100, 2))
+                temp_history.append(process_tree.handle_temp_event(tracecmd.temp_events[x+1], tracecmd.temp_events[x]))
+            progress_bar.setValue(100)
+            metrics.sys_temp_history.temps = np.block(temp_history)
+            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+        except Exception, e:
+            print("Error processing temperatures: %s" % e)
+            return
 
-        start_time = time.time()
-        sys.stdout.write("Building utilization trees")
-        for x, event in enumerate(tracecmd.idle_events):
-            process_tree.handle_idle_event(event)
-        print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+        try:
+            start_time = time.time()
+            no_idle_events = len(tracecmd.idle_events)
+            sys.stdout.write("Building utilization trees")
+            for x, event in enumerate(tracecmd.idle_events):
+                progress_bar.setValue(round(float(x) / no_idle_events * 100, 2))
+                process_tree.handle_idle_event(event)
+            progress_bar.setValue(100)
+            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+        except Exception, e:
+            print("Error building utilization trees: %s" % e)
+            return
 
-        start_time = time.time()
-        sys.stdout.write("Building cluster utilization table")
-        for x, cluster in enumerate(metrics.sys_util_history.clusters):  # Compile cluster utilizations
-            cluster.compile_table(metrics.sys_util_history.cpu[x * 4: x * 4 + 4])
-        print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+        try:
+            start_time = time.time()
+            no_clusters = len(metrics.sys_util_history.clusters)
+            sys.stdout.write("Building cluster utilization table")
+            for x, cluster in enumerate(metrics.sys_util_history.clusters):  # Compile cluster utilizations
+                progress_bar.setValue(round(float(x) / no_clusters * 100, 2))
+                cluster.compile_table(metrics.sys_util_history.cpu[x * 4: x * 4 + 4])
+            progress_bar.setValue(100)
+            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+        except Exception, e:
+            print("Error building cluster utilization table: %s" % e)
+            return
 
-        num_events = len(tracecmd.processed_events)
+        try:
+            start_time = time.time()
+            num_events = len(tracecmd.processed_events)
+            sys.stdout.write("Processing %d events" % num_events)
 
-        sys.stdout.write("Processing %d events" % num_events)
-        start_time = time.time()
+            # TODO does it matter if the first event is a mali event?
+            metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
 
-        # TODO does it matter if the first event is a mali event?
-        metrics.sys_util_history.gpu.init(trace_start_time, trace_finish_time, metrics.current_gpu_util)
+            if test:
+                for x, event in enumerate(tracecmd.processed_events[:test]):
+                    progress_bar.setValue(round(float(x) / test * 100, 2))
+                    if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
+                        break
+            else:
+                for x, event in enumerate(tracecmd.processed_events):
+                    progress_bar.setValue(round(float(x) / num_events * 100, 2))
+                    if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
+                        break
+            progress_bar.setValue(100)
+            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+            print(" ------ Sched switch events in %s seconds" % process_tree.sched_switch_time)
+            print(" ------ Binder events in %s seconds" % process_tree.binder_time)
+            print(" ------ Freq events in %s seconds" % process_tree.freq_time)
+        except Exception, e:
+            print("Error processing events: %s" % e)
+            return
 
-        if test:
-            for x, event in enumerate(tracecmd.processed_events[:test]):
-                progress_bar.setValue(round(float(x) / test * 100, 2))
-                if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
-                    break
-        else:
-            for x, event in enumerate(tracecmd.processed_events):
-                progress_bar.setValue(round(float(x) / num_events * 100, 2))
-                if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
-                    break
-
-        progress_bar.setValue(100)
-        print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
-        print(" ------ Sched switch events in %s seconds" % process_tree.sched_switch_time)
-        print(" ------ Binder events in %s seconds" % process_tree.binder_time)
-        print(" ------ Freq events in %s seconds" % process_tree.freq_time)
-
-
-        start_time = time.time()
-        sys.stdout.write("Finishing process tree")
-        optimizations_found = process_tree.finish_tree(self.filename)
-        print(" --- COMPLETED in {} seconds, found {} optimizations".format((time.time() - start_time),
-                                                                            optimizations_found))
+        try:
+            start_time = time.time()
+            sys.stdout.write("Finishing process tree")
+            optimizations_found = process_tree.finish_tree(self.filename)
+            print(" --- COMPLETED in {} seconds, found {} optimizations".format((time.time() - start_time),
+                                                                                optimizations_found))
+        except Exception, e:
+            print("Error finishing tree: %s" % e)
+            return
 
         if draw:
             sys.stdout.write("Drawing graph")

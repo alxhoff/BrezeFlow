@@ -89,6 +89,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
             bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
         self.radioButtonMultiThreaded.setChecked(bool(int(settings.value("OptimizeWithThreads", defaultValue=1))))
+        self.radioButtonMultiProcessing.setChecked(bool(int(settings.value("OptimizeWithProcesses", defaultValue=1))))
+        self.radioButtonNonthreaded.setChecked(bool(int(settings.value("OptimizeNone", defaultValue=1))))
         self.checkBoxUseUIConsole.setChecked(bool(int(settings.value("UseUIConsole", defaultValue=1))))
 
         # Syslogger
@@ -179,6 +181,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.settings.setValue("DefaultEventSyslogger", int(self.checkBoxSyslogger.isChecked()))
         self.settings.setValue("DefaultEventWakeUp", int(self.checkBoxWakeUp.isChecked()))
         self.settings.setValue("OptimizeWithThreads", int(self.radioButtonMultiThreaded.isChecked()))
+        self.settings.setValue("OptimizeWithProcesses", int(self.radioButtonMultiProcessing.isChecked()))
+        self.settings.setValue("OptimizeNone", int(self.radioButtonNonthreaded.isChecked()))
         self.settings.setValue("UseUIConsole", int(self.checkBoxUseUIConsole.isChecked()))
 
         # Syslogger
@@ -396,7 +400,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                                                                      self.events, self.events_to_process,
                                                                      self.preamble, self.subgraph, self.graph,
                                                                      self.progressBar, self.skip_tracing)).start()
-            else:
+
+            elif bool(int(self.settings.value("OptimizeWithProcesses", defaultValue=1))):
                 print("Running debugger with multiprocessing, outputing to system console")
                 # Separate processes means that the generated process cannot access the UI console created in the
                 # main program's process
@@ -411,6 +416,11 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 if self.UI_console:
                     sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
                     sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
+            else:
+                self.buttonrunprocess(self.application_name, self.duration,
+                                      self.events, self.events_to_process,
+                                      self.preamble, self.subgraph, self.graph,
+                                      self.progressBar, self.skip_tracing)
             self.openresults()
 
         except Exception, e:
