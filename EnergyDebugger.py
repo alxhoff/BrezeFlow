@@ -207,16 +207,21 @@ class EmittingStream(QObject):
 
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
+    results_path = ""
+
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
 
         self.setupUi(self)
+        self.show()
+
         self.setupbuttons()
         self.setupmenu()
+
         self.settings = None
         self.setupsettings()
         self.getsettings()
-        self.show()
+
         console_colour = QPalette(QColor(255,255,255,255), QColor(0,0,0,255))
         self.textEditConsole.setPalette(console_colour)
         self.UI_console = bool(int(self.settings.value("UseUIConsole", defaultValue=1)))
@@ -296,6 +301,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.pushButtonRun.clicked.connect(self.buttonrun)
         self.pushButtonKillADB.clicked.connect(self.buttonkilladb)
         self.pushButtonDisplayResults.clicked.connect(self.openresults)
+        self.pushButtonDisplayOptimizations.clicked.connect(self.openoptimizations)
         self.pushButtonDisplayBinderLog.clicked.connect(self.openbinderlog)
 
     def setupmenu(self):
@@ -304,15 +310,30 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.actionOpenSettings.triggered.connect(self.opensettingsmenu)
         self.actionAbout.triggered.connect(self.openaboutdialog)
 
+    def openallresults(self):
+        self.openresults()
+        self.openoptimizations()
+
     def openresults(self):
-        self.tableWidgetResults.setRowCount(0)
+        self.openfile(self.tableWidgetResults, "_results.csv")
+
+    def openoptimizations(self):
+        self.openfile(self.tableWidgetOptimizations, "_optimizations.csv")
+
+    def openfile(self, table_widget, file_suffix):
+        if not table_widget:
+            return
+
+        table_widget.setRowCount(0)
 
         if self.lineEditApplicationName.text() is None:
             QMessageBox.warning(self, "Error", "Application is not specified", QMessageBox.Ok)
             return
 
         self.application_name = self.lineEditApplicationName.text()
-        results_filename = os.path.join(self.results_path, self.application_name + "_results.csv")
+        if self.application_name == "":
+            return
+        results_filename = os.path.join(self.results_path, self.application_name + file_suffix)
 
         try:
             col_count = 0
@@ -324,14 +345,15 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                         col_count = len(row)
 
                 fileInput.seek(0)
-                self.tableWidgetResults.setColumnCount(col_count)
-                self.tableWidgetResults.setRowCount(row_count)
+                table_widget.setColumnCount(col_count)
+                table_widget.setRowCount(row_count)
 
                 for i, row in enumerate(csv.reader(fileInput)):
                     for j, col in enumerate(row):
-                        self.tableWidgetResults.setItem(i, j, QTableWidgetItem(col))
+                        table_widget.setItem(i, j, QTableWidgetItem(col))
         except Exception, e:
             QMessageBox.warning(self, "Error", "{}".format(e), QMessageBox.Ok)
+
 
     def opensettingsmenu(self):
         settings_menu = SettingsMenu(self.settings)
@@ -417,31 +439,34 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                         return
                 self.debug_task = QDebuggerThread(self.application_name, self.duration, self.events,
                                                   self.events_to_process, self.preamble, self.subgraph, self.graph,
-                                                  self.skip_tracing)
+                                                  self.skip_tracing, self.openallresults)
                 self.debug_task.changed_progress.connect(self.progressBar.setValue)
                 self.debug_task.start()
-
             elif bool(int(self.settings.value("OptimizeWithProcesses", defaultValue=1))):
                 print("Running debugger with multiprocessing, outputing to system console")
                 # Separate processes means that the generated process cannot access the UI console created in the
                 # main program's process
                 sys.stdout = sys.__stdout__
                 sys.stderr = sys.__stderr__
+                changed_progress = pyqtSignal(int)
+                changed_progress.connect(self.progressBar.setValue)
                 proc = multiprocessing.Process(target=buttonrunprocess, args=(self.application_name, self.duration,
                                                                      self.events, self.events_to_process,
                                                                      self.preamble, self.subgraph, self.graph,
-                                                                     self.skip_tracing))
+                                                                     self.skip_tracing, changed_progress,
+                                                                     self.openallresults))
                 self.jobs.append(proc)
                 proc.start()
                 if self.UI_console:
                     sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
                     sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
             else:
+                changed_progress = pyqtSignal(int)
+                changed_progress.connect(self.progressBar.setValue)
                 buttonrunprocess(self.application_name, self.duration,
                                       self.events, self.events_to_process,
                                       self.preamble, self.subgraph, self.graph,
-                                      self.skip_tracing)
-            self.openresults()
+                                      self.skip_tracing, progress_signal=changed_progress, open=self.openallresults)
 
         except Exception, e:
             QMessageBox.critical(self, "Error", e, QMessageBox.Ok)
@@ -452,7 +477,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
 
 def buttonrunprocess(application_name, duration, events, events_to_process, preamble, subgraph, graph, skip_tracing,
-                     progress_signal=None):
+                     progress_signal=None, open=None):
         print("Button process started")
         try:
             current_debugger = EnergyDebugger(
@@ -471,14 +496,16 @@ def buttonrunprocess(application_name, duration, events, events_to_process, prea
             print("Error: {}".format(e))
 
         print(" ------ FINISHED ------")
-        return False
+
+        if open:
+            open()
 
 class QDebuggerThread(QThread):
 
     changed_progress = pyqtSignal(int)
 
     def __init__(self, application_name, duration,events, events_to_process, preamble, subgraph, graph,
-                 skip_tracing):
+                 skip_tracing, open):
         QThread.__init__(self)
         self.application_name = application_name
         self.duration = duration
@@ -488,11 +515,12 @@ class QDebuggerThread(QThread):
         self.subgraph = subgraph
         self.graph = graph
         self.skip_tracing = skip_tracing
+        self.open = open
 
     def run(self):
 
         buttonrunprocess(self.application_name, self.duration, self.events, self.events_to_process, self.preamble,
-                         self.subgraph, self.graph, self.skip_tracing, self.changed_progress)
+                         self.subgraph, self.graph, self.skip_tracing, self.changed_progress, self.open)
 
 
 class CommandInterface:

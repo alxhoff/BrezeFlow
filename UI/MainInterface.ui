@@ -511,7 +511,7 @@
         </sizepolicy>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tabResults">
         <attribute name="title">
@@ -536,11 +536,22 @@
        </widget>
        <widget class="QWidget" name="tab">
         <attribute name="title">
-         <string>Page</string>
+         <string>Optimizations</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_10">
          <item>
           <widget class="QTableWidget" name="tableWidgetOptimizations"/>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_12">
+           <item alignment="Qt::AlignRight">
+            <widget class="QPushButton" name="pushButtonDisplayOptimizations">
+             <property name="text">
+              <string>Display Optimizations</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>
