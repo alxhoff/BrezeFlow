@@ -989,6 +989,9 @@ class ProcessTree:
 
                     for task in branch.tasks:
 
+                        if task.cpu_cycles == 0:
+                            continue
+
                         cores = SystemMetrics.current_metrics.sys_util_history
                         cores_utils = [0.0] * 8
                         cores_utils[0] = cores.cpu[0].get_util(task.finish_time)
@@ -1001,117 +1004,124 @@ class ProcessTree:
                         cores_utils[7] = cores.cpu[7].get_util(task.finish_time)
 
                         lf = SystemMetrics.current_metrics.energy_profile.little_freqs
+                        bf = SystemMetrics.current_metrics.energy_profile.big_freqs
 
-                        if (task.finish_time - task.start_time) > 0:
-                            task_util = float(task.duration) / (task.finish_time - task.start_time) * 100
-                        else:
-                            continue
+                        cur_cpu_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1])
 
-                        if task.events[0].cpu > 3:  # big TODO fix the use of the last event's CPU
+                        task_cycles = task.cpu_cycles
 
-                            little_core_index = np.argmin(cores_utils[:4])
+                        if task.events[0].cpu > 3:  # big TODO fix the use of the first event's CPU
                             optim_type = OptimizationInfoType.NONE
 
-                            for freq in lf:
+                            little_core_index = np.argmin(cores_utils[:4])
 
-                                if freq != task.events[0].cpu_freq[0]:
-                                    optim_type = OptimizationInfoType.POSSIBLE_DVFS
+                            cores = cores_utils[:4]
 
-                                # Util on little @ max: current frequency
-                                util_capacity_on_max_little = float(task.events[0].cpu_freq[1]) / freq * \
-                                                              task_util * mf
+                            cur_little_cpu_freq = float(task.events[0].cpu_freq[0])
 
-                                # if little currently not at max the util needs to be scaled down
-                                cur_little_util_at_max = \
-                                    cores_utils[little_core_index] if task.events[0].cpu_freq[0] == lf[-1] \
-                                        else (cores_utils[little_core_index] * task.events[0].cpu_freq[0] / lf[-1])
+                            big_to_little_scale = float(task.events[0].cpu_freq[1]) / cur_little_cpu_freq * mf
 
-                                new_core_util = (cur_little_util_at_max + util_capacity_on_max_little)
+                            # Util on little @ current freq
+                            cycles_on_little = task_cycles * big_to_little_scale
 
-                                if new_core_util <= 100.0:
+                            for little_freq in lf:
 
-                                    duration_on_little = util_capacity_on_max_little * task.duration
-                                    finish_time_on_little = int(round(task.start_time + duration_on_little))
+                                # Scaled little utils
+                                scaling_factor = cur_little_cpu_freq / little_freq
+                                core_utils_new_freq = [core * scaling_factor for core in cores]
+
+                                if all(core_util <= 100.0 for core_util in core_utils_new_freq):
+
+                                    # Realloc to little
+                                    available_cycles_on_little_at_new_freq = \
+                                        (1 - core_utils_new_freq[little_core_index] / 100.0) * little_freq
+                                    required_cycles_on_little_at_new_feq = cycles_on_little * scaling_factor
+
+                                    required_duration = \
+                                        required_cycles_on_little_at_new_feq / available_cycles_on_little_at_new_freq\
+                                        * 1000000  # Micro seconds in a second
+
+                                    finish_time_on_little = int(round(task.start_time + required_duration))
 
                                     try:
                                         depender_start_time = task.dependency.depender.start_time
                                     except Exception as e:
-                                        depender_start_time = 0
-                                        print "Task {} at time {} has no depender".format(task.events[0].name,
-                                                                                          task.events[0].time)
-
-                                    if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
-                                        task.optimization_info.set_info(
-                                                OptimizationInfoType.LONG_EXEC_DURATION.value,
-                                                "Execution of task would clash with depender task")
                                         continue
 
-                                    task.optimization_info.set_info(optim_type.value |
-                                                                    OptimizationInfoType.POSSIBLE_REALLOC.value,
-                                                                    "Task can be reallocated")  # TODO
-                                    op_writer.writerow([task.pid, task.events[0].name, task.start_time, task.duration,
-                                                        task.events[0].cpu, task.events[0].cpu_freq[0 if task.events[0].cpu <
-                                                        4 else 1], little_core_index, freq, new_core_util])
-                                    optimizations_found += 1
-                                    break
+                                    if finish_time_on_little < depender_start_time:
+                                        optim_type = OptimizationInfoType.POSSIBLE_REALLOC.value
+
+                                        if little_freq != task.events[0].cpu_freq[0]:
+                                            optim_type |= OptimizationInfoType.POSSIBLE_DVFS.value
+
+                                        task.optimization_info.set_info(optim_type.value, "Task can be reallocated")  # TODO
+
+                                        op_writer.writerow([task.pid, task.events[0].name, task.start_time, task.duration,
+                                                            task.events[0].cpu, task.events[0].cpu_freq[0 if task.events[0].cpu <
+                                                            4 else 1], little_core_index, little_freq, core_utils_new_freq[little_core_index]])
+
+                                        optimizations_found += 1
+                                        break
 
                         # If not running on the minimum DVFS of given cluster
-                        if (task.events[0].cpu <= 3 and task.events[0].cpu_freq[0] !=
-                            SystemMetrics.current_metrics.energy_profile.little_freqs[0]) or \
-                                (task.events[0].cpu >= 4 and task.events[0].cpu_freq[1] !=
-                                 SystemMetrics.current_metrics.energy_profile.big_freqs[0]):
-
-                            if task.events[0].cpu <= 3:  # LITTLE
-                                freq_index = SystemMetrics.current_metrics.energy_profile.little_freqs.index(
-                                        task.events[0].cpu_freq[0])
-                                freqs = SystemMetrics.current_metrics.energy_profile.little_freqs[:freq_index]
-                                core_index = np.argmin(cores_utils[:4])
-                            else:  # BIG
-                                freq_index = SystemMetrics.current_metrics.energy_profile.big_freqs.index(
-                                        task.events[0].cpu_freq[1])
-                                freqs = SystemMetrics.current_metrics.energy_profile.big_freqs[:freq_index]
-                                core_index = np.argmin(cores_utils[4:])
-
-                            cur_cpu_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1])
-
-                            for freq in freqs:
-
-                                util_scaling_factor = cur_cpu_freq / freq
-
-                                task_util_new_freq = util_scaling_factor * task_util
-
-                                existing_util = util_scaling_factor * cores_utils[core_index]
-
-                                new_core_util = existing_util + task_util_new_freq
-
-                                if new_core_util <= 100.0:
-
-                                    new_duration = task_util_new_freq * task.duration
-                                    finish_time_on_little = int(round(task.start_time + new_duration))
-
-                                    try:
-                                        depender_start_time = task.dependency.depender.start_time
-                                    except Exception as e:
-                                        depender_start_time = 0
-                                        print "Task {} at time {} has no depender".format(task.events[0].name,
-                                                                                          task.events[0].time)
-
-                                    if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
-                                        task.optimization_info.set_info(
-                                                OptimizationInfoType.LONG_EXEC_DURATION.value,
-                                                "Execution of task would clash with depender task")
-                                        print("Clash")
-
-                                        continue
-
-                                    task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS.value,
-                                                                    "Task can be reallocated")  # TODO
-                                    op_writer.writerow([task.pid, task.events[0].name, task.start_time, task.duration,
-                                                        task.events[0].cpu,
-                                                        task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
-                                                        core_index, freq, new_core_util])
-                                    optimizations_found += 1
-                                    break
+                        # if (task.events[0].cpu <= 3 and task.events[0].cpu_freq[0] != lf[0]) \
+                        #         or (task.events[0].cpu >= 4 and task.events[0].cpu_freq[1] != bf[0]):
+                        #
+                        #     if task.events[0].cpu <= 3:  # LITTLE
+                        #         freq_index = lf.index(cur_cpu_freq)
+                        #         freqs = lf[:freq_index] # Freqs from minimum freq until the current one
+                        #         cores = cores_utils[:4]
+                        #         core_index = np.argmin(cores_utils[:4])
+                        #
+                        #     else:  # BIG
+                        #         freq_index = bf.index(cur_cpu_freq)
+                        #         freqs = bf[:freq_index]
+                        #         cores = cores_utils[4:]
+                        #         core_index = np.argmin(cores_utils[4:])
+                        #
+                        #     task_util = float(task.duration) / (task.finish_time - task.start_time) * 100# TODO not
+                        #     # sure if
+                        #     # valid!
+                        #
+                        #     if core_index != task.events[0].cpu:  # Reallocate util
+                        #         cores[task.events[0].cpu if task.events[0].cpu < 4 else task.events[0].cpu - 4] -= \
+                        #             task_util
+                        #         cores[core_index] += task_util
+                        #
+                        #     for freq in freqs:
+                        #
+                        #         # Scale
+                        #         scaling_factor = cur_cpu_freq / freq
+                        #         core_utils_new_freq = [core * scaling_factor for core in cores]
+                        #
+                        #         if all(core_util <= 100.0 for core_util in core_utils_new_freq):
+                        #
+                        #             new_duration = scaling_factor * task.duration  # TODO all task durations
+                        #             finish_time_on_little = int(round(task.start_time + new_duration))
+                        #
+                        #             try:
+                        #                 depender_start_time = task.dependency.depender.start_time
+                        #             except Exception as e:
+                        #                 depender_start_time = 0
+                        #                 print "Task {} at time {} has no depender".format(task.events[0].name,
+                        #                                                                   task.events[0].time)
+                        #
+                        #             if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
+                        #                 task.optimization_info.set_info(
+                        #                         OptimizationInfoType.LONG_EXEC_DURATION.value,
+                        #                         "Execution of task would clash with depender task")
+                        #                 print("Clash")
+                        #
+                        #                 continue
+                        #
+                        #             task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS.value,
+                        #                                             "Task can be reallocated")  # TODO
+                        #             op_writer.writerow([task.pid, task.events[0].name, task.start_time, task.duration,
+                        #                                 task.events[0].cpu,
+                        #                                 task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
+                        #                                 core_index, freq, core_utils_new_freq[core_index]])
+                        #             optimizations_found += 1
+                        #             break
 
             writer.writerow([])
             writer.writerow(["Total Energy", total_energy])

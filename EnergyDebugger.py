@@ -208,6 +208,7 @@ class EmittingStream(QObject):
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     results_path = ""
+    changed_progress = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
@@ -236,6 +237,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.console_queue = Queue.Queue()
         self.console_task = threading.Thread(target=self.console, args=()).start()
         self.debug_task = None
+        self.changed_progress.connect(self.progressBar.setValue)
 
         self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
         self.trace_file = None
@@ -448,12 +450,10 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 # main program's process
                 sys.stdout = sys.__stdout__
                 sys.stderr = sys.__stderr__
-                changed_progress = pyqtSignal(int)
-                changed_progress.connect(self.progressBar.setValue)
                 proc = multiprocessing.Process(target=buttonrunprocess, args=(self.application_name, self.duration,
                                                                      self.events, self.events_to_process,
                                                                      self.preamble, self.subgraph, self.graph,
-                                                                     self.skip_tracing, changed_progress,
+                                                                     self.skip_tracing, self.changed_progress,
                                                                      self.openallresults))
                 self.jobs.append(proc)
                 proc.start()
@@ -461,12 +461,11 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
                     sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
             else:
-                changed_progress = pyqtSignal(int)
-                changed_progress.connect(self.progressBar.setValue)
                 buttonrunprocess(self.application_name, self.duration,
                                       self.events, self.events_to_process,
                                       self.preamble, self.subgraph, self.graph,
-                                      self.skip_tracing, progress_signal=changed_progress, open=self.openallresults)
+                                      self.skip_tracing, progress_signal=self.changed_progress,
+                                 open=self.openallresults)
 
         except Exception, e:
             QMessageBox.critical(self, "Error", e, QMessageBox.Ok)
