@@ -1368,4 +1368,4 @@ class ProcessTree:
 
     def handle_idle_event(self, event):
 
-        return self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)
+        self.metrics.sys_util_history.cpu[event.cpu].add_idle_event(event)

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+import time
+
 from Grapher import Grapher
 from SystemEvents import *
-import time
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"
@@ -63,7 +64,6 @@ class TraceProcessor:
             trace_start_time = tracecmd.temp_events[0].time
         trace_finish_time = int(trace_start_time + float(duration) * 1000000)
 
-
         try:
             start_time = time.time()
             sys.stdout.write("Building temp trees")
@@ -79,7 +79,8 @@ class TraceProcessor:
             for x in range(len(tracecmd.temp_events[1:])):
                 if progress_signal:
                     progress_signal.emit((round(float(x) / no_temp_events * 100, 2)))
-                temp_history.append(process_tree.handle_temp_event(tracecmd.temp_events[x+1], tracecmd.temp_events[x]))
+                temp_history.append(
+                    process_tree.handle_temp_event(tracecmd.temp_events[x + 1], tracecmd.temp_events[x]))
             if progress_signal:
                 progress_signal.emit(100)
             metrics.sys_temp_history.temps = np.block(temp_history)
@@ -96,10 +97,10 @@ class TraceProcessor:
             for x, event in enumerate(tracecmd.idle_events):
                 if progress_signal:
                     progress_signal.emit(round(float(x) / no_idle_events * 100, 2))
-                calc_time += process_tree.handle_idle_event(event)
+                process_tree.handle_idle_event(event)
             if progress_signal:
                 progress_signal.emit(100)
-            print(" --- COMPLETED in {} seconds, util time calc {}".format((time.time() - start_time), calc_time))
+            print(" --- COMPLETED in {} seconds".format(time.time() - start_time))
         except Exception, e:
             print("Error building utilization trees: %s" % e)
             return

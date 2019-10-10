@@ -16,13 +16,6 @@ __email__ = "alex.hoffman@tum.de"
 __status__ = "Beta"
 
 
-class IdleState(Enum):
-    """ Used by idle trace events to track if a CPU is idle or not.
-    """
-    is_idle = 0
-    is_not_idle = 1
-
-
 class TempLogEntry:
     """ Stores a snapshot of the system's temperatures at a given timestamp.
     """
@@ -65,10 +58,65 @@ class UtilizationTable:
         self.events = []
 
 
+class UtilizationWindow:
+
+    def __init__(self, window_duration):
+
+        self.window_duration = window_duration
+        self.buffer_duration = 0
+        self.on_time = 0
+        self.entries = []
+
+    def add_state(self, state, duration):
+
+        if self.buffer_duration + duration > self.window_duration:
+            self.remove_duration_front(self.buffer_duration + duration - self.window_duration)
+
+        self.add_state_entry(state, duration)
+
+    def add_state_entry(self, state, duration):
+        self.entries.append([state, duration])
+        self.buffer_duration += duration
+        if state:
+            self.on_time += duration
+
+    def remove_states(self, indicies):
+        for index in reversed(indicies):
+            if self.entries[index][0]:
+                self.on_time -= self.entries[index][1]
+            self.buffer_duration -= self.entries[index][1]
+
+            del self.entries[index]
+
+    def remove_duration_front(self, duration):
+        entries_to_delete = []
+
+        while duration:
+            for x, entry in enumerate(self.entries):
+                if entry[1] <= duration:
+                    entries_to_delete.append(x)
+                    duration -= entry[1]
+                else:
+                    entry[1] = entry[1] - duration
+                    self.buffer_duration -= duration
+                    if entry[0]:
+                        self.on_time -= duration
+                    duration = 0
+                    break
+
+        self.remove_states(entries_to_delete)
+
+    def calculate_util(self):
+
+        return float(self.on_time) / self.buffer_duration * 100.0
+
+
 class CPUUtilizationTable(UtilizationTable):
 
     def __init__(self, core_num):
         UtilizationTable.__init__(self)
+
+        self.uw = UtilizationWindow(250000)
         self.core = core_num
         self.utils = []
 
@@ -97,42 +145,19 @@ class CPUUtilizationTable(UtilizationTable):
 
         if self.start_time is 0:  # First event
             self.start_time = event.time
-            if event.state == 4294967295:
-                self.core_state = IdleState.is_not_idle
-            else:
-                self.core_state = not event.state
+            self.last_event_time = 0
+            self.core_state = event.state
             return 0
-        else:
-            self.events.append(UtilizationSlice(
-                    self.last_event_time, event.time - self.start_time,
-                    SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
 
-            self.last_event_time = event.time - self.start_time
+        self.events.append(UtilizationSlice(
+                self.last_event_time, event.time - self.start_time,
+                SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
 
-            start_time = time.time()
-            self.calc_util_last_event()
-            time_taken = time.time() - start_time
+        self.uw.add_state(self.events[-1].state, self.events[-1].duration)
+        self.events[-1].util = self.uw.calculate_util()
 
-            if event.state == 4294967295:
-                self.core_state = not self.core_state
-            else:
-                self.core_state = event.state
-
-            return time_taken
-
-    def calc_util_last_event(self):
-        # Iterate backwards until 250ms has been traversed or until first event hit
-        calc_duration = 0
-        active_duration = 0
-        for event in reversed(self.events):
-            calc_duration += event.duration
-            if event.state:
-                active_duration += event.duration
-
-            if calc_duration >= 250000:
-                break
-
-        self.events[-1].util = float(active_duration) / float(calc_duration) * 100.00
+        self.last_event_time = event.time - self.start_time
+        self.core_state = event.state
 
 
 class TotalUtilizationTable(UtilizationTable):
