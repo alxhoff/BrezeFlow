@@ -139,8 +139,9 @@ class TraceProcessor:
             start_time = time.time()
             sys.stdout.write("Finishing process tree")
             optimizations_found = process_tree.finish_tree(self.filename)
-            print(" --- COMPLETED in {} seconds, found {} optimizations".format((time.time() - start_time),
-                                                                                optimizations_found))
+            print(" --- COMPLETED in {} seconds".format(
+                    time.time() - start_time))
+            print("Found {} realloc & {} DVFS optimizations".format(optimizations_found[0], optimizations_found[1]))
         except Exception, e:
             print("Error finishing tree: %s" % e)
             return

@@ -266,7 +266,7 @@ class TaskNode:
     that time, the cycles is easily updated using a += and the current values (before updating them)
     """
 
-    def __init__(self, graph, pid):
+    def __init__(self, graph, pid, name):
 
         self.events = []
         self.sys_metric_change_events = []
@@ -279,6 +279,7 @@ class TaskNode:
         self.finish_time = 0
         self.graph = graph
         self.pid = pid
+        self.name = name
         self.temp = 0
         self.util = 0
         self.dependency = Dependency()
@@ -315,8 +316,6 @@ class TaskNode:
                         # calc time is the point until which the energy has been calculated
                         new_cycles = int((pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency)
 
-                        # TODO Streamline this
-                        # self.util = SystemMetrics.current_metrics.sys_util_history.cpu[pe.cpu].get_util(pe.time)
                         self.util = [SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 0].get_util(
                                 pe.time)]
                         self.util.append(
@@ -329,7 +328,6 @@ class TaskNode:
                                 SystemMetrics.current_metrics.sys_util_history.cpu[(pe.cpu / 4) * 4 + 3].get_util(
                                         pe.time))
 
-                        # self.temp = SystemMetrics.current_metrics.get_temp(pe.time, pe.cpu)
                         self.temp = [SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 0)]
                         self.temp.append(SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 1))
                         self.temp.append(SystemMetrics.current_metrics.get_temp(pe.time, (pe.cpu / 4) * 4 + 2))
@@ -352,10 +350,6 @@ class TaskNode:
 
                     cpu_speed = SystemMetrics.current_metrics.get_cpu_core_freq(event.cpu)
                     new_cycles = int((event.time - self.calc_time) * 0.000001 * cpu_speed)
-
-                    # TODO here as well
-                    # self.util = SystemMetrics.current_metrics.sys_util_history.cpu[event.cpu].get_util(event.time)
-                    # self.temp = SystemMetrics.current_metrics.get_temp(event.time, event.cpu)
 
                     self.util = [SystemMetrics.current_metrics.sys_util_history.cpu[(event.cpu / 4) * 4 + 0].get_util(
                             event.time)]
@@ -432,8 +426,8 @@ class TaskNode:
 
 class BinderNode(TaskNode):
 
-    def __init__(self, graph, pid):
-        TaskNode.__init__(self, graph, pid)
+    def __init__(self, graph, pid, name):
+        TaskNode.__init__(self, graph, pid, name)
 
 
 class CPUBranch:
@@ -717,7 +711,7 @@ class ProcessBranch:
 
             if not self.tasks:
 
-                self.tasks.append(TaskNode(self.graph, self.pid))
+                self.tasks.append(TaskNode(self.graph, self.pid, self.tname))
                 self.tasks[-1].add_event(event, subgraph=subgraph)
 
                 if event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
@@ -779,7 +773,7 @@ class ProcessBranch:
 
             if self.active is False:  # New task starting
 
-                self.tasks.append(TaskNode(self.graph, self.pid))
+                self.tasks.append(TaskNode(self.graph, self.pid, self.tname))
                 self.tasks[-1].add_event(event, subgraph=subgraph)
                 self.active = True
 
@@ -794,7 +788,7 @@ class ProcessBranch:
 
         elif event_type == JobType.BINDER_SEND:
 
-            self.binder_tasks.append(BinderNode(self.graph, self.pid))
+            self.binder_tasks.append(BinderNode(self.graph, self.pid, self.tname))
             self.binder_tasks[-1].add_event(event, subgraph=subgraph)
 
             return
@@ -802,7 +796,7 @@ class ProcessBranch:
         elif event_type == JobType.BINDER_RECV:
 
             if event.flags & 0x1:  # Async binder recv
-                self.binder_tasks.append(BinderNode(self.graph, self.pid))
+                self.binder_tasks.append(BinderNode(self.graph, self.pid, self.tname))
 
             self.binder_tasks[-1].add_event(event, subgraph=subgraph)
             self.binder_tasks[-1].finish()
@@ -949,6 +943,7 @@ class ProcessTree:
                              PL_ENERGY, PL_DURATION])
 
             total_energy = 0.0
+            optimizations_found = [0,0]
 
             # Calculate GPU energy
             gpu_energy = self.metrics.sys_util_history.gpu.get_energy(start_time, finish_time)
@@ -985,8 +980,6 @@ class ProcessTree:
                     mf = self.metrics.energy_profile.migration_factor
 
                     ### OPTIMAL EVALUATION
-                    optimizations_found = 0
-
                     for task in branch.tasks:
 
                         if task.cpu_cycles == 0: # Tasks that started at the end of the trace time
@@ -1053,11 +1046,11 @@ class ProcessTree:
 
                                         task.optimization_info.set_info(optim_type.value, "Task can be reallocated")  # TODO
 
-                                        op_writer.writerow([task.pid, task.events[0].name, task.start_time, task.duration,
+                                        op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
                                                             task.events[0].cpu, task.events[0].cpu_freq[0 if task.events[0].cpu <
                                                             4 else 1], little_core_index, little_freq, core_utils_new_freq[little_core_index]])
 
-                                        optimizations_found += 1
+                                        optimizations_found[0] += 1
                                         break
 
                         # If not running on the minimum DVFS of given cluster
@@ -1113,11 +1106,11 @@ class ProcessTree:
 
                                     task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS.value,
                                                                     "Task can be reallocated")  # TODO
-                                    op_writer.writerow([task.pid, task.events[0].name, task.start_time, task.duration,
+                                    op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
                                                         task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
                                                         core_index, freq, core_utils_new_freq[core_index]])
-                                    optimizations_found += 1
+                                    optimizations_found[1] += 1
                                     break
 
             writer.writerow([])
