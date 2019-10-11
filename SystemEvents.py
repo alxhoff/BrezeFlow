@@ -60,13 +60,14 @@ class Event:
     the timestamp of the event, the CPU on which the event occurred and the name of the event.
     """
 
-    def __init__(self, pid, ts, name, cpu=0, freq_l=0, freq_b=0, gpu_freq=0):
+    def __init__(self, pid, ts, name, cpu=0, freq_l=0, freq_b=0, gpu_freq=0, gpu_util=0):
         self.pid = pid
         self.time = ts
         self.cpu = cpu
         self.name = name
         self.cpu_freq = [freq_l, freq_b]
         self.gpu_freq = gpu_freq
+        self.gpu_util = gpu_util
 
 
 class EventSchedSwitch(Event):

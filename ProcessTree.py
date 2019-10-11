@@ -13,12 +13,12 @@ import time
 
 import networkx as nx
 
-from SystemMetrics import *
 from Dependencies import DependencyType
 from HardwareBranches import *
 from Optimizations import OptimizationInfoType
 from ProcessBranch import ProcessBranch
 from SystemEvents import *
+from SystemMetrics import *
 
 
 class ProcessTree:
@@ -338,6 +338,7 @@ class ProcessTree:
         event.cpu_freq[0] = self.metrics.get_cpu_core_freq(0)
         event.cpu_freq[1] = self.metrics.get_cpu_core_freq(4)
         event.gpu_freq = self.metrics.current_gpu_freq
+        event.gpu_freq = self.metrics.current_gpu_util
 
         if event.time < start_time or event.time > finish_time:  # Event time window
             return 1

@@ -15,7 +15,6 @@ from pydispatch import dispatcher
 from Dependencies import DependencyType
 from Nodes import *
 from SystemEvents import JobType, ThreadState
-from SystemMetrics import SystemMetrics
 
 
 class EnergyDuration:
@@ -235,7 +234,7 @@ class ProcessBranch:
                             + "   Temp: " + str(self.tasks[-1].temp) \
                             + "   PID: " + str(event.pid) \
                             + "\nGPU: " + str(event.gpu_freq) + "Hz   " \
-                            + str(SystemMetrics.current_metrics.current_gpu_util) + "% Util" \
+                            + str(event.gpu_util) + "% Util" \
                             + "\nDuration: " + str(self.tasks[-1].duration) \
                             + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
                             + "\nEnergy: " + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
