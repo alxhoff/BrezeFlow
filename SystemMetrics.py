@@ -3,6 +3,7 @@
 import sys
 
 import numpy as np
+from enum import Enum
 
 from XU3EnergyProfile import XU3RegressionModel
 
@@ -117,7 +118,7 @@ class CPUUtilizationTable(UtilizationTable):
 
         self.uw = UtilizationWindow(250000)
         self.core = core_num
-        self.utils = []
+        self.utils = None
 
     def get_util(self, ts):
 
@@ -138,7 +139,10 @@ class CPUUtilizationTable(UtilizationTable):
         self.uw.add_state(self.core_state, duration)
         util = self.uw.calculate_util()
         util_array = np.full(duration, [util])
-        np.concatenate((self.utils, util_array))
+        if self.utils is not None:
+            self.utils = np.concatenate((self.utils, util_array))
+        else:
+            self.utils = util_array
 
         self.last_event_time = event.time - self.start_time
         self.core_state = event.state

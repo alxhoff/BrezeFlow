@@ -31,3 +31,4 @@ class OptimizationInfo:
     def set_info(self, error_type, message):
         self.error_type
         self.message
+

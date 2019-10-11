@@ -514,7 +514,8 @@ class ProcessTree:
         if isinstance(event, EventWakeup):
             return 0
 
-    def handle_temp_event(self, event, event_n_minus_1):
+    @staticmethod
+    def handle_temp_event(event, event_n_minus_1):
 
         value = TempLogEntry(event.time, event.big0, event.big1, event.big2, event.big3, event.little, event.gpu)
 

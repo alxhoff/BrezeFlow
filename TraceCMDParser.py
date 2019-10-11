@@ -129,6 +129,7 @@ class TracecmdProcessor:
             self.event_count.cpu_idle += 1
 
             state = event.num_field("state")
+            state = 1 if state == 4294967295 else 0
             self.idle_events.append(EventIdle(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
                                               name=event.name, state=state))
 
