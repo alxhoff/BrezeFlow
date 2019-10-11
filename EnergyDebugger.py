@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
+import Queue
 import argparse
 import csv
+import multiprocessing
 import os
 import sys
-import Queue
 import threading
-import multiprocessing
 import time
 
 from PyQt5.QtCore import QSettings, QObject, pyqtSignal, QThread
@@ -55,6 +55,7 @@ parser.add_argument("-p", "--preamble", required=False,
 
 args = parser.parse_args()
 
+
 class AboutDialog(QDialog, AboutDialog.Ui_Dialog):
 
     def __init__(self, parent=None):
@@ -79,7 +80,7 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.checkBoxSchedSwitch.setChecked(bool(int(settings.value("DefaultEventSchedSwitch", defaultValue=1))))
         self.checkBoxCPUIdle.setChecked(bool(int(settings.value("DefaultEventCPUIdle", defaultValue=0))))
         self.checkBoxBinderTransaction.setChecked(
-            bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
+                bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1))))
         self.checkBoxSyslogger.setChecked(bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
         self.radioButtonMultiThreaded.setChecked(bool(int(settings.value("OptimizeWithThreads", defaultValue=1))))
         self.radioButtonMultiProcessing.setChecked(bool(int(settings.value("OptimizeWithProcesses", defaultValue=1))))
@@ -158,7 +159,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
             QMessageBox.critical(self, "Error", "The trace source file does not exist", QMessageBox.Ok)
 
         os.system(
-            "trace_conv.py -i " + self.lineEditConvertSource.text() + " -o " + self.lineEditConvertDestination.text())
+                "trace_conv.py -i " + self.lineEditConvertSource.text() + " -o " +
+                self.lineEditConvertDestination.text())
         QMessageBox.information(self, "Trace convert", "Converting trace complete", QMessageBox.Ok)
 
     def accept(self):
@@ -206,7 +208,6 @@ class EmittingStream(QObject):
 
 
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
-
     results_path = ""
     changed_progress = pyqtSignal(int)
 
@@ -223,7 +224,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.setupsettings()
         self.getsettings()
 
-        console_colour = QPalette(QColor(255,255,255,255), QColor(0,0,0,255))
+        console_colour = QPalette(QColor(255, 255, 255, 255), QColor(0, 0, 0, 255))
         self.textEditConsole.setPalette(console_colour)
         self.UI_console = bool(int(self.settings.value("UseUIConsole", defaultValue=1)))
         if self.UI_console:
@@ -232,7 +233,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         else:
             self.textEditConsole.setText("Standard console being used, this console can be enabled in the settings "
                                          "menu")
-        #Threading
+        # Threading
         self.jobs = []
         self.console_queue = Queue.Queue()
         self.console_task = threading.Thread(target=self.console, args=()).start()
@@ -356,7 +357,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         except Exception, e:
             QMessageBox.warning(self, "Error", "{}".format(e), QMessageBox.Ok)
 
-
     def opensettingsmenu(self):
         settings_menu = SettingsMenu(self.settings)
         settings_menu.exec_()
@@ -451,10 +451,10 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 sys.stdout = sys.__stdout__
                 sys.stderr = sys.__stderr__
                 proc = multiprocessing.Process(target=buttonrunprocess, args=(self.application_name, self.duration,
-                                                                     self.events, self.events_to_process,
-                                                                     self.preamble, self.subgraph, self.graph,
-                                                                     self.skip_tracing, self.changed_progress,
-                                                                     self.openallresults))
+                                                                              self.events, self.events_to_process,
+                                                                              self.preamble, self.subgraph, self.graph,
+                                                                              self.skip_tracing, self.changed_progress,
+                                                                              self.openallresults))
                 self.jobs.append(proc)
                 proc.start()
                 if self.UI_console:
@@ -462,9 +462,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
             else:
                 buttonrunprocess(self.application_name, self.duration,
-                                      self.events, self.events_to_process,
-                                      self.preamble, self.subgraph, self.graph,
-                                      self.skip_tracing, progress_signal=self.changed_progress,
+                                 self.events, self.events_to_process,
+                                 self.preamble, self.subgraph, self.graph,
+                                 self.skip_tracing, progress_signal=self.changed_progress,
                                  open=self.openallresults)
 
         except Exception, e:
@@ -477,33 +477,33 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
 def buttonrunprocess(application_name, duration, events, events_to_process, preamble, subgraph, graph, skip_tracing,
                      progress_signal=None, open=None):
-        print("Button process started")
-        try:
-            current_debugger = EnergyDebugger(
-                    application=application_name,
-                    duration=duration,
-                    events=events,
-                    event_count=events_to_process,
-                    preamble=preamble,
-                    graph=graph,
-                    subgraph=subgraph,
-                    skip_tracing=skip_tracing,
-                    progress_signal=progress_signal
-                    )
-            current_debugger.run()
-        except Exception, e:
-            print("Error: {}".format(e))
+    print("Button process started")
+    try:
+        current_debugger = EnergyDebugger(
+                application=application_name,
+                duration=duration,
+                events=events,
+                event_count=events_to_process,
+                preamble=preamble,
+                graph=graph,
+                subgraph=subgraph,
+                skip_tracing=skip_tracing,
+                progress_signal=progress_signal
+                )
+        current_debugger.run()
+    except Exception, e:
+        print("Error: {}".format(e))
 
-        print(" ------ FINISHED ------")
+    print(" ------ FINISHED ------")
 
-        if open:
-            open()
+    if open:
+        open()
+
 
 class QDebuggerThread(QThread):
-
     changed_progress = pyqtSignal(int)
 
-    def __init__(self, application_name, duration,events, events_to_process, preamble, subgraph, graph,
+    def __init__(self, application_name, duration, events, events_to_process, preamble, subgraph, graph,
                  skip_tracing, open):
         QThread.__init__(self)
         self.application_name = application_name
@@ -517,7 +517,6 @@ class QDebuggerThread(QThread):
         self.open = open
 
     def run(self):
-
         buttonrunprocess(self.application_name, self.duration, self.events, self.events_to_process, self.preamble,
                          self.subgraph, self.graph, self.skip_tracing, self.changed_progress, self.open)
 
@@ -552,7 +551,6 @@ class EnergyDebugger:
         self.tc_processor = None
         self.skip_tracing = skip_tracing
         self.progress_signal = progress_signal
-
 
         """ Required objects for tracking system metrics and interfacing with a target system, connected
         via an ADB connection.

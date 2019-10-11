@@ -5,6 +5,8 @@ Uses the tracecmd python module to parse the tracecmd events, found in a tracecm
 objects, found in the SystemEvents module of the energy debugger.
 """
 
+import sys
+
 from SystemEvents import *
 from tracecmd import Trace
 

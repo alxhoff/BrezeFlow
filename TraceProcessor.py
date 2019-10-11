@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+import sys
 import time
+import numpy as np
 
 from Grapher import Grapher
-from SystemEvents import *
+from ProcessTree import ProcessTree
 
 __author__ = "Alex Hoffman"
 __copyright__ = "Copyright 2019, Alex Hoffman"
@@ -80,7 +82,7 @@ class TraceProcessor:
                 if progress_signal:
                     progress_signal.emit((round(float(x) / no_temp_events * 100, 2)))
                 temp_history.append(
-                    process_tree.handle_temp_event(tracecmd.temp_events[x + 1], tracecmd.temp_events[x]))
+                        process_tree.handle_temp_event(tracecmd.temp_events[x + 1], tracecmd.temp_events[x]))
             if progress_signal:
                 progress_signal.emit(100)
             metrics.sys_temp_history.temps = np.block(temp_history)
