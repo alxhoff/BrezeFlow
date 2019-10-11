@@ -107,21 +107,6 @@ class TraceProcessor:
 
         try:
             start_time = time.time()
-            no_clusters = len(metrics.sys_util_history.clusters)
-            sys.stdout.write("Building cluster utilization table")
-            for x, cluster in enumerate(metrics.sys_util_history.clusters):  # Compile cluster utilizations
-                if progress_signal:
-                    progress_signal.emit(round(float(x) / no_clusters * 100, 2))
-                cluster.compile_table(metrics.sys_util_history.cpu[x * 4: x * 4 + 4])
-            if progress_signal:
-                progress_signal.emit(100)
-            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
-        except Exception, e:
-            print("Error building cluster utilization table: %s" % e)
-            return
-
-        try:
-            start_time = time.time()
             num_events = len(tracecmd.processed_events)
             sys.stdout.write("Processing %d events" % num_events)
 

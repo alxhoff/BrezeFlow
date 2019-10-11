@@ -120,24 +120,10 @@ class CPUUtilizationTable(UtilizationTable):
         self.core = core_num
         self.utils = []
 
-    def compile_lookup(self, start_time, end_time):
-        lookup_length = end_time - start_time + 1
-        self.utils = [0.0] * lookup_length
-        if len(self.events) != 0:
-            utils = []
-            for event in self.events:
-                util = round(event.util, 2)
-                util_array = np.full(event.duration + 1, [util])
-                utils.append(util_array)
-            self.utils = np.block(utils)
-        return
-
     def get_util(self, ts):
 
-        event_time = ts - self.start_time - 1
-
         try:
-            return self.utils[event_time]
+            return self.utils[ts - self.start_time - 1]
         except IndexError:
             return 0.0
 
@@ -147,42 +133,16 @@ class CPUUtilizationTable(UtilizationTable):
             self.start_time = event.time
             self.last_event_time = 0
             self.core_state = event.state
-            return 0
+            return
 
-        self.events.append(UtilizationSlice(
-                self.last_event_time, event.time - self.start_time,
-                SystemMetrics.current_metrics.current_core_freqs[event.cpu], state=self.core_state))
-
-        self.uw.add_state(self.events[-1].state, self.events[-1].duration)
-        self.events[-1].util = self.uw.calculate_util()
+        duration = event.time - self.start_time - self.last_event_time
+        self.uw.add_state(self.core_state, duration)
+        util = self.uw.calculate_util()
+        util_array = np.full(duration, [util])
+        np.concatenate((self.utils, util_array))
 
         self.last_event_time = event.time - self.start_time
         self.core_state = event.state
-
-
-class TotalUtilizationTable(UtilizationTable):
-
-    def __init__(self):
-        UtilizationTable.__init__(self)
-        self.end_time = 0
-        self.slices = []
-
-    def compile_table(self, cores):
-
-        self.start_time = min(core.start_time for core in cores)
-        self.end_time = 0
-
-        # get the starting and finishing time of the events on each core
-        for core in cores:
-            if len(core.events) != 0:
-                if (self.start_time + core.events[-1].start_time + core.events[-1].duration) > self.end_time:
-                    self.end_time = self.start_time + core.events[-1].start_time + core.events[-1].duration
-
-        # Compile util lookup tables for each core
-        for core in cores:
-            core.compile_lookup(self.start_time, self.end_time)
-
-        return
 
 
 class GPUUtilizationTable(UtilizationTable):
@@ -316,7 +276,7 @@ class SystemUtilization:
 
     def __init__(self, core_count):
         self.cpu = []
-        self.clusters = []
+        # self.clusters = []
         self.gpu = GPUUtilizationTable()
         self._init_tables(core_count)
 
@@ -324,8 +284,8 @@ class SystemUtilization:
         for x in range(core_count):
             self.cpu.append(CPUUtilizationTable(x))
         # TODO remove magic number
-        for x in range(2):
-            self.clusters.append(TotalUtilizationTable())
+        # for x in range(2):
+        #     self.clusters.append(TotalUtilizationTable())
 
 
 class SystemMetrics:
