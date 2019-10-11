@@ -252,23 +252,23 @@ class ProcessTree:
 
                                 if all(core_util <= 100.0 for core_util in core_utils_new_freq):
 
-                                    new_duration = scaling_factor * task.duration  # TODO all task durations
-                                    finish_time_on_little = int(round(task.start_time + new_duration))
-
-                                    try:
-                                        depender_start_time = task.dependency.depender.start_time
-                                    except Exception as e:
-                                        depender_start_time = 0
-                                        print "Task {} at time {} has no depender".format(task.events[0].name,
-                                                                                          task.events[0].time)
-
-                                    if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
-                                        task.optimization_info.set_info(
-                                                OptimizationInfoType.LONG_EXEC_DURATION.value,
-                                                "Execution of task would clash with depender task")
-                                        print("Clash")
-
-                                        continue
+                                    # new_duration = scaling_factor * task.duration  # TODO all task durations
+                                    # finish_time_on_little = int(round(task.start_time + new_duration))
+                                    #
+                                    # try:
+                                    #     depender_start_time = task.dependency.depender.start_time
+                                    # except Exception as e:
+                                    #     depender_start_time = 0
+                                    #     print "Task {} at time {} has no depender".format(task.events[0].name,
+                                    #                                                       task.events[0].time)
+                                    #
+                                    # if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
+                                    #     task.optimization_info.set_info(
+                                    #             OptimizationInfoType.LONG_EXEC_DURATION.value,
+                                    #             "Execution of task would clash with depender task")
+                                    #     print("Clash")
+                                    #
+                                    #     continue
 
                                     task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS.value,
                                                                     "Task can be reallocated")  # TODO
@@ -338,7 +338,7 @@ class ProcessTree:
         event.cpu_freq[0] = self.metrics.get_cpu_core_freq(0)
         event.cpu_freq[1] = self.metrics.get_cpu_core_freq(4)
         event.gpu_freq = self.metrics.current_gpu_freq
-        event.gpu_freq = self.metrics.current_gpu_util
+        event.gpu_util = self.metrics.current_gpu_util
 
         if event.time < start_time or event.time > finish_time:  # Event time window
             return 1

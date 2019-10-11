@@ -491,13 +491,12 @@ def buttonrunprocess(application_name, duration, events, events_to_process, prea
                 progress_signal=progress_signal
                 )
         current_debugger.run()
+        if open:
+            open()
     except Exception, e:
         print("Error: {}".format(e))
 
     print(" ------ FINISHED ------")
-
-    if open:
-        open()
 
 
 class QDebuggerThread(QThread):
