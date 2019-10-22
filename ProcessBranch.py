@@ -225,24 +225,24 @@ class ProcessBranch:
                     self.tasks[-1].finish()
                     self.active = False  # Current task has ended and new one will be needed
                     label = str(self.tasks[-1].start_time)[:-6] + "." \
-                            + str(self.tasks[-1].start_time)[-6:] \
-                            + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "." \
-                            + str(self.tasks[-1].finish_time)[-6:] \
-                            + "\nCPU: " + str(event.cpu) + " @ " + \
-                            str(event.cpu_freq[0 if event.cpu < 4 else 1]) + "Hz" \
-                            + "\nUtil: " + str(self.tasks[-1].util) + "%" \
-                            + "   Temp: " + str(self.tasks[-1].temp) \
-                            + "   PID: " + str(event.pid) \
-                            + "\nGPU: " + str(event.gpu_freq) + "Hz   " \
-                            + str(event.gpu_util) + "% Util" \
-                            + "\nDuration: " + str(self.tasks[-1].duration) \
-                            + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
-                            + "\nEnergy: " + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
-                                                                                             -1].energy[0]) \
-                            + "\n Dependency: " + str(self.tasks[-1].dependency.type) \
-                            + "\n" + self.tname \
-                            + "\n" + self.pname \
-                            + "\n" + str(self.tasks[-1].__class__.__name__)
+                        + str(self.tasks[-1].start_time)[-6:] \
+                        + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "." \
+                        + str(self.tasks[-1].finish_time)[-6:] \
+                        + "\nCPU: " + str(event.cpu) + " @ " + \
+                        str(event.cpu_freq[0 if event.cpu < 4 else 1]) + "Hz" \
+                        + "\nUtil: " + str(self.tasks[-1].util) + "%" \
+                        + "   Temp: " + str(self.tasks[-1].temp) \
+                        + "   PID: " + str(event.pid) \
+                        + "\nGPU: " + str(event.gpu_freq) + "Hz   " \
+                        + str(event.gpu_util) + "% Util" \
+                        + "\nDuration: " + str(self.tasks[-1].duration) \
+                        + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
+                        + "\nEnergy: " + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
+                            -1].energy[0]) \
+                        + "\n Dependency: " + str(self.tasks[-1].dependency.type) \
+                        + "\n" + self.tname \
+                        + "\n" + self.pname \
+                        + "\n" + str(self.tasks[-1].__class__.__name__)
 
                     self.graph.add_node(self.tasks[-1],
                                         label=label,
@@ -297,7 +297,7 @@ class ProcessBranch:
             self.binder_tasks[-1].finish()
             self.graph.add_node(self.binder_tasks[-1],
                                 label=str(self.binder_tasks[-1].events[0].time)[:-6]
-                                      + "." + str(self.binder_tasks[-1].events[0].time)[-6:]
+                                + "." + str(self.binder_tasks[-1].events[0].time)[-6:]
                                       + " ==> " + str(self.binder_tasks[-1].events[-1].time)[:-6]
                                       + "." + str(self.binder_tasks[-1].events[-1].time)[-6:]
                                       + "\nPID: " + str(event.pid)

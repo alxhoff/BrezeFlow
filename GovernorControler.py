@@ -42,12 +42,13 @@ class GovernorController:
     def set_max_freq(self, cpu, freq):
         self.adb.command("echo {} > /sys/devices/system/cpu/cpu{}/cpufreq/scaling_max_freq".format(freq, cpu))
 
-    def reset_cpu_frequencies(self, cpu):
+    def get_cpu_frequencies(self, cpu):
         table_path = "/sys/devices/system/cpu/cpufreq/mp-cpufreq/{}_freq_table".format(self.little_name if cpu <= 3 else
                                                                                        self.big_name)
-        freqs = self.adb.command("cat {}".format(table_path)).split()
-        min_freq = freqs[-1]
-        max_freq = freqs[0]
+        return self.adb.command("cat {}".format(table_path)).split()
 
-        self.set_min_freq(cpu, min_freq)
-        self.set_max_freq(cpu, max_freq)
+    def reset_cpu_frequencies(self, cpu):
+        freqs = self.get_cpu_frequencies()
+
+        self.set_min_freq(cpu, freqs[-1])
+        self.set_max_freq(cpu, freqs[0])
