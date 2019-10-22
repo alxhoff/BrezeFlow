@@ -552,7 +552,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
 def buttonrunprocess(adb, application_name, duration, events, events_to_process, preamble, subgraph, graph,
                      skip_tracing, progress_signal=None, open=None):
-    print("Button process started")
+
     try:
         current_debugger = EnergyDebugger(
                 adb=adb,
@@ -578,9 +578,10 @@ def buttonrunprocess(adb, application_name, duration, events, events_to_process,
 class QDebuggerThread(QThread):
     changed_progress = pyqtSignal(int)
 
-    def __init__(self, application_name, duration, events, events_to_process, preamble, subgraph, graph,
+    def __init__(self, adb, application_name, duration, events, events_to_process, preamble, subgraph, graph,
                  skip_tracing, open):
         QThread.__init__(self)
+        self.adb = adb
         self.application_name = application_name
         self.duration = duration
         self.events = events
@@ -592,8 +593,8 @@ class QDebuggerThread(QThread):
         self.open = open
 
     def run(self):
-        buttonrunprocess(self.application_name, self.duration, self.events, self.events_to_process, self.preamble,
-                         self.subgraph, self.graph, self.skip_tracing, self.changed_progress, self.open)
+        buttonrunprocess(self.adb, self.application_name, self.duration, self.events, self.events_to_process,
+                         self.preamble, self.subgraph, self.graph, self.skip_tracing, self.changed_progress, self.open)
 
 
 class CommandInterface:

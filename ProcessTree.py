@@ -80,7 +80,7 @@ class ProcessTree:
         """
         with open("results/" + filename + "_results.csv", "w+") as f:
 
-            writer = csv.writer(f, delimiter=',')
+            results_writer = csv.writer(f, delimiter=',')
 
             # Start and end time
             start_time = 0
@@ -96,29 +96,21 @@ class ProcessTree:
                             or finish_time == 0:
                         finish_time = branch.tasks[-1].start_time + branch.tasks[-1].duration
 
-            writer.writerow(["Application", filename])
-            writer.writerow(["Start", start_time / 1000000.0])
-            writer.writerow(["Finish", finish_time / 1000000.0])
+            results_writer.writerow(["Application", filename])
+            results_writer.writerow(["Start", start_time / 1000000.0])
+            results_writer.writerow(["Finish", finish_time / 1000000.0])
             duration = (finish_time - start_time) * 0.000001
-            writer.writerow(["Duration", duration])
-            writer.writerow([])
-
-            writer.writerow(["PID", "Process Name", "Thread Name", "Task Count",
-                             "Energy", "Duration"])
+            results_writer.writerow(["Duration", duration])
+            results_writer.writerow([])
 
             total_energy = 0.0
             optimizations_found = [0, 0]
 
-            # Calculate GPU energy
-            gpu_energy = self.metrics.sys_util_history.gpu.get_energy(start_time, finish_time)
-            writer.writerow(["GPU", gpu_energy])
-
-            total_energy += gpu_energy
-
             with open("results/" + filename + "_optimizations.csv", "w+") as f_op:
                 op_writer = csv.writer(f_op, delimiter=',')
-                op_writer.writerow(["Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core", "New Freq",
-                                    "New Util", "Optimization Type"])
+                op_writer.writerow(["Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core",
+                                    "New Core's Old Freq", "New Freq", "Prev Util", "New Util", "Optimization Type"])
+                op_writer.writerow([])
 
                 for x in list(self.process_branches.keys()):
 
@@ -138,7 +130,7 @@ class ProcessTree:
                     if branch.energy == 0.0:
                         continue
 
-                    writer.writerow([branch.pid, branch.pname, branch.tname, str(len(branch.tasks)),
+                    results_writer.writerow([branch.pid, branch.pname, branch.tname, str(len(branch.tasks)),
                                      branch.energy, branch.duration])
 
                     mf = self.metrics.energy_profile.migration_factor
@@ -171,11 +163,13 @@ class ProcessTree:
 
                             little_core_index = np.argmin(cores_utils[:4])  # Core with most capacity
 
+                            prev_util = cores_utils[little_core_index]
+
                             little_cores = cores_utils[:4]
 
                             cur_little_cpu_freq = float(task.events[0].cpu_freq[0])
 
-                            cycles_on_little = task_cycles * mf
+                            cycles_on_little = round(task_cycles * mf)
 
                             for little_freq in lf:
 
@@ -193,10 +187,13 @@ class ProcessTree:
                                     available_cycles_on_little_at_new_freq = \
                                         round((1.0 - (core_utils_new_freq[little_core_index] / 100)) * little_freq)
 
-                                    required_duration = cycles_on_little / available_cycles_on_little_at_new_freq \
-                                                        * 1000000  # Micro seconds in a second
+                                    required_duration \
+                                        = cycles_on_little / available_cycles_on_little_at_new_freq * 1000000
 
                                     finish_time_on_little = int(round(task.start_time + required_duration))
+
+                                    new_util_on_target_core = core_utils_new_freq[little_core_index] + \
+                                                              (cycles_on_little / little_freq * 100)
 
                                     try:
                                         depender_start_time = task.dependency.depender.start_time
@@ -214,8 +211,9 @@ class ProcessTree:
                                         op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
                                                             task.events[0].cpu,
                                                             task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
-                                                            little_core_index, little_freq,
-                                                            core_utils_new_freq[little_core_index],
+                                                            little_core_index, task.events[0].cpu_freq[0],
+                                                            little_freq, prev_util,
+                                                            new_util_on_target_core,
                                                             str(task.optimization_info)])
 
                                         optimizations_found[0] += 1
@@ -242,9 +240,12 @@ class ProcessTree:
                             if core_index != task.events[0].cpu:  # Reallocate util to different core
                                 task_util = float(task.duration) / \
                                             self.metrics.sys_util_history.cpu[0].uw.window_duration * 100
+                                prev_util = \
+                                    cores[task.events[0].cpu if task.events[0].cpu <= 3 else (task.events[0].cpu - 4)]
                                 cores[task.events[0].cpu if task.events[0].cpu <= 3 else (task.events[0].cpu - 4)] -= \
                                     task_util
                                 cores[core_index] += task_util
+                                task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_REALLOC)
 
                             for freq in freqs:
 
@@ -272,25 +273,37 @@ class ProcessTree:
                                     #
                                     #     continue
 
-                                    task.optimization_info.set_message("Task can be reallocated")
+                                    task.optimization_info.set_message("DVFS optimization possible")
                                     task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_DVFS)
                                     op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
                                                         task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
-                                                        core_index, freq, core_utils_new_freq[core_index],
-                                                        str(task.optimization_info)])
+                                                        core_index, cur_cpu_freq, freq, prev_util,
+                                                        core_utils_new_freq[core_index], str(task.optimization_info)])
                                     optimizations_found[1] += 1
                                     break
 
-            writer.writerow([])
-            writer.writerow(["Total Energy", total_energy])
+            results_writer.writerow(["Optimizations", "Reallocations", "DVFS"])
+            results_writer.writerow(["", optimizations_found[0], optimizations_found[1]])
+            results_writer.writerow([])
+
+            results_writer.writerow(["PID", "Process Name", "Thread Name", "Task Count", "Energy", "Duration"])
+
+            # Calculate GPU energy
+            gpu_energy = self.metrics.sys_util_history.gpu.get_energy(start_time, finish_time)
+            results_writer.writerow(["GPU", gpu_energy])
+
+            total_energy += gpu_energy
+
+            results_writer.writerow([])
+            results_writer.writerow(["Total Energy", total_energy])
             try:
-                writer.writerow(["Average wattage", total_energy / duration])
+                results_writer.writerow(["Average wattage", total_energy / duration])
             except ZeroDivisionError:
                 print "No events were recorded!"
 
-            writer.writerow([])
-            writer.writerow(["Energy Timeline"])
+            results_writer.writerow([])
+            results_writer.writerow(["Energy Timeline"])
 
             timeline_interval = 0.05
             energy_timeline = [[(0.0, 0.0), 0.0, (0.0, 0.0, 0.0), 0.0, 0] for _ in range(int(
@@ -314,11 +327,11 @@ class ProcessTree:
                 second[3] = SystemMetrics.current_metrics.sys_util_history.gpu.get_util(i * timeline_interval * 1000000)
                 second[4] = SystemMetrics.current_metrics.sys_util_history.gpu.get_freq(i * timeline_interval * 1000000)
 
-            writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "Big Energy", "Little Energy",
+            results_writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "Big Energy", "Little Energy",
                              "GPU Energy", "Total Energy", "Temps", "GPU Util", "GPU Freq"])
 
             for x, second in enumerate(energy_timeline):
-                writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
+                results_writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
                                  str(second[0][0] + second[0][1]), str(second[0][1]), str(second[0][0]), str(second[1]),
                                  str(second[0][0] + second[0][1] + second[1]), str(second[2]), str(second[3]),
                                  str(second[4])])
@@ -349,8 +362,7 @@ class ProcessTree:
         elif isinstance(event, EventSchedSwitch):  # PID context swap
 
             # Task being switched out, ignoring idle task and binder threads
-            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids:  # and "GLThread" not in event.name:
-                # TODO why do GLThreads run rampant in some games?
+            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids:
                 try:
                     process_branch = self.process_branches[event.pid]
                     process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
@@ -374,8 +386,6 @@ class ProcessTree:
                                 del self.completed_binder_calls[x]
                                 break
 
-                            print "New Binder thread found: " + str(pending_binder_node.binder_thread)
-
                             self.process_branches[pending_binder_node.binder_thread] = \
                                 ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
                                               self.pidtracer,
@@ -390,8 +400,6 @@ class ProcessTree:
                             if not pid_info:
                                 del self.completed_binder_calls[x]
                                 break
-
-                            print "New PID of interest found: " + str(pid_info.pid)
 
                             self.process_branches[event.next_pid] = \
                                 ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
