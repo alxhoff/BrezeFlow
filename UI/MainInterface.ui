@@ -659,8 +659,14 @@
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_15">
-          <item>
+          <item alignment="Qt::AlignHCenter">
            <widget class="QLabel" name="label_13">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
             <property name="text">
              <string>Current Governor</string>
             </property>
@@ -681,30 +687,30 @@
              <set>Qt::AlignCenter</set>
             </property>
             <property name="margin">
-             <number>2</number>
+             <number>5</number>
             </property>
            </widget>
           </item>
          </layout>
         </widget>
        </item>
-       <item alignment="Qt::AlignHCenter">
-        <widget class="QFrame" name="frameAvailableGovernors">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
+       <item>
+        <widget class="QFrame" name="frame_5">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
          <property name="frameShadow">
           <enum>QFrame::Raised</enum>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_13">
-          <item>
+         <layout class="QVBoxLayout" name="verticalLayout_17">
+          <item alignment="Qt::AlignHCenter">
            <widget class="QLabel" name="label_12">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
             <property name="text">
              <string>Available Governors</string>
             </property>

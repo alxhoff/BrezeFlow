@@ -229,8 +229,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.textEditConsole.setPalette(console_colour)
         self.UI_console = bool(int(self.settings.value("UseUIConsole", defaultValue=1)))
         if self.UI_console:
-            sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
-            sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
+            sys.stdout = EmittingStream(textWritten=self.normal_output_written)
+            sys.stderr = EmittingStream(textWritten=self.normal_output_written)
         else:
             self.textEditConsole.setText("Standard console being used, this console can be enabled in the settings "
                                          "menu")
@@ -340,7 +340,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         self.governor_controller.set_governor(new_governor)
         self.labelCurrentGovernor.setText(new_governor)
-        print("wait here")
 
     def console(self):
         cursor = self.textEditConsole.textCursor()
@@ -354,7 +353,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             except Exception, e:
                 print("Updating console failed, %s" % e)
 
-    def normalOutputWritten(self, text):
+    def normal_output_written(self, text):
         try:
             self.console_queue.put(str(text))
         except Exception, e:
@@ -516,7 +515,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     except Exception:
                         print("Could not terminate current debug task")
                         return
-                self.debug_task = QDebuggerThread(self.application_name, self.duration, self.events,
+                self.debug_task = QDebuggerThread(self.adb, self.application_name, self.duration, self.events,
                                                   self.events_to_process, self.preamble, self.subgraph, self.graph,
                                                   self.skip_tracing, self.openallresults)
                 self.debug_task.changed_progress.connect(self.progressBar.setValue)
@@ -536,8 +535,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 self.jobs.append(proc)
                 proc.start()
                 if self.UI_console:
-                    sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
-                    sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
+                    sys.stdout = EmittingStream(textWritten=self.normal_output_written)
+                    sys.stderr = EmittingStream(textWritten=self.normal_output_written)
             else:
                 buttonrunprocess(self.adb, self.application_name, self.duration, self.events, self.events_to_process,
                                  self.preamble, self.subgraph, self.graph, self.skip_tracing,
@@ -616,7 +615,7 @@ class EnergyDebugger:
 
     def __init__(self, adb, application, duration, events, event_count, preamble, graph, subgraph, skip_tracing,
                  progress_signal):
-
+        self.adb = adb
         self.application = application
         self.duration = duration
         self.events = []
@@ -632,7 +631,6 @@ class EnergyDebugger:
         via an ADB connection.
         """
         start_time = time.time()
-        self.adb = adb
         print("ADB interface created --- %s Sec" % (time.time() - start_time))
         start_time = time.time()
         try:
