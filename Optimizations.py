@@ -13,9 +13,8 @@ from enum import Enum
 
 class OptimizationInfoType(Enum):
     NONE = 0
-    LONG_EXEC_DURATION = 0b1
-    POSSIBLE_DVFS = 0b10
-    POSSIBLE_REALLOC = 0b100
+    POSSIBLE_DVFS = 0b1
+    POSSIBLE_REALLOC = 0b10
 
     def __str__(self):
         return "%s" % self.name
@@ -31,18 +30,15 @@ class OptimizationInfo:
     def __str__(self):
         ret = ""
 
-        if self.optim_type & OptimizationInfoType.LONG_EXEC_DURATION.value:
-            ret += "Long execution duration"
-
         if self.optim_type & OptimizationInfoType.POSSIBLE_DVFS.value:
             if ret != "":
                 ret += ", "
-            ret += "Possible DVFS"
+            ret += "DVFS"
 
         if self.optim_type & OptimizationInfoType.POSSIBLE_REALLOC.value:
             if ret != "":
                 ret += ", "
-            ret += "Possible Reallocation"
+            ret += "Task Reallocation"
 
         return ret
 

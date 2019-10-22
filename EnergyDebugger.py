@@ -17,6 +17,7 @@ import AboutDialog
 import MainInterface
 import SettingsDialog
 from ADBInterface import ADBInterface
+from GovernorControler import GovernorController
 from PIDTool import PIDTool
 from SysLoggerInterface import SysLogger
 from SystemMetrics import SystemMetrics
@@ -256,6 +257,16 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.subgraph = False
         self.skip_tracing = False
 
+        # Governor control
+        self.governorRadioButtons = []
+        self.adb = ADBInterface()
+        self.governor_controller = GovernorController(self.adb)
+        try:
+            self.set_governors()
+        except Exception, e:
+            print(e)
+
+
     def __del__(self):
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
@@ -264,6 +275,36 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             job.terminate()
 
         self.console_task._stop_event.set()
+
+    def set_governors(self):
+        governors = self.governor_controller.get_governors()
+        current_governor = self.governor_controller.get_current_governor()
+
+        self.labelCurrentGovernor.setText(str(current_governor))
+
+        for governor in governors:
+            rb = QRadioButton(governor)
+
+            self.governorRadioButtons.append(rb)
+
+            if governor == current_governor:
+                rb.setChecked(True)
+            else:
+                rb.setChecked(False)
+            rb.clicked.connect(lambda:self.governor_changed())
+            self.verticalLayoutGovernors.addWidget(rb)
+
+    def governor_changed(self):
+        new_governor = ""
+
+        for rb in self.governorRadioButtons:
+            if rb.isChecked():
+                new_governor = rb.text()
+                break
+
+        self.governor_controller.set_governor(new_governor)
+        self.labelCurrentGovernor.setText(new_governor)
+        print("wait here")
 
     def console(self):
         cursor = self.textEditConsole.textCursor()
@@ -450,9 +491,10 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 # main program's process
                 sys.stdout = sys.__stdout__
                 sys.stderr = sys.__stderr__
-                proc = multiprocessing.Process(target=buttonrunprocess, args=(self.application_name, self.duration,
-                                                                              self.events, self.events_to_process,
-                                                                              self.preamble, self.subgraph, self.graph,
+                proc = multiprocessing.Process(target=buttonrunprocess, args=(self.adb, self.application_name,
+                                                                              self.duration, self.events,
+                                                                              self.events_to_process, self.preamble,
+                                                                              self.subgraph, self.graph,
                                                                               self.skip_tracing, self.changed_progress,
                                                                               self.openallresults))
                 self.jobs.append(proc)
@@ -461,11 +503,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     sys.stdout = EmittingStream(textWritten=self.normalOutputWritten)
                     sys.stderr = EmittingStream(textWritten=self.normalOutputWritten)
             else:
-                buttonrunprocess(self.application_name, self.duration,
-                                 self.events, self.events_to_process,
-                                 self.preamble, self.subgraph, self.graph,
-                                 self.skip_tracing, progress_signal=self.changed_progress,
-                                 open=self.openallresults)
+                buttonrunprocess(self.adb, self.application_name, self.duration, self.events, self.events_to_process,
+                                 self.preamble, self.subgraph, self.graph, self.skip_tracing,
+                                 progress_signal=self.changed_progress, open=self.openallresults)
 
         except Exception, e:
             QMessageBox.critical(self, "Error", e, QMessageBox.Ok)
@@ -475,11 +515,12 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         os.system("killall adb")
 
 
-def buttonrunprocess(application_name, duration, events, events_to_process, preamble, subgraph, graph, skip_tracing,
-                     progress_signal=None, open=None):
+def buttonrunprocess(adb, application_name, duration, events, events_to_process, preamble, subgraph, graph,
+                     skip_tracing, progress_signal=None, open=None):
     print("Button process started")
     try:
         current_debugger = EnergyDebugger(
+                adb=adb,
                 application=application_name,
                 duration=duration,
                 events=events,
@@ -537,7 +578,7 @@ class CommandInterface:
 
 class EnergyDebugger:
 
-    def __init__(self, application, duration, events, event_count, preamble, graph, subgraph, skip_tracing,
+    def __init__(self, adb, application, duration, events, event_count, preamble, graph, subgraph, skip_tracing,
                  progress_signal):
 
         self.application = application
@@ -555,7 +596,7 @@ class EnergyDebugger:
         via an ADB connection.
         """
         start_time = time.time()
-        self.adb = ADBInterface()
+        self.adb = adb
         print("ADB interface created --- %s Sec" % (time.time() - start_time))
         start_time = time.time()
         try:

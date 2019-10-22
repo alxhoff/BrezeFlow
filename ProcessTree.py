@@ -96,6 +96,7 @@ class ProcessTree:
                             or finish_time == 0:
                         finish_time = branch.tasks[-1].start_time + branch.tasks[-1].duration
 
+            writer.writerow(["Application", filename])
             writer.writerow(["Start", start_time / 1000000.0])
             writer.writerow(["Finish", finish_time / 1000000.0])
             duration = (finish_time - start_time) * 0.000001
