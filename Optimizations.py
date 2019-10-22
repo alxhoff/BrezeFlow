@@ -23,12 +23,34 @@ class OptimizationInfoType(Enum):
 
 class OptimizationInfo:
 
-    def __init__(self, graph_node, error_type=OptimizationInfoType.NONE, message=""):
+    def __init__(self, graph_node, optim_type=OptimizationInfoType.NONE.value, message=""):
         self.graph_node = graph_node
-        self.error_type = error_type
+        self.optim_type = optim_type
         self.message = message
 
-    def set_info(self, error_type, message):
-        self.error_type
-        self.message
+    def __str__(self):
+        ret = ""
+
+        if self.optim_type & OptimizationInfoType.LONG_EXEC_DURATION.value:
+            ret += "Long execution duration"
+
+        if self.optim_type & OptimizationInfoType.POSSIBLE_DVFS.value:
+            if ret != "":
+                ret += ", "
+            ret += "Possible DVFS"
+
+        if self.optim_type & OptimizationInfoType.POSSIBLE_REALLOC.value:
+            if ret != "":
+                ret += ", "
+            ret += "Possible Reallocation"
+
+        return ret
+
+    def set_message(self, message):
+        self.message = message
+
+    def add_optim_type(self, optim_type):
+        self.optim_type |= optim_type.value
+
+
 

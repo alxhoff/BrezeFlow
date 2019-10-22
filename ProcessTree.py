@@ -117,7 +117,7 @@ class ProcessTree:
             with open("results/" + filename + "_optimizations.csv", "w+") as f_op:
                 op_writer = csv.writer(f_op, delimiter=',')
                 op_writer.writerow(["Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core", "New Freq",
-                                    "New Util"])
+                                    "New Util", "Optimization Type"])
 
                 for x in list(self.process_branches.keys()):
 
@@ -160,6 +160,7 @@ class ProcessTree:
 
                         task_cycles = task.cpu_cycles
 
+                        # Reallocate to small core
                         if task.events[0].cpu > 3:  # big TODO fix the use of the first event's CPU
 
                             cores_utils.append(cores.cpu[4].get_util(task.finish_time))
@@ -189,7 +190,7 @@ class ProcessTree:
 
                                     # Realloc to little
                                     available_cycles_on_little_at_new_freq = \
-                                        round((1 - (core_utils_new_freq[little_core_index] / 100)) * little_freq)
+                                        round((1.0 - (core_utils_new_freq[little_core_index] / 100)) * little_freq)
 
                                     required_duration = cycles_on_little / available_cycles_on_little_at_new_freq \
                                                         * 1000000  # Micro seconds in a second
@@ -202,28 +203,28 @@ class ProcessTree:
                                         continue
 
                                     if finish_time_on_little < depender_start_time:
-                                        optim_type = OptimizationInfoType.POSSIBLE_REALLOC.value
+                                        task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_REALLOC)
 
                                         if little_freq != task.events[0].cpu_freq[0]:
-                                            optim_type |= OptimizationInfoType.POSSIBLE_DVFS.value
+                                            task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_DVFS)
 
-                                        task.optimization_info.set_info(optim_type.value,
-                                                                        "Task can be reallocated")  # TODO
+                                        task.optimization_info.set_message("Task can be reallocated")
 
                                         op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
                                                             task.events[0].cpu,
-                                                            task.events[0].cpu_freq[0 if task.events[0].cpu <
-                                                                                         4 else 1], little_core_index,
-                                                            little_freq, core_utils_new_freq[little_core_index]])
+                                                            task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
+                                                            little_core_index, little_freq,
+                                                            core_utils_new_freq[little_core_index],
+                                                            str(task.optimization_info)])
 
                                         optimizations_found[0] += 1
                                         break
 
-                        # If not running on the minimum DVFS of given cluster
+                        # Current core not running at minimum DVFS
                         if (task.events[0].cpu <= 3 and task.events[0].cpu_freq[0] != lf[0]) \
                                 or (task.events[0].cpu >= 4 and task.events[0].cpu_freq[1] != bf[0]):
 
-                            cur_cpu_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1])
+                            cur_cpu_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu <= 3 else 1])
 
                             if task.events[0].cpu <= 3:  # LITTLE
                                 freq_index = lf.index(cur_cpu_freq)
@@ -237,10 +238,10 @@ class ProcessTree:
                                 cores = cores_utils[4:]
                                 core_index = np.argmin(cores_utils[4:])
 
-                            if core_index != task.events[0].cpu:  # Reallocate util
+                            if core_index != task.events[0].cpu:  # Reallocate util to different core
                                 task_util = float(task.duration) / \
                                             self.metrics.sys_util_history.cpu[0].uw.window_duration * 100
-                                cores[task.events[0].cpu if task.events[0].cpu < 4 else task.events[0].cpu - 4] -= \
+                                cores[task.events[0].cpu if task.events[0].cpu <= 3 else (task.events[0].cpu - 4)] -= \
                                     task_util
                                 cores[core_index] += task_util
 
@@ -270,12 +271,13 @@ class ProcessTree:
                                     #
                                     #     continue
 
-                                    task.optimization_info.set_info(OptimizationInfoType.POSSIBLE_DVFS.value,
-                                                                    "Task can be reallocated")  # TODO
+                                    task.optimization_info.set_message("Task can be reallocated")
+                                    task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_DVFS)
                                     op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
                                                         task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
-                                                        core_index, freq, core_utils_new_freq[core_index]])
+                                                        core_index, freq, core_utils_new_freq[core_index],
+                                                        str(task.optimization_info)])
                                     optimizations_found[1] += 1
                                     break
 
