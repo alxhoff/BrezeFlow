@@ -261,10 +261,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.governorRadioButtons = []
         self.adb = ADBInterface()
         self.governor_controller = GovernorController(self.adb)
-        try:
-            self.set_governors()
-        except Exception, e:
-            print(e)
+        self.setup_governors()
 
 
     def __del__(self):
@@ -276,7 +273,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         self.console_task._stop_event.set()
 
-    def set_governors(self):
+    def setup_governors(self):
         governors = self.governor_controller.get_governors()
         current_governor = self.governor_controller.get_current_governor()
 
@@ -293,6 +290,45 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 rb.setChecked(False)
             rb.clicked.connect(lambda:self.governor_changed())
             self.verticalLayoutGovernors.addWidget(rb)
+
+        self.update_frequency_display()
+
+        self.pushButtonSetLittleFreqs.clicked.connect(self.set_little_frequencies)
+        self.pushButtonResetLittleFreqs.clicked.connect(self.reset_little_frequencies)
+        self.pushButtonSetBigFreqs.clicked.connect(self.set_big_frequencies)
+        self.pushButtonResetBigFreqs.clicked.connect(self.reset_big_frequencies)
+
+    def update_frequency_display(self):
+        little_min = str(self.governor_controller.get_min_freq(0))
+        little_max = str(self.governor_controller.get_max_freq(0))
+        self.labelLittleMinFreq.setText(little_min)
+        self.labelLittleMaxFreq.setText(little_max)
+        self.lineEditLittleMinFreq.setText(little_min)
+        self.lineEditLittleMaxFreq.setText(little_max)
+        big_min = str(self.governor_controller.get_min_freq(4))
+        big_max = str(self.governor_controller.get_max_freq(4))
+        self.labelBigMinFreq.setText(big_min)
+        self.labelBigMaxFreq.setText(big_max)
+        self.lineEditBigMinFreq.setText(big_min)
+        self.lineEditBigMaxFreq.setText(big_max)
+
+    def set_little_frequencies(self):
+        self.governor_controller.set_min_freq(0, self.lineEditLittleMinFreq.text())
+        self.governor_controller.set_max_freq(0, self.lineEditLittleMaxFreq.text())
+        self.update_frequency_display()
+
+    def set_big_frequencies(self):
+        self.governor_controller.set_min_freq(4, self.lineEditBigMinFreq.text())
+        self.governor_controller.set_max_freq(4, self.lineEditBigMaxFreq.text())
+        self.update_frequency_display()
+
+    def reset_little_frequencies(self):
+        self.governor_controller.reset_cpu_frequencies(0)
+        self.update_frequency_display()
+
+    def reset_big_frequencies(self):
+        self.governor_controller.reset_cpu_frequencies(4)
+        self.update_frequency_display()
 
     def governor_changed(self):
         new_governor = ""
