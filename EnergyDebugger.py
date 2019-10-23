@@ -10,7 +10,7 @@ import threading
 import time
 
 from PyQt5.QtCore import QSettings, QObject, pyqtSignal, QThread
-from PyQt5.QtGui import QTextCursor, QPalette, QColor
+from PyQt5.QtGui import QTextCursor, QPalette, QColor, QGuiApplication
 from PyQt5.QtWidgets import *
 
 import AboutDialog
@@ -211,6 +211,7 @@ class EmittingStream(QObject):
 class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
     results_path = ""
     changed_progress = pyqtSignal(int)
+    changed_test_count = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
@@ -240,6 +241,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.console_task = threading.Thread(target=self.console, args=()).start()
         self.debug_task = None
         self.changed_progress.connect(self.progressBar.setValue)
+        self.changed_test_count.connect(self.labelTestsCompleted.setText)
 
         self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
         self.trace_file = None
@@ -259,7 +261,11 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         # Governor control
         self.governorRadioButtons = []
-        self.adb = ADBInterface()
+        try:
+            self.adb = ADBInterface()
+        except Exception, e:
+            print("Could not open an ADB connection to device")
+            exit()
         self.governor_controller = GovernorController(self.adb)
         self.setup_governors()
 
@@ -506,41 +512,57 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             self.graph = self.checkBoxDrawGraph.isChecked()
             self.skip_tracing = self.checkBoxSkipTracing.isChecked()
 
-            if bool(int(self.settings.value("OptimizeWithThreads", defaultValue=1))):
-                print("Running debugger with multithreading")
+            if self.checkBoxTestAutomation.isChecked():  # TODO allow test automation to be multithreaded
+                no_of_tests = self.spinBoxNoOfTests.value()
+                test_start_value = self.spinBoxStartTestValue.value() - 1
 
-                if self.debug_task:
-                    try:
-                        self.debug_task.terminate()
-                    except Exception:
-                        print("Could not terminate current debug task")
-                        return
-                self.debug_task = QDebuggerThread(self.adb, self.application_name, self.duration, self.events,
-                                                  self.events_to_process, self.preamble, self.subgraph, self.graph,
-                                                  self.skip_tracing, self.openallresults)
-                self.debug_task.changed_progress.connect(self.progressBar.setValue)
-                self.debug_task.start()
-            elif bool(int(self.settings.value("OptimizeWithProcesses", defaultValue=1))):
-                print("Running debugger with multiprocessing, outputing to system console")
-                # Separate processes means that the generated process cannot access the UI console created in the
-                # main program's process
-                sys.stdout = sys.__stdout__
-                sys.stderr = sys.__stderr__
-                proc = multiprocessing.Process(target=buttonrunprocess, args=(self.adb, self.application_name,
-                                                                              self.duration, self.events,
-                                                                              self.events_to_process, self.preamble,
-                                                                              self.subgraph, self.graph,
-                                                                              self.skip_tracing, self.changed_progress,
-                                                                              self.openallresults))
-                self.jobs.append(proc)
-                proc.start()
-                if self.UI_console:
-                    sys.stdout = EmittingStream(textWritten=self.normal_output_written)
-                    sys.stderr = EmittingStream(textWritten=self.normal_output_written)
+                self.labelTestsCompleted.setText("0")
+
+                for x in range(test_start_value, test_start_value + no_of_tests):
+                    buttonrunprocess(self.adb, self.application_name, self.duration, self.events,
+                                     self.events_to_process,
+                                     self.preamble, self.subgraph, self.graph, self.skip_tracing,
+                                     progress_signal=self.changed_progress, open_func=self.openallresults,
+                                     subdir=str(x + 1))
+                    self.changed_test_count.emit(str(x - test_start_value + 1))
+                    QGuiApplication.processEvents()
+
             else:
-                buttonrunprocess(self.adb, self.application_name, self.duration, self.events, self.events_to_process,
-                                 self.preamble, self.subgraph, self.graph, self.skip_tracing,
-                                 progress_signal=self.changed_progress, open=self.openallresults)
+                if bool(int(self.settings.value("OptimizeWithThreads", defaultValue=1))):
+                    print("Running debugger with multithreading")
+
+                    if self.debug_task:
+                        try:
+                            self.debug_task.terminate()
+                        except Exception:
+                            print("Could not terminate current debug task")
+                            return
+                    self.debug_task = QDebuggerThread(self.adb, self.application_name, self.duration, self.events,
+                                                      self.events_to_process, self.preamble, self.subgraph, self.graph,
+                                                      self.skip_tracing, self.openallresults)
+                    self.debug_task.changed_progress.connect(self.progressBar.setValue)
+                    self.debug_task.start()
+                elif bool(int(self.settings.value("OptimizeWithProcesses", defaultValue=1))):
+                    print("Running debugger with multiprocessing, outputing to system console")
+                    # Separate processes means that the generated process cannot access the UI console created in the
+                    # main program's process
+                    sys.stdout = sys.__stdout__
+                    sys.stderr = sys.__stderr__
+                    proc = multiprocessing.Process(target=buttonrunprocess, args=(self.adb, self.application_name,
+                                                                                  self.duration, self.events,
+                                                                                  self.events_to_process, self.preamble,
+                                                                                  self.subgraph, self.graph,
+                                                                                  self.skip_tracing, self.changed_progress,
+                                                                                  self.openallresults))
+                    self.jobs.append(proc)
+                    proc.start()
+                    if self.UI_console:
+                        sys.stdout = EmittingStream(textWritten=self.normal_output_written)
+                        sys.stderr = EmittingStream(textWritten=self.normal_output_written)
+                else:
+                    buttonrunprocess(self.adb, self.application_name, self.duration, self.events, self.events_to_process,
+                                     self.preamble, self.subgraph, self.graph, self.skip_tracing,
+                                     progress_signal=self.changed_progress, open_func=self.openallresults)
 
         except Exception, e:
             QMessageBox.critical(self, "Error", e, QMessageBox.Ok)
@@ -551,7 +573,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
 
 def buttonrunprocess(adb, application_name, duration, events, events_to_process, preamble, subgraph, graph,
-                     skip_tracing, progress_signal=None, open=None):
+                     skip_tracing, progress_signal=None, open_func=None, subdir=None):
 
     try:
         current_debugger = EnergyDebugger(
@@ -564,11 +586,12 @@ def buttonrunprocess(adb, application_name, duration, events, events_to_process,
                 graph=graph,
                 subgraph=subgraph,
                 skip_tracing=skip_tracing,
-                progress_signal=progress_signal
+                progress_signal=progress_signal,
+                results_subdir=subdir
                 )
         current_debugger.run()
-        if open:
-            open()
+        if open_func:
+            open_func()
     except Exception, e:
         print("Error: {}".format(e))
 
@@ -579,7 +602,7 @@ class QDebuggerThread(QThread):
     changed_progress = pyqtSignal(int)
 
     def __init__(self, adb, application_name, duration, events, events_to_process, preamble, subgraph, graph,
-                 skip_tracing, open):
+                 skip_tracing, open_func):
         QThread.__init__(self)
         self.adb = adb
         self.application_name = application_name
@@ -590,11 +613,11 @@ class QDebuggerThread(QThread):
         self.subgraph = subgraph
         self.graph = graph
         self.skip_tracing = skip_tracing
-        self.open = open
+        self.open_func = open_func
 
     def run(self):
         buttonrunprocess(self.adb, self.application_name, self.duration, self.events, self.events_to_process,
-                         self.preamble, self.subgraph, self.graph, self.skip_tracing, self.changed_progress, self.open)
+                         self.preamble, self.subgraph, self.graph, self.skip_tracing, self.changed_progress, self.open_func)
 
 
 class CommandInterface:
@@ -615,7 +638,7 @@ class CommandInterface:
 class EnergyDebugger:
 
     def __init__(self, adb, application, duration, events, event_count, preamble, graph, subgraph, skip_tracing,
-                 progress_signal):
+                 progress_signal, results_subdir):
         self.adb = adb
         self.application = application
         self.duration = duration
@@ -627,6 +650,7 @@ class EnergyDebugger:
         self.tc_processor = None
         self.skip_tracing = skip_tracing
         self.progress_signal = progress_signal
+        self.results_subdir = results_subdir
 
         """ Required objects for tracking system metrics and interfacing with a target system, connected
         via an ADB connection.
@@ -716,7 +740,7 @@ class EnergyDebugger:
 
         self.trace_processor.process_trace(progress_signal=self.progress_signal, metrics=self.sys_metrics,
                                            tracecmd=self.tc_processor, duration=self.duration, draw=self.graph,
-                                           test=self.event_count, subgraph=self.subgraph)
+                                           test=self.event_count, subgraph=self.subgraph, subdir=self.results_subdir)
 
         print "Run took a total of %s seconds to run" % (time.time() - start_time)
 

@@ -10,6 +10,7 @@ __status__ = "Beta"
 
 import csv
 import time
+import os
 
 import networkx as nx
 
@@ -71,14 +72,26 @@ class ProcessTree:
             self.process_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
                                                      self.pidtracer, self.cpus, self.gpu)
 
-    def finish_tree(self, filename):
+    def finish_tree(self, filename, subdir):
         """ After all events have been added to a tree the tree compiles its energy results and
         writes them to a CSV file. Summaries of each PID's energy consumption as well as total
         tree energy metrics are provided.
 
         :param filename: Filename prefix which is used to differentiate the current trace
+        :param subdir: Sub directory to store results in (usefull if running multiple tests)
         """
-        with open("results/" + filename + "_results.csv", "w+") as f:
+        file_folder = "results/"
+
+        if subdir:
+            file_folder += subdir + "/"
+
+        if not os.path.exists(file_folder):
+            os.makedirs(file_folder)
+
+        file_prefix = file_folder + filename
+
+
+        with open(file_prefix + "_results.csv", "w+") as f:
 
             results_writer = csv.writer(f, delimiter=',')
 
@@ -106,7 +119,7 @@ class ProcessTree:
             total_energy = 0.0
             optimizations_found = [0, 0]
 
-            with open("results/" + filename + "_optimizations.csv", "w+") as f_op:
+            with open(file_prefix + "_optimizations.csv", "w+") as f_op:
                 op_writer = csv.writer(f_op, delimiter=',')
                 op_writer.writerow(["Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core",
                                     "New Core's Old Freq", "New Freq", "Prev Util", "New Util", "Optimization Type"])

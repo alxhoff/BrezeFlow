@@ -31,7 +31,8 @@ class TraceProcessor:
         self.pidt = pidt
         self.filename = filename
 
-    def process_trace(self, progress_signal, metrics, tracecmd, duration, draw=None, test=None, subgraph=False):
+    def process_trace(self, progress_signal, metrics, tracecmd, duration, draw=None, test=None, subgraph=False,
+        subdir=None):
         """ There are a number of steps required in processing a given trace. This is outlined below.
 
         - Idle and temperature events are preprocessed and removed from the pending events to be processed. This
@@ -140,7 +141,7 @@ class TraceProcessor:
         try:
             start_time = time.time()
             sys.stdout.write("Finishing process tree")
-            optimizations_found = process_tree.finish_tree(self.filename)
+            optimizations_found = process_tree.finish_tree(self.filename, subdir)
             print(" --- COMPLETED in {} seconds".format(
                     time.time() - start_time))
             print("Found {} realloc & {} DVFS optimizations".format(optimizations_found[0], optimizations_found[1]))
@@ -151,7 +152,7 @@ class TraceProcessor:
         if draw:
             sys.stdout.write("Drawing graph")
             start_time = time.time()
-            draw_graph = Grapher(process_tree)
+            draw_graph = Grapher(process_tree, subdir)
             draw_graph.draw_graph()
             print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
 
