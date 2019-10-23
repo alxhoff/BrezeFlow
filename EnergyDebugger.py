@@ -122,6 +122,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
             adb.pull_file("/data/local/tmp/trace.dat", pull_location)
         except Exception, e:
             QMessageBox.critical(self, "Error", "Pulling file via ADB failed\n\n Error: {}".format(e))
+            raise Exception(e)
+            self.close()
 
     def sysloggerpullfile_clicked(self):
         options = QFileDialog.Options()
@@ -212,6 +214,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
     results_path = ""
     changed_progress = pyqtSignal(int)
     changed_test_count = pyqtSignal(str)
+    changed_test_progress = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super(QMainWindow, self).__init__(parent)
@@ -242,6 +245,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.debug_task = None
         self.changed_progress.connect(self.progressBar.setValue)
         self.changed_test_count.connect(self.labelTestsCompleted.setText)
+        self.changed_test_progress.connect(self.progressBarTestsCompleted.setValue)
 
         self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "results/")
         self.trace_file = None
@@ -265,7 +269,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             self.adb = ADBInterface()
         except Exception, e:
             print("Could not open an ADB connection to device")
-            exit()
+            self.close()
+            sys.exit()
+
         self.governor_controller = GovernorController(self.adb)
         self.setup_governors()
 
@@ -441,7 +447,12 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     def opensettingsmenu(self):
         settings_menu = SettingsMenu(self.settings)
-        settings_menu.exec_()
+        try:
+            settings_menu.exec_()
+        except Exception, e:
+            print(e)
+            self.close()
+            sys.exit()
 
     def openaboutdialog(self):
         dialog = AboutDialog()
@@ -514,18 +525,18 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
             if self.checkBoxTestAutomation.isChecked():  # TODO allow test automation to be multithreaded
                 no_of_tests = self.spinBoxNoOfTests.value()
-                test_start_value = self.spinBoxStartTestValue.value() - 1
+                test_start_value = self.spinBoxStartTestValue.value()
 
                 self.labelTestsCompleted.setText("0")
+                self.progressBarTestsCompleted.setValue(0)
 
                 for x in range(test_start_value, test_start_value + no_of_tests):
                     buttonrunprocess(self.adb, self.application_name, self.duration, self.events,
-                                     self.events_to_process,
-                                     self.preamble, self.subgraph, self.graph, self.skip_tracing,
-                                     progress_signal=self.changed_progress, open_func=self.openallresults,
-                                     subdir=str(x + 1))
+                                     self.events_to_process, self.preamble, self.subgraph, self.graph,
+                                     self.skip_tracing, progress_signal=self.changed_progress,
+                                     open_func=self.openallresults, subdir=self.application_name + "/" + str(x))
                     self.changed_test_count.emit(str(x - test_start_value + 1))
-                    QGuiApplication.processEvents()
+                    self.changed_test_progress.emit(round(float(x) / no_of_tests * 100))
 
             else:
                 if bool(int(self.settings.value("OptimizeWithThreads", defaultValue=1))):
@@ -655,8 +666,7 @@ class EnergyDebugger:
         """ Required objects for tracking system metrics and interfacing with a target system, connected
         via an ADB connection.
         """
-        start_time = time.time()
-        print("ADB interface created --- %s Sec" % (time.time() - start_time))
+
         start_time = time.time()
         try:
             self.pid_tool = PIDTool(self.adb, self.application)

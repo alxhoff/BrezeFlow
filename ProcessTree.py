@@ -296,6 +296,7 @@ class ProcessTree:
                                     optimizations_found[1] += 1
                                     break
 
+            results_writer.writerow([])
             results_writer.writerow(["Optimizations", "Reallocations", "DVFS"])
             results_writer.writerow(["", optimizations_found[0], optimizations_found[1]])
             results_writer.writerow([])
