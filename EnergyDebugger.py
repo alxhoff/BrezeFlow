@@ -536,7 +536,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                                      self.skip_tracing, progress_signal=self.changed_progress,
                                      open_func=self.openallresults, subdir=self.application_name + "/" + str(x))
                     self.changed_test_count.emit(str(x - test_start_value + 1))
-                    self.changed_test_progress.emit(round(float(x) / no_of_tests * 100))
+                    self.changed_test_progress.emit(round(float(x + 1) / float(no_of_tests) * 100))
 
             else:
                 if bool(int(self.settings.value("OptimizeWithThreads", defaultValue=1))):
