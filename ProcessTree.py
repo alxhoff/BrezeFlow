@@ -402,9 +402,10 @@ class ProcessTree:
                 for x, pending_binder_node in reversed(
                         list(enumerate(self.completed_binder_calls))):  # Most recent
 
+                    # If event to be switched in is the target of the Binder transaction
                     if event.next_pid == pending_binder_node.target_pid:
 
-                        # Add first half binder event to binder branch
+                        # Binder thread that is not yet known
                         if pending_binder_node.binder_thread not in self.process_branches:
                             pid_info = self.pidtracer.find_pid_info(pending_binder_node.binder_thread)
 
@@ -419,6 +420,7 @@ class ProcessTree:
 
                             self.process_branches[pending_binder_node.binder_thread] = pid_info
 
+                        # If target thread is not yet known
                         if event.next_pid not in self.process_branches:
                             # Calling to a PID that was not initially found as belonging to app
                             pid_info = self.pidtracer.find_pid_info(event.next_pid)
@@ -434,6 +436,7 @@ class ProcessTree:
 
                             self.pidtracer.app_pids[event.next_pid] = pid_info
 
+                        # Add first half binder event to binder branch
                         self.process_branches[pending_binder_node.binder_thread].add_event(
                                 pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
 
@@ -460,11 +463,16 @@ class ProcessTree:
                                 self.process_branches[pending_binder_node.target_pid].tasks[-1],
                                 color='yellow3', dir='forward')
 
+                        # Create dependency
                         self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.type = \
                             DependencyType.BINDER
-                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.dependee = \
-                            self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1]
-                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.depender = \
+
+                        # Create dependency from current task to calling task
+                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.prev_task = \
+                            self.process_branches[pending_binder_node.caller_pid].tasks[-1]
+
+                        # Create dependency from calling task to current task
+                        self.process_branches[pending_binder_node.caller_pid].tasks[-1].dependency.next_task = \
                             self.process_branches[pending_binder_node.target_pid].tasks[-1]
 
                         # remove binder task that is now complete
@@ -473,6 +481,7 @@ class ProcessTree:
                         self.sched_switch_time += time.time() - proc_start_time
                         return 0
 
+                # Not called from a Binder transaction (cyclic task)
                 try:
                     self.process_branches[event.next_pid].add_event(
                             event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
@@ -536,19 +545,6 @@ class ProcessTree:
             self.gpu.add_event(event)
 
             self.mali_time += time.time() - proc_start_time
-            return 0
-
-        elif isinstance(event, EventIdle):
-
-            return 0
-
-        elif isinstance(event, EventTempInfo):
-
-            return 0
-
-        # Wakeup events show us the same information as sched switch events and
-        # as such can be neglected when it comes to generating directed graphs
-        if isinstance(event, EventWakeup):
             return 0
 
     @staticmethod

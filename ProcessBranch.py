@@ -276,8 +276,14 @@ class ProcessBranch:
                     self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen',
                                         style='dashed')
                     self.tasks[-1].dependency.type = DependencyType.TASK
-                    self.tasks[-1].dependency.dependee = self.tasks[-2]  # Previous task
-                    self.tasks[-2].dependency.depender = self.tasks[-1]  # Next task, update previous task
+
+                    # Create dependency from current task to calling task
+                    if not self.tasks[-1].dependency.prev_task:  # If not already set because of a Binder dependency
+                        self.tasks[-1].dependency.prev_task = self.tasks[-2]
+
+                    # Create dependency from calling task to current task
+                    if not self.tasks[-2].dependency.next_task:
+                        self.tasks[-2].dependency.next_task = self.tasks[-1]
 
                 return
 
