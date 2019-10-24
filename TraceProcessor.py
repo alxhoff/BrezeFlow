@@ -94,7 +94,6 @@ class TraceProcessor:
 
         try:
             start_time = time.time()
-            calc_time = 0
             no_idle_events = len(tracecmd.idle_events)
             sys.stdout.write("Building utilization trees")
             for x, event in enumerate(tracecmd.idle_events):

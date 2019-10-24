@@ -674,8 +674,8 @@
            <widget class="QLabel" name="label_13">
             <property name="font">
              <font>
-              <weight>75</weight>
-              <bold>true</bold>
+              <weight>50</weight>
+              <bold>false</bold>
              </font>
             </property>
             <property name="text">
@@ -718,8 +718,8 @@
            <widget class="QLabel" name="label_12">
             <property name="font">
              <font>
-              <weight>75</weight>
-              <bold>true</bold>
+              <weight>50</weight>
+              <bold>false</bold>
              </font>
             </property>
             <property name="text">
@@ -731,6 +731,22 @@
            <layout class="QVBoxLayout" name="verticalLayoutGovernors"/>
           </item>
          </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_32">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>CPU Options</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
         </widget>
        </item>
        <item alignment="Qt::AlignVCenter">
@@ -746,8 +762,10 @@
            <widget class="QLabel" name="label_14">
             <property name="font">
              <font>
-              <weight>75</weight>
-              <bold>true</bold>
+              <weight>50</weight>
+              <italic>false</italic>
+              <bold>false</bold>
+              <underline>false</underline>
              </font>
             </property>
             <property name="text">
@@ -757,8 +775,13 @@
           </item>
           <item>
            <widget class="QLabel" name="label_20">
+            <property name="font">
+             <font>
+              <underline>true</underline>
+             </font>
+            </property>
             <property name="text">
-             <string>Current:</string>
+             <string>Current</string>
             </property>
            </widget>
           </item>
@@ -774,14 +797,14 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_16">
               <property name="text">
-               <string>Min Freq</string>
+               <string>Min Freq:</string>
               </property>
              </widget>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label_18">
               <property name="text">
-               <string>Max Freq</string>
+               <string>Max Freq:</string>
               </property>
              </widget>
             </item>
@@ -796,8 +819,13 @@
           </item>
           <item>
            <widget class="QLabel" name="label_26">
+            <property name="font">
+             <font>
+              <underline>true</underline>
+             </font>
+            </property>
             <property name="text">
-             <string>New:</string>
+             <string>New</string>
             </property>
            </widget>
           </item>
@@ -843,35 +871,32 @@
             </item>
            </layout>
           </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QFrame" name="frame_4">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_16">
-          <item alignment="Qt::AlignHCenter">
+          <item>
            <widget class="QLabel" name="label_15">
             <property name="font">
              <font>
-              <weight>75</weight>
-              <bold>true</bold>
+              <weight>50</weight>
+              <bold>false</bold>
+              <underline>false</underline>
              </font>
             </property>
             <property name="text">
              <string>big</string>
             </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_21">
+            <property name="font">
+             <font>
+              <underline>true</underline>
+             </font>
+            </property>
             <property name="text">
-             <string>Current:</string>
+             <string>Current</string>
             </property>
            </widget>
           </item>
@@ -880,7 +905,7 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_22">
               <property name="text">
-               <string>Min Freq</string>
+               <string>Min Freq:</string>
               </property>
              </widget>
             </item>
@@ -894,7 +919,7 @@
             <item row="1" column="0">
              <widget class="QLabel" name="label_24">
               <property name="text">
-               <string>Max Freq</string>
+               <string>Max Freq:</string>
               </property>
              </widget>
             </item>
@@ -909,8 +934,13 @@
           </item>
           <item>
            <widget class="QLabel" name="label_27">
+            <property name="font">
+             <font>
+              <underline>true</underline>
+             </font>
+            </property>
             <property name="text">
-             <string>New:</string>
+             <string>New</string>
             </property>
            </widget>
           </item>
@@ -960,6 +990,22 @@
         </widget>
        </item>
        <item>
+        <widget class="QLabel" name="label_28">
+         <property name="font">
+          <font>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Test Automation</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QFrame" name="frame_6">
          <property name="font">
           <font>
@@ -974,13 +1020,6 @@
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_13">
-          <item alignment="Qt::AlignHCenter">
-           <widget class="QLabel" name="label_28">
-            <property name="text">
-             <string>Test Automation</string>
-            </property>
-           </widget>
-          </item>
           <item>
            <widget class="QCheckBox" name="checkBoxTestAutomation">
             <property name="font">

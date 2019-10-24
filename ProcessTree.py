@@ -90,7 +90,6 @@ class ProcessTree:
 
         file_prefix = file_folder + filename
 
-
         with open(file_prefix + "_results.csv", "w+") as f:
 
             results_writer = csv.writer(f, delimiter=',')
@@ -144,7 +143,7 @@ class ProcessTree:
                         continue
 
                     results_writer.writerow([branch.pid, branch.pname, branch.tname, str(len(branch.tasks)),
-                                     branch.energy, branch.duration])
+                        branch.energy, branch.duration])
 
                     mf = self.metrics.energy_profile.migration_factor
 
@@ -155,11 +154,15 @@ class ProcessTree:
                             continue
 
                         cores = self.metrics.sys_util_history
-                        cores_utils = [0.0] * 4
-                        cores_utils[0] = cores.cpu[0].get_util(task.finish_time)
-                        cores_utils[1] = cores.cpu[1].get_util(task.finish_time)
-                        cores_utils[2] = cores.cpu[2].get_util(task.finish_time)
-                        cores_utils[3] = cores.cpu[3].get_util(task.finish_time)
+                        core_utils = [0.0] * 8
+                        core_utils[0] = cores.cpu[0].get_util(task.finish_time)
+                        core_utils[1] = cores.cpu[1].get_util(task.finish_time)
+                        core_utils[2] = cores.cpu[2].get_util(task.finish_time)
+                        core_utils[3] = cores.cpu[3].get_util(task.finish_time)
+                        core_utils[4] = cores.cpu[4].get_util(task.finish_time)
+                        core_utils[5] = cores.cpu[5].get_util(task.finish_time)
+                        core_utils[6] = cores.cpu[6].get_util(task.finish_time)
+                        core_utils[7] = cores.cpu[7].get_util(task.finish_time)
 
                         lf = self.metrics.energy_profile.little_freqs
                         bf = self.metrics.energy_profile.big_freqs
@@ -169,16 +172,11 @@ class ProcessTree:
                         # Reallocate to small core
                         if task.events[0].cpu > 3:  # big TODO fix the use of the first event's CPU
 
-                            cores_utils.append(cores.cpu[4].get_util(task.finish_time))
-                            cores_utils.append(cores.cpu[5].get_util(task.finish_time))
-                            cores_utils.append(cores.cpu[6].get_util(task.finish_time))
-                            cores_utils.append(cores.cpu[7].get_util(task.finish_time))
+                            little_core_index = np.argmin(core_utils[:4])  # Core with most capacity
 
-                            little_core_index = np.argmin(cores_utils[:4])  # Core with most capacity
+                            cur_core_util = core_utils[little_core_index]
 
-                            prev_util = cores_utils[little_core_index]
-
-                            little_cores = cores_utils[:4]
+                            little_cores = core_utils[:4]
 
                             cur_little_cpu_freq = float(task.events[0].cpu_freq[0])
 
@@ -214,10 +212,10 @@ class ProcessTree:
                                         continue
 
                                     if finish_time_on_little < depender_start_time:
-                                        task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_REALLOC)
+                                        task.optimization_info.add_optim_type(OptimizationInfoType.REALLOC)
 
                                         if little_freq != task.events[0].cpu_freq[0]:
-                                            task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_DVFS)
+                                            task.optimization_info.add_optim_type(OptimizationInfoType.DVFS)
 
                                         task.optimization_info.set_message("Task can be reallocated")
 
@@ -225,7 +223,7 @@ class ProcessTree:
                                                             task.events[0].cpu,
                                                             task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
                                                             little_core_index, task.events[0].cpu_freq[0],
-                                                            little_freq, prev_util,
+                                                            little_freq, cur_core_util,
                                                             new_util_on_target_core,
                                                             str(task.optimization_info)])
 
@@ -241,30 +239,43 @@ class ProcessTree:
                             if task.events[0].cpu <= 3:  # LITTLE
                                 freq_index = lf.index(cur_cpu_freq)
                                 freqs = lf[:freq_index]  # Freqs from minimum freq until the current one
-                                cores = cores_utils[:4]
-                                core_index = np.argmin(cores_utils[:4])
+                                lowest_util_core_index = np.argmin(core_utils[:4])
 
-                            else:  # BIG
+                            else:  # big
                                 freq_index = bf.index(cur_cpu_freq)
                                 freqs = bf[:freq_index]
-                                cores = cores_utils[4:]
-                                core_index = np.argmin(cores_utils[4:])
+                                lowest_util_core_index = np.argmin(core_utils[4:]) + 4
 
-                            if core_index != task.events[0].cpu:  # Reallocate util to different core
-                                task_util = float(task.duration) / \
-                                            self.metrics.sys_util_history.cpu[0].uw.window_duration * 100
-                                prev_util = \
-                                    cores[task.events[0].cpu if task.events[0].cpu <= 3 else (task.events[0].cpu - 4)]
-                                cores[task.events[0].cpu if task.events[0].cpu <= 3 else (task.events[0].cpu - 4)] -= \
-                                    task_util
-                                cores[core_index] += task_util
-                                task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_REALLOC)
+                            if lowest_util_core_index != task.events[0].cpu:  # Might be a better core in cluster
+
+                                # Utilization of core in cluster with smallest load
+                                target_core_util = core_utils[lowest_util_core_index]
+
+                                # Utilization of core that task is currently running on
+                                cur_core_util = core_utils[task.events[0].cpu]
+
+                                # Load generated from the target task
+                                task_load = float(task.duration) / \
+                                    self.metrics.sys_util_history.cpu[0].uw.window_duration * 100
+
+                                # Current core utilization less the task of interest's load
+                                cur_core_util_wo_task = cur_core_util - task_load
+
+                                # If reallocation would result in a lower max utilization between current and target
+                                # core
+                                if cur_core_util_wo_task > target_core_util:
+                                    core_utils[task.events[0].cpu] -= task_load
+                                    core_utils[lowest_util_core_index] += task_load
+                                    task.optimization_info.add_optim_type(OptimizationInfoType.REALLOC)
 
                             for freq in freqs:
 
                                 # Scale
                                 scaling_factor = cur_cpu_freq / freq
-                                core_utils_new_freq = [core * scaling_factor for core in cores]
+                                if task.events[0].cpu <= 3:  # LITTLE
+                                    core_utils_new_freq = [core * scaling_factor for core in core_utils[:4]]
+                                else:  # big
+                                    core_utils_new_freq = [core * scaling_factor for core in core_utils[4:]]
 
                                 if all(core_util <= 100.0 for core_util in core_utils_new_freq):
 
@@ -287,12 +298,13 @@ class ProcessTree:
                                     #     continue
 
                                     task.optimization_info.set_message("DVFS optimization possible")
-                                    task.optimization_info.add_optim_type(OptimizationInfoType.POSSIBLE_DVFS)
+                                    task.optimization_info.add_optim_type(OptimizationInfoType.DVFS)
                                     op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
                                                         task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
-                                                        core_index, cur_cpu_freq, freq, prev_util,
-                                                        core_utils_new_freq[core_index], str(task.optimization_info)])
+                                                        lowest_util_core_index, cur_cpu_freq, freq, cur_core_util,
+                                                        core_utils_new_freq[lowest_util_core_index % 4],
+                                                        str(task.optimization_info)])
                                     optimizations_found[1] += 1
                                     break
 

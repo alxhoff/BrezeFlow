@@ -13,8 +13,8 @@ from enum import Enum
 
 class OptimizationInfoType(Enum):
     NONE = 0
-    POSSIBLE_DVFS = 0b1
-    POSSIBLE_REALLOC = 0b10
+    DVFS = 0b1
+    REALLOC = 0b10
 
     def __str__(self):
         return "%s" % self.name
@@ -30,12 +30,12 @@ class OptimizationInfo:
     def __str__(self):
         ret = ""
 
-        if self.optim_type & OptimizationInfoType.POSSIBLE_DVFS.value:
+        if self.optim_type & OptimizationInfoType.DVFS.value:
             if ret != "":
                 ret += ", "
             ret += "DVFS"
 
-        if self.optim_type & OptimizationInfoType.POSSIBLE_REALLOC.value:
+        if self.optim_type & OptimizationInfoType.REALLOC.value:
             if ret != "":
                 ret += ", "
             ret += "Task Reallocation"
