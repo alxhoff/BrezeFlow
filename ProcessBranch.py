@@ -214,17 +214,21 @@ class ProcessBranch:
 
                 if event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
 
-                    toi = self.tasks[-1]
+                    self.active = False  # Current task has ended and new one will be needed
 
+                    toi = self.tasks[-1]
                     toi.add_event(event, subgraph=subgraph)
                     toi.finish()
-                    self.active = False  # Current task has ended and new one will be needed
-                    label = "{}.{} ==> {}.{}\nPID: {}\nCPU: {} @ {} Hz\nUtil: {}%\nTemp: {}\nGPU: {}Hz {}% " \
-                            "Util\n Duration: {} CPU Cycles: {}\nEnergy: {};{}\n Dependency: {} Dependent: #{} " \
+                    utils_g = ('{}% '.format(round(k[1], 2)) for k in enumerate(toi.util))
+                    utils = ""
+                    for entry in utils_g:
+                        utils += str(entry)
+                    label = "{}.{} ==> {}.{}\nPID: {}\nCPU: {} @ {} Hz\nUtil: {}\nTemp: {}\nGPU: {}Hz Util {}% " \
+                            "\n Duration: {} CPU Cycles: {}\nEnergy: {};{}\n Dependency: {} Dependent: #{} " \
                             "\nProc: '{}'\nThread: '{}'\nNode Type: {} ID: #{}".format(
                         str(toi.start_time)[:-6], str(toi.start_time)[-6:], str(toi.finish_time)[:-6],
                         str(toi.finish_time)[-6:], event.pid, event.cpu, event.cpu_freq[0 if event.cpu < 4 else 1],
-                        toi.util, toi.temp, event.gpu_freq, event.gpu_util, toi.duration, toi.cpu_cycles,
+                        utils, toi.temp, event.gpu_freq, event.gpu_util, toi.duration, toi.cpu_cycles,
                         toi.energy[1], toi.energy[0], toi.dependency.type,
                         toi.dependency.prev_task.id if toi.dependency.prev_task else "None",
                         self.pname, self.tname, toi.__class__.__name__, toi.id)

@@ -122,7 +122,8 @@ class ProcessTree:
             with open(file_prefix + "_optimizations.csv", "w+") as f_op:
                 op_writer = csv.writer(f_op, delimiter=',')
                 op_writer.writerow(["Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core",
-                                    "New Core's Old Freq", "New Freq", "Prev Util", "New Util", "Optimization Type"])
+                                    "New Core's Old Freq", "New Freq", "Original Core's Prev Util",
+                                    "New Core's Prev Util", "New Core's New Util", "Optimization Type"])
                 op_writer.writerow([])
 
                 for x in list(self.process_branches.keys()):
@@ -177,10 +178,10 @@ class ProcessTree:
                         if task.events[0].cpu > 3:  # big TODO fix the use of the first event's CPU
 
                             little_core_index = np.argmin(core_utils[:4])  # Core with most capacity
-
-                            cur_core_util = core_utils[little_core_index]
-
                             little_cores = core_utils[:4]
+
+                            cur_core_util = core_utils[task.events[0].cpu]
+                            target_core_util = core_utils[little_core_index]
 
                             cur_little_cpu_freq = float(task.events[0].cpu_freq[0])
 
@@ -227,7 +228,7 @@ class ProcessTree:
                                                             task.events[0].cpu,
                                                             task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
                                                             little_core_index, task.events[0].cpu_freq[0],
-                                                            little_freq, cur_core_util,
+                                                            little_freq, cur_core_util, cur_core_util,
                                                             new_util_on_target_core,
                                                             str(task.optimization_info)])
 
@@ -252,11 +253,10 @@ class ProcessTree:
 
                             if lowest_util_core_index != task.events[0].cpu:  # Might be a better core in cluster
 
-                                # Utilization of core in cluster with smallest load
-                                target_core_util = core_utils[lowest_util_core_index]
-
                                 # Utilization of core that task is currently running on
                                 cur_core_util = core_utils[task.events[0].cpu]
+                                # Utilization of core in cluster with smallest load
+                                target_core_util = core_utils[lowest_util_core_index]
 
                                 # Load generated from the target task
                                 task_load = float(task.duration) / \
@@ -307,6 +307,7 @@ class ProcessTree:
                                                         task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
                                                         lowest_util_core_index, cur_cpu_freq, freq, cur_core_util,
+                                                        target_core_util,
                                                         core_utils_new_freq[lowest_util_core_index % 4],
                                                         str(task.optimization_info)])
                                     optimizations_found[1] += 1
