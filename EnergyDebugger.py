@@ -97,8 +97,7 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
         self.checkBoxPower.setChecked(bool(int(settings.value("DefaultSysloggerPower", defaultValue=1))))
         self.checkBoxMali.setChecked(bool(int(settings.value("DefaultSysloggerMali", defaultValue=1))))
         self.checkBoxTemp.setChecked(bool(int(settings.value("DefaultSysloggerTemp", defaultValue=1))))
-        self.checkBoxNetwork.setChecked(bool(int(settings.value("DefaultSysloggerNetwork",
-                                                                defaultValue=0))))
+        self.checkBoxNetwork.setChecked(bool(int(settings.value("DefaultSysloggerNetwork", defaultValue=0))))
 
     def sysloggerstart_clicked(self):
         pass
@@ -238,6 +237,11 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         else:
             self.textEditConsole.setText("Standard console being used, this console can be enabled in the settings "
                                          "menu")
+
+        # Persistant settings
+        self.checkBoxSkipTracing.setChecked(bool(int(self.settings.value("SkipTracing", defaultValue=0))))
+        self.checkBoxSkipTracing.stateChanged.connect(self.save_persistent_settings)
+
         # Threading
         self.jobs = []
         self.console_queue = Queue.Queue()
@@ -275,7 +279,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.governor_controller = GovernorController(self.adb)
         self.setup_governors()
 
-
     def __del__(self):
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
@@ -284,6 +287,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             job.terminate()
 
         self.console_task._stop_event.set()
+
+    def save_persistent_settings(self):
+        self.settings.setValue("SkipTracing", int(self.checkBoxSkipTracing.isChecked()))
 
     def setup_governors(self):
         governors = self.governor_controller.get_governors()
