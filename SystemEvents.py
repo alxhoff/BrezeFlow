@@ -38,6 +38,7 @@ class BinderType(Enum):
     CALL = 1
     REPLY = 2
     ASYNC = 3
+    SYNC = 4
 
     def __str__(self):
         return "%s" % self.name
@@ -223,15 +224,16 @@ class CompletedBinderTransaction:
     def __init__(self, second_half_event, first_half_event=None):
 
         self.first_half = first_half_event
+        self.binder_thread = second_half_event.pid
 
         if first_half_event:
+            self.transaction_type = BinderType.SYNC
             self.duration = second_half_event.time - first_half_event.time
-            self.binder_thread = second_half_event.pid
             self.caller_pid = first_half_event.pid
             self.time = first_half_event.time
         else:
+            self.transaction_type = BinderType.ASYNC
             self.duration = 0
-            self.binder_thread = None
             self.caller_pid = second_half_event.pid
             self.time = second_half_event.time
 

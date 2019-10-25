@@ -256,3 +256,13 @@ class PIDTool:
         if pid in self.binder_pids:
             return True
         return False
+
+    def get_pid_info(self, pid_no):
+        if pid_no in self.app_pids:
+            return self.app_pids[pid_no]
+        elif pid_no in self.system_pids:
+            return self.app_pids[pid_no]
+        elif pid_no in self.binder_pids:
+            return self.binder_pids[pid_no]
+        else:
+            return self.find_pid_info(pid_no)

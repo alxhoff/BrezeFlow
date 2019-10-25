@@ -85,12 +85,9 @@ class ProcessBranch:
         if self.tasks:
 
             try:
-                self.tasks[-1].add_cpu_gpu_event(self.cpus[self.cpu].events[-1].time,
-                                                 self.cpu,
-                                                 self.cpus[self.cpu].prev_freq,
-                                                 self.cpus[self.cpu].prev_util,
-                                                 self.gpu.freq,
-                                                 self.gpu.util)
+                self.tasks[-1].add_cpu_gpu_event(self.cpus[self.cpu].events[-1].time, self.cpu,
+                                                 self.cpus[self.cpu].prev_freq, self.cpus[self.cpu].prev_util,
+                                                 self.gpu.freq, self.gpu.util)
             except IndexError:
                 print "IndexError in handling CPU freq change"
                 sys.exit(1)
@@ -105,12 +102,8 @@ class ProcessBranch:
 
             try:
                 if self.cpus[event.cpu].freq != self.cpus[self.cpu].freq:
-                    self.tasks[-1].add_cpu_gpu_event(event.time,
-                                                     self.cpu,
-                                                     self.cpus[self.cpu].freq,
-                                                     self.cpus[self.cpu].util,
-                                                     self.gpu.freq,
-                                                     self.gpu.util)
+                    self.tasks[-1].add_cpu_gpu_event(event.time, self.cpu, self.cpus[self.cpu].freq,
+                                                     self.cpus[self.cpu].util, self.gpu.freq, self.gpu.util)
             except IndexError:
                 print "IndexError in handing CPU num change"
                 sys.exit(1)
@@ -221,39 +214,27 @@ class ProcessBranch:
 
                 if event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
 
-                    self.tasks[-1].add_event(event, subgraph=subgraph)
-                    self.tasks[-1].finish()
-                    self.active = False  # Current task has ended and new one will be needed
-                    label = str(self.tasks[-1].start_time)[:-6] + "." \
-                            + str(self.tasks[-1].start_time)[-6:] \
-                            + " ==> " + str(self.tasks[-1].finish_time)[:-6] + "." \
-                            + str(self.tasks[-1].finish_time)[-6:] \
-                            + "\nCPU: " + str(event.cpu) + " @ " + \
-                            str(event.cpu_freq[0 if event.cpu < 4 else 1]) + "Hz" \
-                            + "\nUtil: " + str(self.tasks[-1].util) + "%" \
-                            + "   Temp: " + str(self.tasks[-1].temp) \
-                            + "   PID: " + str(event.pid) \
-                            + "\nGPU: " + str(event.gpu_freq) + "Hz   " \
-                            + str(event.gpu_util) + "% Util" \
-                            + "\nDuration: " + str(self.tasks[-1].duration) \
-                            + "\nCPU Cycles: " + str(self.tasks[-1].cpu_cycles) \
-                            + "\nEnergy: " + str(self.tasks[-1].energy[1]) + "; l" + str(self.tasks[
-                                                                                             -1].energy[0]) \
-                            + "\n Dependency: " + str(self.tasks[-1].dependency.type) \
-                            + "\n" + self.tname \
-                            + "\n" + self.pname \
-                            + "\n" + str(self.tasks[-1].__class__.__name__)
+                    toi = self.tasks[-1]
 
-                    self.graph.add_node(self.tasks[-1],
-                                        label=label,
-                                        fillcolor='darkolivegreen3',
+                    toi.add_event(event, subgraph=subgraph)
+                    toi.finish()
+                    self.active = False  # Current task has ended and new one will be needed
+                    label = "{}.{} ==> {}.{}\nPID: {}\nCPU: {} @ {} Hz\nUtil: {}%\nTemp: {}\nGPU: {}Hz {}% " \
+                            "Util\n Duration: {} CPU Cycles: {}\nEnergy: {};{}\n Dependency: {} Dependent: #{} " \
+                            "\nProc: '{}'\nThread: '{}'\nNode Type: {} ID: #{}".format(
+                        str(toi.start_time)[:-6], str(toi.start_time)[-6:], str(toi.finish_time)[:-6],
+                        str(toi.finish_time)[-6:], event.pid, event.cpu, event.cpu_freq[0 if event.cpu < 4 else 1],
+                        toi.util, toi.temp, event.gpu_freq, event.gpu_util, toi.duration, toi.cpu_cycles,
+                        toi.energy[1], toi.energy[0], toi.dependency.type,
+                        toi.dependency.prev_task.id if toi.dependency.prev_task else "None",
+                        self.pname, self.tname, toi.__class__.__name__, toi.id)
+
+                    self.graph.add_node(self.tasks[-1], label=label, fillcolor='darkolivegreen3',
                                         style='filled,bold,rounded', shape='box')
 
                     if subgraph:
-                        self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue',
-                                            dir='forward')
-                        self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red',
-                                            dir='back')
+                        self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue', dir='forward')
+                        self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red', dir='back')
 
                     return
 
@@ -273,9 +254,9 @@ class ProcessBranch:
                 self.active = True
 
                 if len(self.tasks) >= 2:  # Connecting task in the same PID branch for visual aid
-                    self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen',
-                                        style='dashed')
-                    self.tasks[-1].dependency.type = DependencyType.TASK
+                    self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen', style='dashed')
+                    if self.tasks[-1].dependency.type != DependencyType.BINDER:
+                        self.tasks[-1].dependency.type = DependencyType.TASK
 
                     # Create dependency from current task to calling task
                     if not self.tasks[-1].dependency.prev_task:  # If not already set because of a Binder dependency
@@ -295,23 +276,16 @@ class ProcessBranch:
             return
 
         elif event_type == JobType.BINDER_RECV:
-
-            if event.flags & 0x1:  # Async binder recv
-                self.binder_tasks.append(BinderNode(self.graph, self.pid, self.tname))
-
-            self.binder_tasks[-1].add_event(event, subgraph=subgraph)
-            self.binder_tasks[-1].finish()
-            self.graph.add_node(self.binder_tasks[-1],
-                                label=str(self.binder_tasks[-1].events[0].time)[:-6]
-                                      + "." + str(self.binder_tasks[-1].events[0].time)[-6:]
-                                      + " ==> " + str(self.binder_tasks[-1].events[-1].time)[:-6]
-                                      + "." + str(self.binder_tasks[-1].events[-1].time)[-6:]
-                                      + "\nPID: " + str(event.pid)
-                                      + "  dest PID: " + str(event.target_pid)
-                                      + "\nType: " + str(self.binder_tasks[-1].events[0].trans_type)
-                                      + "\n" + str(event.name)
-                                      + "\n" + str(self.binder_tasks[-1].__class__.__name__),
-                                fillcolor='coral', style='filled,bold', shape='box')
+            btoi = self.binder_tasks[-1]
+            btoi.add_event(event, subgraph=subgraph)
+            btoi.finish()
+            label = "{}.{} ==> {}.{}\nPID: {} Dest PID: {}\nType: {}\nTrans: {}\nThread: '{}'\nNode Type: {} ID: #{}"\
+                .format(
+                str(btoi.events[0].time)[:-6], str(btoi.events[0].time)[-6:],
+                str(btoi.events[-1].time)[:-6], str(btoi.events[-1].time)[-6:], str(event.pid),
+                str(event.target_pid), str(btoi.events[0].trans_type), str(event.transaction),
+                str(btoi.name), str(btoi.__class__.__name__), btoi.id)
+            self.graph.add_node(btoi, label=label, fillcolor='coral', style='filled,bold', shape='box')
 
             return
 

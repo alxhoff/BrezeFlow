@@ -117,15 +117,15 @@ class TraceProcessor:
 
             if test:
                 for x, event in enumerate(tracecmd.processed_events[:test]):
-                    if progress_signal:
+                    if progress_signal and trace_start_time <= event.time <= trace_finish_time:
                         progress_signal.emit(round(float(x) / test * 100, 2))
-                    if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
+                    if process_tree.handle_event(event, subgraph):
                         break
             else:
                 for x, event in enumerate(tracecmd.processed_events):
-                    if progress_signal:
+                    if progress_signal and trace_start_time <= event.time <= trace_finish_time:
                         progress_signal.emit(round(float(x) / num_events * 100, 2))
-                    if process_tree.handle_event(event, subgraph, trace_start_time, trace_finish_time):
+                    if process_tree.handle_event(event, subgraph):
                         break
             if progress_signal:
                 progress_signal.emit(100)

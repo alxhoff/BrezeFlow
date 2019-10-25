@@ -33,6 +33,7 @@ class ProcessTree:
         self.pidtracer = pidtracer
 
         self.process_branches = dict()
+        self.binder_branches = dict()
         self.pending_binder_calls = []
         self.completed_binder_calls = []
         self.cpus = []
@@ -69,7 +70,7 @@ class ProcessTree:
                                                      self.pidtracer, self.cpus, self.gpu)
 
         for i, pid in self.pidtracer.binder_pids.iteritems():
-            self.process_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
+            self.binder_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
                                                      self.pidtracer, self.cpus, self.gpu)
 
     def finish_tree(self, filename, subdir):
@@ -150,6 +151,9 @@ class ProcessTree:
                     ### OPTIMAL EVALUATION
                     for task in branch.tasks:
 
+                        if task.start_time == 286786253:
+                            print("wait ehre")
+
                         if task.cpu_cycles == 0:  # Tasks that started at the end of the trace time
                             continue
 
@@ -207,7 +211,7 @@ class ProcessTree:
                                                               (cycles_on_little / little_freq * 100)
 
                                     try:
-                                        depender_start_time = task.dependency.depender.start_time
+                                        depender_start_time = task.dependency.next_task.start_time
                                     except Exception as e:
                                         continue
 
@@ -364,14 +368,12 @@ class ProcessTree:
 
             return optimizations_found
 
-    def handle_event(self, event, subgraph, start_time, finish_time):
+    def handle_event(self, event, subgraph):
         """
         An event is handled by and added to the current trace tree, handled depending on event type.
 
         :param event: The event to be added into the tree
         :param subgraph: Boolean to enable to drawing of the task graph's node's sub-graphs
-        :param start_time: Time after which events must happens if they are to be processed
-        :param finish_time: Time before which events must happens if they are to be processed
         :return 0 on success
         """
         proc_start_time = time.time()
@@ -382,13 +384,12 @@ class ProcessTree:
         event.gpu_freq = self.metrics.current_gpu_freq
         event.gpu_util = self.metrics.current_gpu_util
 
-        if event.time < start_time or event.time > finish_time:  # Event time window
-            return 1
-
-        elif isinstance(event, EventSchedSwitch):  # PID context swap
+        if isinstance(event, EventSchedSwitch):  # PID context swap
 
             # Task being switched out, ignoring idle task and binder threads
-            if event.pid != 0 and event.pid not in self.pidtracer.binder_pids:
+            if event.pid != 0 and (event.next_pid in self.pidtracer.system_pids or event.next_pid in
+                self.pidtracer.app_pids):
+
                 try:
                     process_branch = self.process_branches[event.pid]
                     process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
@@ -397,7 +398,8 @@ class ProcessTree:
                     pass  # PID not of interest to program
 
             # Task being switched in, again ignoring idle task and binder threads
-            if event.next_pid != 0 and event.next_pid not in self.pidtracer.binder_pids:
+            if event.next_pid != 0 and (event.next_pid in self.pidtracer.system_pids or event.next_pid in
+                                        self.pidtracer.app_pids):
 
                 for x, pending_binder_node in reversed(
                         list(enumerate(self.completed_binder_calls))):  # Most recent
@@ -405,20 +407,37 @@ class ProcessTree:
                     # If event to be switched in is the target of the Binder transaction
                     if event.next_pid == pending_binder_node.target_pid:
 
-                        # Binder thread that is not yet known
-                        if pending_binder_node.binder_thread not in self.process_branches:
-                            pid_info = self.pidtracer.find_pid_info(pending_binder_node.binder_thread)
+                        # If async binder call (no binder thread)
+                        if pending_binder_node.transaction_type == BinderType.ASYNC:
+                            # Calling PID acts as binder thread and should be added to binder threads if not already
+                            # added
+                            if pending_binder_node.caller_pid not in self.binder_branches:
+                                pid_info = self.pidtracer.get_pid_info(pending_binder_node.caller_pid)
 
-                            if not pid_info:
-                                del self.completed_binder_calls[x]
-                                break
+                                if not pid_info:
+                                    del self.completed_binder_calls[x]
+                                    break
 
-                            self.process_branches[pending_binder_node.binder_thread] = \
-                                ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
-                                              self.pidtracer,
-                                              self.cpus, self.gpu)
+                                self.binder_branches[pending_binder_node.caller_pid] = \
+                                    ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname,
+                                                  None, self.graph, self.pidtracer, self.cpus, self.gpu)
 
-                            self.process_branches[pending_binder_node.binder_thread] = pid_info
+                                self.pidtracer.binder_pids[pending_binder_node.binder_thread] = pid_info
+
+                        else:  # Sync
+                            # Binder thread that is not yet known
+                            if pending_binder_node.binder_thread not in self.binder_branches:
+                                pid_info = self.pidtracer.find_pid_info(pending_binder_node.binder_thread)
+
+                                if not pid_info:
+                                    del self.completed_binder_calls[x]
+                                    break
+
+                                self.binder_branches[pending_binder_node.binder_thread] = \
+                                    ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
+                                                  self.pidtracer, self.cpus, self.gpu)
+
+                                self.pidtracer.binder_pids[pending_binder_node.binder_thread] = pid_info
 
                         # If target thread is not yet known
                         if event.next_pid not in self.process_branches:
@@ -437,17 +456,21 @@ class ProcessTree:
                             self.pidtracer.app_pids[event.next_pid] = pid_info
 
                         # Add first half binder event to binder branch
-                        self.process_branches[pending_binder_node.binder_thread].add_event(
-                                pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
+                        if pending_binder_node.first_half:
+                            self.binder_branches[pending_binder_node.binder_thread].add_event(
+                                    pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
+                        else:  # Async binder transaction
+                            self.binder_branches[pending_binder_node.binder_thread].add_event(
+                                    pending_binder_node.second_half, event_type=JobType.BINDER_SEND)
 
                         # Add second half binder event to binder branch
-                        self.process_branches[pending_binder_node.binder_thread].add_event(
+                        self.binder_branches[pending_binder_node.binder_thread].add_event(
                                 pending_binder_node.second_half, event_type=JobType.BINDER_RECV)
 
                         try:
                             self.graph.add_edge(  # Edge from calling task to binder node
                                     self.process_branches[pending_binder_node.caller_pid].tasks[-1],
-                                    self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
+                                    self.binder_branches[pending_binder_node.binder_thread].binder_tasks[-1],
                                     color='palevioletred3', dir='forward', style='bold')
 
                         except IndexError:
@@ -455,11 +478,11 @@ class ProcessTree:
 
                         # Switch in new pid which will find pending completed binder transaction and create a
                         # new task node
-                        self.process_branches[event.next_pid].add_event(
+                        self.process_branches[pending_binder_node.target_pid].add_event(
                                 event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
 
                         self.graph.add_edge(  # Edge from binder node to next task
-                                self.process_branches[pending_binder_node.binder_thread].binder_tasks[-1],
+                                self.binder_branches[pending_binder_node.binder_thread].binder_tasks[-1],
                                 self.process_branches[pending_binder_node.target_pid].tasks[-1],
                                 color='yellow3', dir='forward')
 
@@ -467,13 +490,22 @@ class ProcessTree:
                         self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.type = \
                             DependencyType.BINDER
 
-                        # Create dependency from current task to calling task
-                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.prev_task = \
-                            self.process_branches[pending_binder_node.caller_pid].tasks[-1]
+                        if pending_binder_node.target_pid == pending_binder_node.caller_pid:  # Task signaling itself
+                            # Create dependency from current task to calling task
+                            self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.prev_task = \
+                                self.process_branches[pending_binder_node.caller_pid].tasks[-2]
 
-                        # Create dependency from calling task to current task
-                        self.process_branches[pending_binder_node.caller_pid].tasks[-1].dependency.next_task = \
-                            self.process_branches[pending_binder_node.target_pid].tasks[-1]
+                            # Create dependency from calling task to current task
+                            self.process_branches[pending_binder_node.caller_pid].tasks[-2].dependency.next_task = \
+                                self.process_branches[pending_binder_node.target_pid].tasks[-1]
+                        else:
+                            # Create dependency from current task to calling task
+                            self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.prev_task = \
+                                self.process_branches[pending_binder_node.caller_pid].tasks[-1]
+
+                            # Create dependency from calling task to current task
+                            self.process_branches[pending_binder_node.caller_pid].tasks[-1].dependency.next_task = \
+                                self.process_branches[pending_binder_node.target_pid].tasks[-1]
 
                         # remove binder task that is now complete
                         del self.completed_binder_calls[x]

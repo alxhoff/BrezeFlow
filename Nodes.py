@@ -14,6 +14,7 @@ from Optimizations import OptimizationInfo
 from SystemEvents import EventSchedSwitch, FreqPowerEvent
 from XU3EnergyProfile import XU3RegressionModel
 
+task_ID = 0
 
 class TaskNode:
     """
@@ -34,7 +35,10 @@ class TaskNode:
     """
 
     def __init__(self, graph, pid, name):
+        global task_ID
 
+        self.id = task_ID
+        task_ID += 1
         self.events = []
         self.sys_metric_change_events = []
         self.cpu_cycles = 0
