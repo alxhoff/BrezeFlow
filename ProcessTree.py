@@ -164,6 +164,7 @@ class ProcessTree:
                 op_writer.writerow(
                     [
                         "Op ID",
+                        "Task ID",
                         "Task PID",
                         "Task Name",
                         "TS",
@@ -321,6 +322,7 @@ class ProcessTree:
                                         op_writer.writerow(
                                             [
                                                 task.optimization_info.ID,
+                                                task.id,
                                                 task.pid,
                                                 task.name,
                                                 task.start_time,
@@ -427,6 +429,7 @@ class ProcessTree:
                                     op_writer.writerow(
                                         [
                                             task.optimization_info.ID,
+                                            task.id,
                                             task.pid,
                                             task.name,
                                             task.start_time,
