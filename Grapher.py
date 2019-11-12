@@ -23,9 +23,9 @@ class Grapher:
 
     def draw_graph(self):
         a_graph = nx.nx_agraph.to_agraph(self.pt.graph)
-        a_graph.graph_attr['splines'] = 'polyline'
-        a_graph.graph_attr['packmode'] = 'node'
-        a_graph.graph_attr['margin'] = 2
+        a_graph.graph_attr["splines"] = "polyline"
+        a_graph.graph_attr["packmode"] = "node"
+        a_graph.graph_attr["margin"] = 2
 
         file_path = "results/"
 
@@ -33,5 +33,11 @@ class Grapher:
             file_path += self.subdir + "/"
 
         a_graph.draw(
-                os.path.join(os.path.dirname(os.path.realpath(__file__)), file_path + self.pt.pidtracer.name) + ".xdot",
-                     format='xdot', prog='dot')
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                file_path + self.pt.pidtracer.name,
+            )
+            + ".xdot",
+            format="xdot",
+            prog="dot",
+        )

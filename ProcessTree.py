@@ -39,7 +39,9 @@ class ProcessTree:
         self.cpus = []
 
         self._create_cpu_branches()
-        self.gpu = GPUBranch(self.metrics.current_gpu_freq, self.metrics.current_gpu_util, self.graph)
+        self.gpu = GPUBranch(
+            self.metrics.current_gpu_freq, self.metrics.current_gpu_util, self.graph
+        )
         self._create_pid_branches()
 
         self.idle_time = 0
@@ -53,8 +55,14 @@ class ProcessTree:
         """ Creates a CPU branch for each CPU found in a system
         """
         for x in range(0, self.metrics.core_count):
-            self.cpus.append(CPUBranch(x, self.metrics.current_core_freqs[x],
-                                       self.metrics.current_core_utils[x], self.graph))
+            self.cpus.append(
+                CPUBranch(
+                    x,
+                    self.metrics.current_core_freqs[x],
+                    self.metrics.current_core_utils[x],
+                    self.graph,
+                )
+            )
 
     def _create_pid_branches(self):
         """ Each PID in the tree creates a branch on which jobs and tasks of that PID are created in a
@@ -62,16 +70,40 @@ class ProcessTree:
         branch's PID.
         """
         for i, pid in self.pidtracer.app_pids.iteritems():
-            self.process_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
-                                                     self.pidtracer, self.cpus, self.gpu)
+            self.process_branches[i] = ProcessBranch(
+                pid.pid,
+                pid.pname,
+                pid.tname,
+                None,
+                self.graph,
+                self.pidtracer,
+                self.cpus,
+                self.gpu,
+            )
 
         for i, pid in self.pidtracer.system_pids.iteritems():
-            self.process_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
-                                                     self.pidtracer, self.cpus, self.gpu)
+            self.process_branches[i] = ProcessBranch(
+                pid.pid,
+                pid.pname,
+                pid.tname,
+                None,
+                self.graph,
+                self.pidtracer,
+                self.cpus,
+                self.gpu,
+            )
 
         for i, pid in self.pidtracer.binder_pids.iteritems():
-            self.binder_branches[i] = ProcessBranch(pid.pid, pid.pname, pid.tname, None, self.graph,
-                                                     self.pidtracer, self.cpus, self.gpu)
+            self.binder_branches[i] = ProcessBranch(
+                pid.pid,
+                pid.pname,
+                pid.tname,
+                None,
+                self.graph,
+                self.pidtracer,
+                self.cpus,
+                self.gpu,
+            )
 
     def finish_tree(self, filename, subdir):
         """ After all events have been added to a tree the tree compiles its energy results and
@@ -93,7 +125,7 @@ class ProcessTree:
 
         with open(file_prefix + "_results.csv", "w+") as f:
 
-            results_writer = csv.writer(f, delimiter=',')
+            results_writer = csv.writer(f, delimiter=",")
 
             # Start and end time
             start_time = 0
@@ -105,9 +137,12 @@ class ProcessTree:
                     if branch.tasks[0].start_time < start_time or start_time == 0:
                         start_time = branch.tasks[0].start_time
 
-                    if (branch.tasks[-1].start_time + branch.tasks[-1].duration) > finish_time \
-                            or finish_time == 0:
-                        finish_time = branch.tasks[-1].start_time + branch.tasks[-1].duration
+                    if (
+                        branch.tasks[-1].start_time + branch.tasks[-1].duration
+                    ) > finish_time or finish_time == 0:
+                        finish_time = (
+                            branch.tasks[-1].start_time + branch.tasks[-1].duration
+                        )
 
             results_writer.writerow(["Application", filename])
             results_writer.writerow(["Start", start_time / 1000000.0])
@@ -119,14 +154,31 @@ class ProcessTree:
             total_energy = 0.0
             optimizations_found = [0, 0]
             timeline_interval = 0.05
-            timeline_intervals = int(round(duration/timeline_interval)) + 1
-            optimization_timeline_total = np.full(timeline_intervals * 2, [0]).reshape(timeline_intervals, 2)
+            timeline_intervals = int(round(duration / timeline_interval)) + 1
+            optimization_timeline_total = np.full(timeline_intervals * 2, [0]).reshape(
+                timeline_intervals, 2
+            )
 
             with open(file_prefix + "_optimizations.csv", "w+") as f_op:
-                op_writer = csv.writer(f_op, delimiter=',')
-                op_writer.writerow(["Op ID", "Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core",
-                                    "New Core's Old Freq", "New Freq", "Original Core's Prev Util",
-                                    "New Core's Prev Util", "New Core's New Util", "Optimization Type"])
+                op_writer = csv.writer(f_op, delimiter=",")
+                op_writer.writerow(
+                    [
+                        "Op ID",
+                        "Task PID",
+                        "Task Name",
+                        "TS",
+                        "Duration",
+                        "Core",
+                        "Freq",
+                        "New Core",
+                        "New Core's Old Freq",
+                        "New Freq",
+                        "Original Core's Prev Util",
+                        "New Core's Prev Util",
+                        "New Core's New Util",
+                        "Optimization Type",
+                    ]
+                )
                 op_writer.writerow([])
 
                 for x in list(self.process_branches.keys()):
@@ -147,15 +199,25 @@ class ProcessTree:
                     if branch.energy == 0.0:
                         continue
 
-                    results_writer.writerow([branch.pid, branch.pname, branch.tname, str(len(branch.tasks)),
-                        branch.energy, branch.duration])
+                    results_writer.writerow(
+                        [
+                            branch.pid,
+                            branch.pname,
+                            branch.tname,
+                            str(len(branch.tasks)),
+                            branch.energy,
+                            branch.duration,
+                        ]
+                    )
 
                     mf = self.metrics.energy_profile.migration_factor
 
                     ### OPTIMAL EVALUATION
                     for task in branch.tasks:
 
-                        if task.cpu_cycles == 0:  # Tasks that started at the end of the trace time
+                        if (
+                            task.cpu_cycles == 0
+                        ):  # Tasks that started at the end of the trace time
                             continue
 
                         cores = self.metrics.sys_util_history
@@ -175,9 +237,13 @@ class ProcessTree:
                         task_cycles = task.cpu_cycles
 
                         # Reallocate to small core
-                        if task.events[0].cpu > 3:  # big TODO fix the use of the first event's CPU
+                        if (
+                            task.events[0].cpu > 3
+                        ):  # big TODO fix the use of the first event's CPU
 
-                            little_core_index = np.argmin(core_utils[:4])  # Core with most capacity
+                            little_core_index = np.argmin(
+                                core_utils[:4]
+                            )  # Core with most capacity
                             little_cores = core_utils[:4]
 
                             cur_core_util = core_utils[task.events[0].cpu]
@@ -192,59 +258,110 @@ class ProcessTree:
                                 # Scaled little utils
                                 if cur_little_cpu_freq != little_freq:
                                     scaling_factor = cur_little_cpu_freq / little_freq
-                                    core_utils_new_freq = [core * scaling_factor for core in little_cores]
+                                    core_utils_new_freq = [
+                                        core * scaling_factor for core in little_cores
+                                    ]
                                 else:
                                     core_utils_new_freq = little_cores
 
                                 # Check existing workload can be fit onto CPU at new frequency
-                                if all(core_util <= 100.0 for core_util in core_utils_new_freq):
+                                if all(
+                                    core_util <= 100.0
+                                    for core_util in core_utils_new_freq
+                                ):
 
                                     # Realloc to little
-                                    available_cycles_on_little_at_new_freq = \
-                                        round((1.0 - (core_utils_new_freq[little_core_index] / 100)) * little_freq)
+                                    available_cycles_on_little_at_new_freq = round(
+                                        (
+                                            1.0
+                                            - (
+                                                core_utils_new_freq[little_core_index]
+                                                / 100
+                                            )
+                                        )
+                                        * little_freq
+                                    )
 
-                                    required_duration \
-                                        = cycles_on_little / available_cycles_on_little_at_new_freq * 1000000
+                                    required_duration = (
+                                        cycles_on_little
+                                        / available_cycles_on_little_at_new_freq
+                                        * 1000000
+                                    )
 
-                                    finish_time_on_little = int(round(task.start_time + required_duration))
+                                    finish_time_on_little = int(
+                                        round(task.start_time + required_duration)
+                                    )
 
-                                    new_util_on_target_core = core_utils_new_freq[little_core_index] + \
-                                                              (cycles_on_little / little_freq * 100)
+                                    new_util_on_target_core = core_utils_new_freq[
+                                        little_core_index
+                                    ] + (cycles_on_little / little_freq * 100)
 
                                     try:
-                                        depender_start_time = task.dependency.next_task.start_time
+                                        depender_start_time = (
+                                            task.dependency.next_task.start_time
+                                        )
                                     except Exception as e:
                                         continue
 
                                     if finish_time_on_little < depender_start_time:
-                                        task.optimization_info.add_optim_type(OptimizationInfoType.REALLOC)
+                                        task.optimization_info.add_optim_type(
+                                            OptimizationInfoType.REALLOC
+                                        )
 
                                         if little_freq != task.events[0].cpu_freq[0]:
-                                            task.optimization_info.add_optim_type(OptimizationInfoType.DVFS)
+                                            task.optimization_info.add_optim_type(
+                                                OptimizationInfoType.DVFS
+                                            )
                                             optimizations_found[1] += 1
 
-                                        task.optimization_info.set_message("Task can be reallocated")
+                                        task.optimization_info.set_message(
+                                            "Task can be reallocated"
+                                        )
 
-                                        op_writer.writerow([task.optimization_info.ID, task.pid, task.name,
-                                                            task.start_time, task.duration, task.events[0].cpu,
-                                                            task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
-                                                            little_core_index, task.events[0].cpu_freq[0],
-                                                            little_freq, cur_core_util, cur_core_util,
-                                                            new_util_on_target_core,
-                                                            str(task.optimization_info)])
+                                        op_writer.writerow(
+                                            [
+                                                task.optimization_info.ID,
+                                                task.pid,
+                                                task.name,
+                                                task.start_time,
+                                                task.duration,
+                                                task.events[0].cpu,
+                                                task.events[0].cpu_freq[
+                                                    0 if task.events[0].cpu < 4 else 1
+                                                ],
+                                                little_core_index,
+                                                task.events[0].cpu_freq[0],
+                                                little_freq,
+                                                cur_core_util,
+                                                cur_core_util,
+                                                new_util_on_target_core,
+                                                str(task.optimization_info),
+                                            ]
+                                        )
 
                                         optimizations_found[0] += 1
                                         break
 
                         # Current core not running at minimum DVFS
-                        if (task.events[0].cpu <= 3 and task.events[0].cpu_freq[0] != lf[0]) \
-                                or (task.events[0].cpu >= 4 and task.events[0].cpu_freq[1] != bf[0]):
+                        if (
+                            task.events[0].cpu <= 3
+                            and task.events[0].cpu_freq[0] != lf[0]
+                        ) or (
+                            task.events[0].cpu >= 4
+                            and task.events[0].cpu_freq[1] != bf[0]
+                        ):
 
-                            cur_cpu_freq = float(task.events[0].cpu_freq[0 if task.events[0].cpu <= 3 else 1])
+                            cur_cpu_freq = float(
+                                task.events[0].cpu_freq[
+                                    0 if task.events[0].cpu <= 3 else 1
+                                ]
+                            )
 
                             if task.events[0].cpu <= 3:  # LITTLE
                                 freq_index = lf.index(cur_cpu_freq)
-                                freqs = lf[:freq_index]  # Freqs from minimum freq until the current one
+                                freqs = lf[
+                                    :freq_index
+                                ]  # Freqs from minimum freq until the current one
                                 lowest_util_core_index = np.argmin(core_utils[:4])
 
                             else:  # big
@@ -252,7 +369,9 @@ class ProcessTree:
                                 freqs = bf[:freq_index]
                                 lowest_util_core_index = np.argmin(core_utils[4:]) + 4
 
-                            if lowest_util_core_index != task.events[0].cpu:  # Might be a better core in cluster
+                            if (
+                                lowest_util_core_index != task.events[0].cpu
+                            ):  # Might be a better core in cluster
 
                                 # Utilization of core that task is currently running on
                                 cur_core_util = core_utils[task.events[0].cpu]
@@ -260,8 +379,13 @@ class ProcessTree:
                                 target_core_util = core_utils[lowest_util_core_index]
 
                                 # Load generated from the target task
-                                task_load = float(task.duration) / \
-                                    self.metrics.sys_util_history.cpu[0].uw.window_duration * 100
+                                task_load = (
+                                    float(task.duration)
+                                    / self.metrics.sys_util_history.cpu[
+                                        0
+                                    ].uw.window_duration
+                                    * 100
+                                )
 
                                 # Current core utilization less the task of interest's load
                                 cur_core_util_wo_task = cur_core_util - task_load
@@ -271,7 +395,9 @@ class ProcessTree:
                                 if cur_core_util_wo_task > target_core_util:
                                     core_utils[task.events[0].cpu] -= task_load
                                     core_utils[lowest_util_core_index] += task_load
-                                    task.optimization_info.add_optim_type(OptimizationInfoType.REALLOC)
+                                    task.optimization_info.add_optim_type(
+                                        OptimizationInfoType.REALLOC
+                                    )
                                     optimizations_found[0] += 1
 
                             for freq in freqs:
@@ -279,35 +405,68 @@ class ProcessTree:
                                 # Scale
                                 scaling_factor = cur_cpu_freq / freq
                                 if task.events[0].cpu <= 3:  # LITTLE
-                                    core_utils_new_freq = [core * scaling_factor for core in core_utils[:4]]
+                                    core_utils_new_freq = [
+                                        core * scaling_factor for core in core_utils[:4]
+                                    ]
                                 else:  # big
-                                    core_utils_new_freq = [core * scaling_factor for core in core_utils[4:]]
+                                    core_utils_new_freq = [
+                                        core * scaling_factor for core in core_utils[4:]
+                                    ]
 
-                                if all(core_util <= 100.0 for core_util in core_utils_new_freq):
+                                if all(
+                                    core_util <= 100.0
+                                    for core_util in core_utils_new_freq
+                                ):
 
-                                    task.optimization_info.set_message("DVFS optimization possible")
-                                    task.optimization_info.add_optim_type(OptimizationInfoType.DVFS)
-                                    op_writer.writerow([task.optimization_info.ID, task.pid, task.name,
-                                                        task.start_time, task.duration, task.events[0].cpu,
-                                                        task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
-                                                        lowest_util_core_index, cur_cpu_freq, freq, cur_core_util,
-                                                        target_core_util,
-                                                        core_utils_new_freq[lowest_util_core_index % 4],
-                                                        str(task.optimization_info)])
+                                    task.optimization_info.set_message(
+                                        "DVFS optimization possible"
+                                    )
+                                    task.optimization_info.add_optim_type(
+                                        OptimizationInfoType.DVFS
+                                    )
+                                    op_writer.writerow(
+                                        [
+                                            task.optimization_info.ID,
+                                            task.pid,
+                                            task.name,
+                                            task.start_time,
+                                            task.duration,
+                                            task.events[0].cpu,
+                                            task.events[0].cpu_freq[
+                                                0 if task.events[0].cpu < 4 else 1
+                                            ],
+                                            lowest_util_core_index,
+                                            cur_cpu_freq,
+                                            freq,
+                                            cur_core_util,
+                                            target_core_util,
+                                            core_utils_new_freq[
+                                                lowest_util_core_index % 4
+                                            ],
+                                            str(task.optimization_info),
+                                        ]
+                                    )
                                     optimizations_found[1] += 1
                                     break
 
-                    optimization_timeline = branch.get_optimization_timeline(start_time, timeline_intervals,
-                                                                             timeline_interval * 1000000)
-                    optimization_timeline_total = np.add(optimization_timeline_total, optimization_timeline)
+                    optimization_timeline = branch.get_optimization_timeline(
+                        start_time, timeline_intervals, timeline_interval * 1000000
+                    )
+                    optimization_timeline_total = np.add(
+                        optimization_timeline_total, optimization_timeline
+                    )
 
             results_writer.writerow([])
             results_writer.writerow(["Optimizations", "Reallocations", "DVFS"])
-            results_writer.writerow(["", optimizations_found[0], optimizations_found[1]])
+            results_writer.writerow(
+                ["", optimizations_found[0], optimizations_found[1]]
+            )
             results_writer.writerow([])
 
             results_writer.writerow(["Optimization Timeline"])
-            results_writer.writerow(["TS (uS)", "Offset (S)", "DVFS Count", "Realloc Count", "Total Count"])
+            results_writer.writerow(
+                ["TS (uS)", "Offset (S)", "DVFS Count", "Realloc Count", "Total Count"]
+            )
 
             total_timeline_dvfs = 0
             total_timeline_realloc = 0
@@ -315,18 +474,43 @@ class ProcessTree:
                 total_timeline_realloc += optimization_timeline_total[i][0]
                 total_timeline_dvfs += optimization_timeline_total[i][1]
                 offset = timeline_interval * i
-                results_writer.writerow([start_time + offset * 1000000, offset, optimization_timeline_total[i][1],
-                                         optimization_timeline_total[i][0], optimization_timeline_total[i][0] +
-                                         optimization_timeline_total[i][1]])
+                results_writer.writerow(
+                    [
+                        start_time + offset * 1000000,
+                        offset,
+                        optimization_timeline_total[i][1],
+                        optimization_timeline_total[i][0],
+                        optimization_timeline_total[i][0]
+                        + optimization_timeline_total[i][1],
+                    ]
+                )
 
-            results_writer.writerow(["", "Totals", total_timeline_dvfs, total_timeline_realloc, total_timeline_dvfs +
-                                     total_timeline_realloc])
+            results_writer.writerow(
+                [
+                    "",
+                    "Totals",
+                    total_timeline_dvfs,
+                    total_timeline_realloc,
+                    total_timeline_dvfs + total_timeline_realloc,
+                ]
+            )
             results_writer.writerow([])
 
-            results_writer.writerow(["PID", "Process Name", "Thread Name", "Task Count", "Energy", "Duration"])
+            results_writer.writerow(
+                [
+                    "PID",
+                    "Process Name",
+                    "Thread Name",
+                    "Task Count",
+                    "Energy",
+                    "Duration",
+                ]
+            )
 
             # Calculate GPU energy
-            gpu_energy = self.metrics.sys_util_history.gpu.get_energy(start_time, finish_time)
+            gpu_energy = self.metrics.sys_util_history.gpu.get_energy(
+                start_time, finish_time
+            )
             results_writer.writerow(["GPU", gpu_energy])
 
             total_energy += gpu_energy
@@ -341,34 +525,72 @@ class ProcessTree:
             results_writer.writerow([])
             results_writer.writerow(["Energy Timeline"])
 
-            energy_timeline = [[(0.0, 0.0), 0.0, (0.0, 0.0, 0.0), 0.0, 0] for _ in range(timeline_intervals)]
+            energy_timeline = [
+                [(0.0, 0.0), 0.0, (0.0, 0.0, 0.0), 0.0, 0]
+                for _ in range(timeline_intervals)
+            ]
 
             for i, second in enumerate(energy_timeline):
 
                 for x, branch in self.process_branches.iteritems():
-                    energy = branch.get_interval_energy(i, timeline_interval, start_time, finish_time)
+                    energy = branch.get_interval_energy(
+                        i, timeline_interval, start_time, finish_time
+                    )
                     new_energy = [second[0][0] + energy[0], second[0][1] + energy[1]]
                     second[0] = new_energy
 
             for i, second in enumerate(energy_timeline):
 
-                second[1] += \
-                    self.metrics.sys_util_history.gpu.get_interval_energy(i, timeline_interval, start_time, finish_time)
-                temp_l = SystemMetrics.current_metrics.get_temp(i * timeline_interval * 1000000, 0)
-                temp_b = SystemMetrics.current_metrics.get_temp(i * timeline_interval * 1000000, 4)
-                temp_g = SystemMetrics.current_metrics.get_temp(i * timeline_interval * 1000000, -1)
+                second[1] += self.metrics.sys_util_history.gpu.get_interval_energy(
+                    i, timeline_interval, start_time, finish_time
+                )
+                temp_l = SystemMetrics.current_metrics.get_temp(
+                    i * timeline_interval * 1000000, 0
+                )
+                temp_b = SystemMetrics.current_metrics.get_temp(
+                    i * timeline_interval * 1000000, 4
+                )
+                temp_g = SystemMetrics.current_metrics.get_temp(
+                    i * timeline_interval * 1000000, -1
+                )
                 second[2] = (temp_b, temp_l, temp_g)
-                second[3] = SystemMetrics.current_metrics.sys_util_history.gpu.get_util(i * timeline_interval * 1000000)
-                second[4] = SystemMetrics.current_metrics.sys_util_history.gpu.get_freq(i * timeline_interval * 1000000)
+                second[3] = SystemMetrics.current_metrics.sys_util_history.gpu.get_util(
+                    i * timeline_interval * 1000000
+                )
+                second[4] = SystemMetrics.current_metrics.sys_util_history.gpu.get_freq(
+                    i * timeline_interval * 1000000
+                )
 
-            results_writer.writerow(["Absolute Time", "Sec Offset", "Thread Energy", "Big Energy", "Little Energy",
-                             "GPU Energy", "Total Energy", "Temps", "GPU Util", "GPU Freq"])
+            results_writer.writerow(
+                [
+                    "Absolute Time",
+                    "Sec Offset",
+                    "Thread Energy",
+                    "Big Energy",
+                    "Little Energy",
+                    "GPU Energy",
+                    "Total Energy",
+                    "Temps",
+                    "GPU Util",
+                    "GPU Freq",
+                ]
+            )
 
             for x, second in enumerate(energy_timeline):
-                results_writer.writerow([str(x * timeline_interval + start_time / 1000000.0), str(x * timeline_interval),
-                                 str(second[0][0] + second[0][1]), str(second[0][1]), str(second[0][0]), str(second[1]),
-                                 str(second[0][0] + second[0][1] + second[1]), str(second[2]), str(second[3]),
-                                 str(second[4])])
+                results_writer.writerow(
+                    [
+                        str(x * timeline_interval + start_time / 1000000.0),
+                        str(x * timeline_interval),
+                        str(second[0][0] + second[0][1]),
+                        str(second[0][1]),
+                        str(second[0][0]),
+                        str(second[1]),
+                        str(second[0][0] + second[0][1] + second[1]),
+                        str(second[2]),
+                        str(second[3]),
+                        str(second[4]),
+                    ]
+                )
 
             return optimizations_found
 
@@ -391,22 +613,29 @@ class ProcessTree:
         if isinstance(event, EventSchedSwitch):  # PID context swap
 
             # Task being switched out, ignoring idle task and binder threads
-            if event.pid != 0 and (event.next_pid in self.pidtracer.system_pids or event.next_pid in
-                self.pidtracer.app_pids):
+            if event.pid != 0 and (
+                event.next_pid in self.pidtracer.system_pids
+                or event.next_pid in self.pidtracer.app_pids
+            ):
 
                 try:
                     process_branch = self.process_branches[event.pid]
-                    process_branch.add_event(event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph)
+                    process_branch.add_event(
+                        event, event_type=JobType.SCHED_SWITCH_OUT, subgraph=subgraph
+                    )
 
                 except KeyError:
                     pass  # PID not of interest to program
 
             # Task being switched in, again ignoring idle task and binder threads
-            if event.next_pid != 0 and (event.next_pid in self.pidtracer.system_pids or event.next_pid in
-                                        self.pidtracer.app_pids):
+            if event.next_pid != 0 and (
+                event.next_pid in self.pidtracer.system_pids
+                or event.next_pid in self.pidtracer.app_pids
+            ):
 
                 for x, pending_binder_node in reversed(
-                        list(enumerate(self.completed_binder_calls))):  # Most recent
+                    list(enumerate(self.completed_binder_calls))
+                ):  # Most recent
 
                     # If event to be switched in is the target of the Binder transaction
                     if event.next_pid == pending_binder_node.target_pid:
@@ -415,33 +644,65 @@ class ProcessTree:
                         if pending_binder_node.transaction_type == BinderType.ASYNC:
                             # Calling PID acts as binder thread and should be added to binder threads if not already
                             # added
-                            if pending_binder_node.caller_pid not in self.binder_branches:
-                                pid_info = self.pidtracer.get_pid_info(pending_binder_node.caller_pid)
+                            if (
+                                pending_binder_node.caller_pid
+                                not in self.binder_branches
+                            ):
+                                pid_info = self.pidtracer.get_pid_info(
+                                    pending_binder_node.caller_pid
+                                )
 
                                 if not pid_info:
                                     del self.completed_binder_calls[x]
                                     break
 
-                                self.binder_branches[pending_binder_node.caller_pid] = \
-                                    ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname,
-                                                  None, self.graph, self.pidtracer, self.cpus, self.gpu)
+                                self.binder_branches[
+                                    pending_binder_node.caller_pid
+                                ] = ProcessBranch(
+                                    pid_info.pid,
+                                    pid_info.pname,
+                                    pid_info.tname,
+                                    None,
+                                    self.graph,
+                                    self.pidtracer,
+                                    self.cpus,
+                                    self.gpu,
+                                )
 
-                                self.pidtracer.binder_pids[pending_binder_node.binder_thread] = pid_info
+                                self.pidtracer.binder_pids[
+                                    pending_binder_node.binder_thread
+                                ] = pid_info
 
                         else:  # Sync
                             # Binder thread that is not yet known
-                            if pending_binder_node.binder_thread not in self.binder_branches:
-                                pid_info = self.pidtracer.find_pid_info(pending_binder_node.binder_thread)
+                            if (
+                                pending_binder_node.binder_thread
+                                not in self.binder_branches
+                            ):
+                                pid_info = self.pidtracer.find_pid_info(
+                                    pending_binder_node.binder_thread
+                                )
 
                                 if not pid_info:
                                     del self.completed_binder_calls[x]
                                     break
 
-                                self.binder_branches[pending_binder_node.binder_thread] = \
-                                    ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
-                                                  self.pidtracer, self.cpus, self.gpu)
+                                self.binder_branches[
+                                    pending_binder_node.binder_thread
+                                ] = ProcessBranch(
+                                    pid_info.pid,
+                                    pid_info.pname,
+                                    pid_info.tname,
+                                    None,
+                                    self.graph,
+                                    self.pidtracer,
+                                    self.cpus,
+                                    self.gpu,
+                                )
 
-                                self.pidtracer.binder_pids[pending_binder_node.binder_thread] = pid_info
+                                self.pidtracer.binder_pids[
+                                    pending_binder_node.binder_thread
+                                ] = pid_info
 
                         # If target thread is not yet known
                         if event.next_pid not in self.process_branches:
@@ -452,30 +713,55 @@ class ProcessTree:
                                 del self.completed_binder_calls[x]
                                 break
 
-                            self.process_branches[event.next_pid] = \
-                                ProcessBranch(pid_info.pid, pid_info.pname, pid_info.tname, None, self.graph,
-                                              self.pidtracer,
-                                              self.cpus, self.gpu)
+                            self.process_branches[event.next_pid] = ProcessBranch(
+                                pid_info.pid,
+                                pid_info.pname,
+                                pid_info.tname,
+                                None,
+                                self.graph,
+                                self.pidtracer,
+                                self.cpus,
+                                self.gpu,
+                            )
 
                             self.pidtracer.app_pids[event.next_pid] = pid_info
 
                         # Add first half binder event to binder branch
                         if pending_binder_node.first_half:
-                            self.binder_branches[pending_binder_node.binder_thread].add_event(
-                                    pending_binder_node.first_half, event_type=JobType.BINDER_SEND)
+                            self.binder_branches[
+                                pending_binder_node.binder_thread
+                            ].add_event(
+                                pending_binder_node.first_half,
+                                event_type=JobType.BINDER_SEND,
+                            )
                         else:  # Async binder transaction
-                            self.binder_branches[pending_binder_node.binder_thread].add_event(
-                                    pending_binder_node.second_half, event_type=JobType.BINDER_SEND)
+                            self.binder_branches[
+                                pending_binder_node.binder_thread
+                            ].add_event(
+                                pending_binder_node.second_half,
+                                event_type=JobType.BINDER_SEND,
+                            )
 
                         # Add second half binder event to binder branch
-                        self.binder_branches[pending_binder_node.binder_thread].add_event(
-                                pending_binder_node.second_half, event_type=JobType.BINDER_RECV)
+                        self.binder_branches[
+                            pending_binder_node.binder_thread
+                        ].add_event(
+                            pending_binder_node.second_half,
+                            event_type=JobType.BINDER_RECV,
+                        )
 
                         try:
                             self.graph.add_edge(  # Edge from calling task to binder node
-                                    self.process_branches[pending_binder_node.caller_pid].tasks[-1],
-                                    self.binder_branches[pending_binder_node.binder_thread].binder_tasks[-1],
-                                    color='palevioletred3', dir='forward', style='bold')
+                                self.process_branches[
+                                    pending_binder_node.caller_pid
+                                ].tasks[-1],
+                                self.binder_branches[
+                                    pending_binder_node.binder_thread
+                                ].binder_tasks[-1],
+                                color="palevioletred3",
+                                dir="forward",
+                                style="bold",
+                            )
 
                         except IndexError:
                             pass  # Calling task has no nodes yet to link
@@ -483,33 +769,64 @@ class ProcessTree:
                         # Switch in new pid which will find pending completed binder transaction and create a
                         # new task node
                         self.process_branches[pending_binder_node.target_pid].add_event(
-                                event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                            event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph
+                        )
 
                         self.graph.add_edge(  # Edge from binder node to next task
-                                self.binder_branches[pending_binder_node.binder_thread].binder_tasks[-1],
-                                self.process_branches[pending_binder_node.target_pid].tasks[-1],
-                                color='yellow3', dir='forward')
+                            self.binder_branches[
+                                pending_binder_node.binder_thread
+                            ].binder_tasks[-1],
+                            self.process_branches[pending_binder_node.target_pid].tasks[
+                                -1
+                            ],
+                            color="yellow3",
+                            dir="forward",
+                        )
 
                         # Create dependency
-                        self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.type = \
-                            DependencyType.BINDER
+                        self.process_branches[pending_binder_node.target_pid].tasks[
+                            -1
+                        ].dependency.type = DependencyType.BINDER
 
-                        if pending_binder_node.target_pid == pending_binder_node.caller_pid:  # Task signaling itself
+                        if (
+                            pending_binder_node.target_pid
+                            == pending_binder_node.caller_pid
+                        ):  # Task signaling itself
                             # Create dependency from current task to calling task
-                            self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.prev_task = \
-                                self.process_branches[pending_binder_node.caller_pid].tasks[-2]
+                            self.process_branches[pending_binder_node.target_pid].tasks[
+                                -1
+                            ].dependency.prev_task = self.process_branches[
+                                pending_binder_node.caller_pid
+                            ].tasks[
+                                -2
+                            ]
 
                             # Create dependency from calling task to current task
-                            self.process_branches[pending_binder_node.caller_pid].tasks[-2].dependency.next_task = \
-                                self.process_branches[pending_binder_node.target_pid].tasks[-1]
+                            self.process_branches[pending_binder_node.caller_pid].tasks[
+                                -2
+                            ].dependency.next_task = self.process_branches[
+                                pending_binder_node.target_pid
+                            ].tasks[
+                                -1
+                            ]
                         else:
                             # Create dependency from current task to calling task
-                            self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.prev_task = \
-                                self.process_branches[pending_binder_node.caller_pid].tasks[-1]
+                            self.process_branches[pending_binder_node.target_pid].tasks[
+                                -1
+                            ].dependency.prev_task = self.process_branches[
+                                pending_binder_node.caller_pid
+                            ].tasks[
+                                -1
+                            ]
 
                             # Create dependency from calling task to current task
-                            self.process_branches[pending_binder_node.caller_pid].tasks[-1].dependency.next_task = \
-                                self.process_branches[pending_binder_node.target_pid].tasks[-1]
+                            self.process_branches[pending_binder_node.caller_pid].tasks[
+                                -1
+                            ].dependency.next_task = self.process_branches[
+                                pending_binder_node.target_pid
+                            ].tasks[
+                                -1
+                            ]
 
                         # remove binder task that is now complete
                         del self.completed_binder_calls[x]
@@ -520,7 +837,8 @@ class ProcessTree:
                 # Not called from a Binder transaction (cyclic task)
                 try:
                     self.process_branches[event.next_pid].add_event(
-                            event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph)
+                        event, event_type=JobType.SCHED_SWITCH_IN, subgraph=subgraph
+                    )
                 except KeyError:
                     pass  # Branch (PID) is not of interest and as such can be passed
 
@@ -533,32 +851,55 @@ class ProcessTree:
             if event.trans_type == BinderType.CALL:
 
                 # First half of a binder transaction
-                if event.pid in self.pidtracer.app_pids or event.pid in self.pidtracer.system_pids:
+                if (
+                    event.pid in self.pidtracer.app_pids
+                    or event.pid in self.pidtracer.system_pids
+                ):
 
                     self.pending_binder_calls.append(
-                            FirstHalfBinderTransaction(event, event.target_pid, self.pidtracer))
+                        FirstHalfBinderTransaction(
+                            event, event.target_pid, self.pidtracer
+                        )
+                    )
 
             elif event.trans_type == BinderType.ASYNC:
 
-                if event.pid in self.pidtracer.app_pids or event.pid in self.pidtracer.system_pids:
+                if (
+                    event.pid in self.pidtracer.app_pids
+                    or event.pid in self.pidtracer.system_pids
+                ):
 
-                    self.completed_binder_calls.append(CompletedBinderTransaction(event))
+                    self.completed_binder_calls.append(
+                        CompletedBinderTransaction(event)
+                    )
 
             elif event.trans_type == BinderType.REPLY:
 
-                if event.pid in self.pidtracer.system_pids or event.pid in self.pidtracer.binder_pids:
+                if (
+                    event.pid in self.pidtracer.system_pids
+                    or event.pid in self.pidtracer.binder_pids
+                ):
 
                     if self.pending_binder_calls:  # Pending first halves
                         # Find most recent first half
-                        for x, transaction in reversed(list(enumerate(self.pending_binder_calls))):
+                        for x, transaction in reversed(
+                            list(enumerate(self.pending_binder_calls))
+                        ):
 
-                            if any(pid == event.pid for pid in transaction.child_pids) or \
-                                    event.pid == transaction.parent_pid:  # Find corresponding first half
+                            if (
+                                any(pid == event.pid for pid in transaction.child_pids)
+                                or event.pid == transaction.parent_pid
+                            ):  # Find corresponding first half
 
                                 self.completed_binder_calls.append(
-                                        CompletedBinderTransaction(event, transaction.send_event))
+                                    CompletedBinderTransaction(
+                                        event, transaction.send_event
+                                    )
+                                )
 
-                                del self.pending_binder_calls[x]  # Remove completed first half
+                                del self.pending_binder_calls[
+                                    x
+                                ]  # Remove completed first half
 
             self.binder_time += time.time() - proc_start_time
             return 0
@@ -586,7 +927,15 @@ class ProcessTree:
     @staticmethod
     def handle_temp_event(event, event_n_minus_1):
 
-        value = TempLogEntry(event.time, event.big0, event.big1, event.big2, event.big3, event.little, event.gpu)
+        value = TempLogEntry(
+            event.time,
+            event.big0,
+            event.big1,
+            event.big2,
+            event.big3,
+            event.little,
+            event.gpu,
+        )
 
         if not event_n_minus_1:
             return np.full(1, value)

@@ -23,14 +23,14 @@ from enum import Enum
 
 
 class JobType(Enum):
-    UNKNOWN = 'U'
-    SCHED_SWITCH_IN = 'S'
-    SCHED_SWITCH_OUT = 'O'
-    FREQ_CHANGE = 'F'
-    WAKEUP = 'W'
-    IDLE = 'I'
-    BINDER_SEND = 'B'
-    BINDER_RECV = 'R'
+    UNKNOWN = "U"
+    SCHED_SWITCH_IN = "S"
+    SCHED_SWITCH_OUT = "O"
+    FREQ_CHANGE = "F"
+    WAKEUP = "W"
+    IDLE = "I"
+    BINDER_SEND = "B"
+    BINDER_RECV = "R"
 
 
 class BinderType(Enum):
@@ -45,12 +45,12 @@ class BinderType(Enum):
 
 
 class ThreadState(Enum):
-    UNINTERRUPTIBLE_SLEEP_D = 'D'
-    RUNNING_R = 'R'
-    INTERRUPTIBLE_SLEEP_S = 'S'
-    STOPPED_T = 'T'
-    DEAD_X = 'X'
-    ZOMBIE_Z = 'Z'
+    UNINTERRUPTIBLE_SLEEP_D = "D"
+    RUNNING_R = "R"
+    INTERRUPTIBLE_SLEEP_S = "S"
+    STOPPED_T = "T"
+    DEAD_X = "X"
+    ZOMBIE_Z = "Z"
 
     def __str__(self):
         return str(self.value)
@@ -61,7 +61,9 @@ class Event:
     the timestamp of the event, the CPU on which the event occurred and the name of the event.
     """
 
-    def __init__(self, pid, ts, name, cpu=0, freq_l=0, freq_b=0, gpu_freq=0, gpu_util=0):
+    def __init__(
+        self, pid, ts, name, cpu=0, freq_l=0, freq_b=0, gpu_freq=0, gpu_util=0
+    ):
         self.pid = pid
         self.time = ts
         self.cpu = cpu
@@ -99,7 +101,6 @@ class EventFreqChange(Event):
 
 
 class EventWakeup(Event):
-
     def __init__(self, pid, ts, cpu, name):
         Event.__init__(self, pid=pid, ts=ts, cpu=cpu, name=name)
 
@@ -121,7 +122,9 @@ class EventBinderTransaction(Event):
 
     """
 
-    def __init__(self, pid, ts, cpu, name, reply, dest_proc, target_pid, flags, code, tran_num):
+    def __init__(
+        self, pid, ts, cpu, name, reply, dest_proc, target_pid, flags, code, tran_num
+    ):
         Event.__init__(self, pid=pid, ts=ts, cpu=cpu, name=name)
 
         if reply == 0:
@@ -194,7 +197,9 @@ class FreqPowerEvent:
     def __init__(self, ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util):
         self.time = ts
         self.cpu = cpu
-        self.cpu_frequency = cpu_freq  # Frequency up until the event, not the frequency after the event
+        self.cpu_frequency = (
+            cpu_freq  # Frequency up until the event, not the frequency after the event
+        )
         self.gpu_frequency = gpu_freq
         self.cpu_util = cpu_util  # Not really needed
         self.gpu_util = gpu_util

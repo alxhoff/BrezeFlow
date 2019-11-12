@@ -22,29 +22,50 @@ class GovernorController:
         self.adb = adb
 
     def get_governors(self):
-        return self.adb.command("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors").split()
+        return self.adb.command(
+            "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
+        ).split()
 
     def get_current_governor(self):
-        return self.adb.command("cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor").split()[0]
+        return self.adb.command(
+            "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+        ).split()[0]
 
     def set_governor(self, governor):
-        self.adb.command("echo {} > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor".format(governor))
+        self.adb.command(
+            "echo {} > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor".format(
+                governor
+            )
+        )
 
     def get_min_freq(self, cpu):
-        return self.adb.command("cat /sys/devices/system/cpu/cpu{}/cpufreq/scaling_min_freq".format(cpu)).split()[0]
+        return self.adb.command(
+            "cat /sys/devices/system/cpu/cpu{}/cpufreq/scaling_min_freq".format(cpu)
+        ).split()[0]
 
     def get_max_freq(self, cpu):
-        return self.adb.command("cat /sys/devices/system/cpu/cpu{}/cpufreq/scaling_max_freq".format(cpu)).split()[0]
+        return self.adb.command(
+            "cat /sys/devices/system/cpu/cpu{}/cpufreq/scaling_max_freq".format(cpu)
+        ).split()[0]
 
     def set_min_freq(self, cpu, freq):
-        self.adb.command("echo {} > /sys/devices/system/cpu/cpu{}/cpufreq/scaling_min_freq".format(freq, cpu))
+        self.adb.command(
+            "echo {} > /sys/devices/system/cpu/cpu{}/cpufreq/scaling_min_freq".format(
+                freq, cpu
+            )
+        )
 
     def set_max_freq(self, cpu, freq):
-        self.adb.command("echo {} > /sys/devices/system/cpu/cpu{}/cpufreq/scaling_max_freq".format(freq, cpu))
+        self.adb.command(
+            "echo {} > /sys/devices/system/cpu/cpu{}/cpufreq/scaling_max_freq".format(
+                freq, cpu
+            )
+        )
 
     def reset_cpu_frequencies(self, cpu):
-        table_path = "/sys/devices/system/cpu/cpufreq/mp-cpufreq/{}_freq_table".format(self.little_name if cpu <= 3 else
-                                                                                       self.big_name)
+        table_path = "/sys/devices/system/cpu/cpufreq/mp-cpufreq/{}_freq_table".format(
+            self.little_name if cpu <= 3 else self.big_name
+        )
         freqs = self.adb.command("cat {}".format(table_path)).split()
         min_freq = freqs[-1]
         max_freq = freqs[0]

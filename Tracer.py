@@ -12,10 +12,19 @@ class Tracer:
     arguments.
 
     """
-    tracing_path = '/d/tracing/'
 
-    def __init__(self, adb_device, name, functions=None, events=None,
-                 trace_type="nop", duration=1, metrics=None):
+    tracing_path = "/d/tracing/"
+
+    def __init__(
+        self,
+        adb_device,
+        name,
+        functions=None,
+        events=None,
+        trace_type="nop",
+        duration=1,
+        metrics=None,
+    ):
 
         if functions is None:
             functions = []
@@ -25,7 +34,9 @@ class Tracer:
         self.metrics = metrics
         self.adb = adb_device
         self.name = name
-        self.filename = os.path.dirname(os.path.realpath(__file__)) + '/' + name + "_tracer.trace"
+        self.filename = (
+            os.path.dirname(os.path.realpath(__file__)) + "/" + name + "_tracer.trace"
+        )
         self.trace_type = trace_type
         self.functions = functions
         self.events = events
@@ -61,14 +72,21 @@ class Tracer:
         """
         start_time = self._get_device_time()
         self._enable_tracing(True)
-        while (self._get_device_time() - start_time) < (duration * 1000000 + preamble * 1000000):
+        while (self._get_device_time() - start_time) < (
+            duration * 1000000 + preamble * 1000000
+        ):
             time.sleep(0.1)
 
-        print("*** Traced for %s seconds ***" % ((self._get_device_time() - start_time) / 1000000.0))
+        print(
+            "*** Traced for %s seconds ***"
+            % ((self._get_device_time() - start_time) / 1000000.0)
+        )
         self._enable_tracing(False)
 
     def _get_device_time(self):
-        sys_time = self.adb.command("cat /proc/uptime")  # Get timestamp when test started
+        sys_time = self.adb.command(
+            "cat /proc/uptime"
+        )  # Get timestamp when test started
         return int(float(re.findall(r"(\d+.\d{2})", sys_time)[0]) * 1000000)
 
     def get_trace_results(self):
@@ -79,10 +97,14 @@ class Tracer:
         self.adb.pull_file("/data/local/tmp/trace.dat", "results/" + self.name + ".dat")
         print(" --- Completed")
         sys.stdout.write("Pulling /data/local/tmp/trace.report")
-        self.adb.pull_file("/data/local/tmp/trace.report", "results/" + self.name + ".report")
+        self.adb.pull_file(
+            "/data/local/tmp/trace.report", "results/" + self.name + ".report"
+        )
         print(" --- Completed")
         sys.stdout.write("Pulling /d/binder/transaction_log")
-        self.adb.pull_file("/d/binder/transaction_log", "results/" + self.name + ".tlog")
+        self.adb.pull_file(
+            "/d/binder/transaction_log", "results/" + self.name + ".tlog"
+        )
         print(" --- Completed")
 
     def _get_available_events(self):
@@ -105,8 +127,7 @@ class Tracer:
         if isinstance(events, list):
             for f in range(0, len(events)):
                 if events[f] in avail_events:
-                    self.adb.append_to_file(self.tracing_path + "set_event",
-                                            events[f])
+                    self.adb.append_to_file(self.tracing_path + "set_event", events[f])
         else:
             if events in avail_events:
                 self.adb.append_to_file(self.tracing_path + "set_event", events)
@@ -118,12 +139,14 @@ class Tracer:
         :param filter_contents: State of the event filter to be set
         """
         event_dir = self.adb.command(
-                "find " + self.tracing_path + "/events -name " + event)
+            "find " + self.tracing_path + "/events -name " + event
+        )
         if event_dir is None:
             return
 
-        self.adb.append_to_file(self.tracing_path + event_dir + "/filter",
-                                filter_contents)
+        self.adb.append_to_file(
+            self.tracing_path + event_dir + "/filter", filter_contents
+        )
 
     def _clear_event_filter(self, event):
         """ Clears the ftrace event filter for a particular event.
@@ -131,7 +154,8 @@ class Tracer:
         :param event: Event whoes filter is to be cleared
         """
         event_dir = self.adb.command(
-                "find " + self.tracing_path + "/events -name " + event)
+            "find " + self.tracing_path + "/events -name " + event
+        )
         if event_dir is None:
             return
 
@@ -144,12 +168,12 @@ class Tracer:
         :return: String representation of the event's format. Empty string otherwise.
         """
         event_dir = self.adb.command(
-                "find " + self.tracing_path + "/events -name " + event)
+            "find " + self.tracing_path + "/events -name " + event
+        )
         if event_dir is None:
             return ""
 
-        return self.adb.read_file(self.tracing_path
-                                  + event_dir + "/format")
+        return self.adb.read_file(self.tracing_path + event_dir + "/format")
 
     def _get_available_tracer(self):
         """ Gets a list of the available tracers on the target system.
@@ -165,8 +189,7 @@ class Tracer:
         """
         available_tracers = self._get_available_tracer()
         if tracer in available_tracers:
-            self.adb.write_file(self.tracing_path
-                                + "current_tracer", tracer)
+            self.adb.write_file(self.tracing_path + "current_tracer", tracer)
 
     def _clear_tracer(self):
         """ Resets the current tracer by setting the current tracer to 'nop'.

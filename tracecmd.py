@@ -48,10 +48,12 @@ def cached_property(func, name=None):
         value = func(self)
         self.__cached_properties[name] = value
         return value
+
     update_wrapper(_get, func)
 
     def _del(self):
         self.__cached_properties.pop(name, None)
+
     return property(_get, None, _del)
 
 
@@ -67,9 +69,15 @@ class Event(object, DictMixin):
         self._format = format
 
     def __str__(self):
-        return "%d.%d CPU%d %s: pid=%d comm=%s type=%d" % \
-               (self.ts/1000000000, self.ts % 1000000000, self.cpu, self.name,
-                self.num_field("common_pid"), self.comm, self.type)
+        return "%d.%d CPU%d %s: pid=%d comm=%s type=%d" % (
+            self.ts / 1000000000,
+            self.ts % 1000000000,
+            self.cpu,
+            self.name,
+            self.num_field("common_pid"),
+            self.comm,
+            self.type,
+        )
 
     def __del__(self):
         free_record(self._record)
@@ -123,8 +131,7 @@ class Event(object, DictMixin):
         return py_field_get_str(f, self._record)
 
     def stack_field(self, long_size):
-        return py_field_get_stack(self._pevent, self._record, self._format,
-                                  long_size)
+        return py_field_get_stack(self._pevent, self._record, self._format, long_size)
 
 
 class TraceSeq(object):
@@ -150,11 +157,13 @@ class Field(object):
         return py_field_get_data(self._field, self._record)
 
     def __long__(self):
-        ret, val = pevent_read_number_field(self._field,
-                                            pevent_record_data_get(self._record))
+        ret, val = pevent_read_number_field(
+            self._field, pevent_record_data_get(self._record)
+        )
         if ret:
             raise FieldError("Not a number field")
         return val
+
     __int__ = __long__
 
     def __str__(self):
@@ -169,16 +178,16 @@ class PEvent(object):
         return cb(TraceSeq(s), Event(self._pevent, record, event_fmt))
 
     def register_event_handler(self, subsys, event_name, callback):
-        def l(s, r, e): return self._handler(callback, s, r, e)
+        def l(s, r, e):
+            return self._handler(callback, s, r, e)
 
-        py_pevent_register_event_handler(
-            self._pevent, -1, subsys, event_name, l)
+        py_pevent_register_event_handler(self._pevent, -1, subsys, event_name, l)
 
     @cached_property
     def file_endian(self):
         if pevent_is_file_bigendian(self._pevent):
-            return '>'
-        return '<'
+            return ">"
+        return "<"
 
 
 class FileFormatError(Exception):

@@ -12,6 +12,7 @@ from enum import Enum
 
 optimization_ID = 0
 
+
 class OptimizationInfoType(Enum):
 
     NONE = 0
@@ -23,8 +24,9 @@ class OptimizationInfoType(Enum):
 
 
 class OptimizationInfo:
-
-    def __init__(self, graph_node, optim_type=OptimizationInfoType.NONE.value, message=""):
+    def __init__(
+        self, graph_node, optim_type=OptimizationInfoType.NONE.value, message=""
+    ):
 
         self.ID = 0
         self.graph_node = graph_node
@@ -66,7 +68,3 @@ class OptimizationInfo:
         if self.optim_type & OptimizationInfoType.REALLOC.value:
             return True
         return False
-
-
-
-

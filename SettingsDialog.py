@@ -17,7 +17,9 @@ class Ui_DialogSettings(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(DialogSettings)
         self.verticalLayout.setObjectName("verticalLayout")
         self.toolBox = QtWidgets.QToolBox(DialogSettings)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.toolBox.sizePolicy().hasHeightForWidth())
@@ -30,7 +32,9 @@ class Ui_DialogSettings(object):
         self.gridLayout_2 = QtWidgets.QGridLayout(self.pageApp)
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.label = QtWidgets.QLabel(self.pageApp)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
@@ -118,7 +122,9 @@ class Ui_DialogSettings(object):
         self.gridLayout_3 = QtWidgets.QGridLayout(self.pageSyslogger)
         self.gridLayout_3.setObjectName("gridLayout_3")
         self.label_6 = QtWidgets.QLabel(self.pageSyslogger)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
@@ -126,7 +132,9 @@ class Ui_DialogSettings(object):
         self.label_6.setObjectName("label_6")
         self.gridLayout_3.addWidget(self.label_6, 0, 0, 1, 1)
         self.frame_2 = QtWidgets.QFrame(self.pageSyslogger)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.frame_2.sizePolicy().hasHeightForWidth())
@@ -180,7 +188,9 @@ class Ui_DialogSettings(object):
         self.pushButtonChoosePullFile = QtWidgets.QPushButton(self.frame_5)
         self.pushButtonChoosePullFile.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("../icons/folder.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(
+            QtGui.QPixmap("../icons/folder.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off
+        )
         self.pushButtonChoosePullFile.setIcon(icon)
         self.pushButtonChoosePullFile.setObjectName("pushButtonChoosePullFile")
         self.horizontalLayout.addWidget(self.pushButtonChoosePullFile)
@@ -223,7 +233,9 @@ class Ui_DialogSettings(object):
         self.pushButtonFileToConvertDestination = QtWidgets.QPushButton(self.frame_3)
         self.pushButtonFileToConvertDestination.setText("")
         self.pushButtonFileToConvertDestination.setIcon(icon)
-        self.pushButtonFileToConvertDestination.setObjectName("pushButtonFileToConvertDestination")
+        self.pushButtonFileToConvertDestination.setObjectName(
+            "pushButtonFileToConvertDestination"
+        )
         self.horizontalLayout_3.addWidget(self.pushButtonFileToConvertDestination)
         self.verticalLayout_6.addLayout(self.horizontalLayout_3)
         self.pushButtonConvertTrace = QtWidgets.QPushButton(self.frame_3)
@@ -281,22 +293,42 @@ class Ui_DialogSettings(object):
         self.verticalLayout.addWidget(self.toolBox)
         self.buttonBox = QtWidgets.QDialogButtonBox(DialogSettings)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(
+            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok
+        )
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
 
         self.retranslateUi(DialogSettings)
         self.toolBox.setCurrentIndex(0)
         self.buttonBox.accepted.connect(DialogSettings.accept)
-        self.pushButtonSysloggerPull.clicked.connect(DialogSettings.sysloggerpull_clicked)
-        self.pushButtonChoosePullFile.clicked.connect(DialogSettings.sysloggerpullfile_clicked)
-        self.pushButtonSysloggerStart.clicked.connect(DialogSettings.sysloggerstart_clicked)
-        self.pushButtonSysloggerSetup.clicked.connect(DialogSettings.sysloggersetup_clicked)
-        self.pushButtonSysloggerStop.clicked.connect(DialogSettings.sysloggerstop_clicked)
-        self.pushButtonSysloggerFinish.clicked.connect(DialogSettings.sysloggerfinish_clicked)
-        self.pushButtonFileToConvert.clicked.connect(DialogSettings.sysloggerfiletoconvert_clicked)
-        self.pushButtonConvertTrace.clicked.connect(DialogSettings.sysloggerconverttrace_clicked)
-        self.pushButtonFileToConvertDestination.clicked.connect(DialogSettings.sysloggerfiletoconvertdestination_clicked)
+        self.pushButtonSysloggerPull.clicked.connect(
+            DialogSettings.sysloggerpull_clicked
+        )
+        self.pushButtonChoosePullFile.clicked.connect(
+            DialogSettings.sysloggerpullfile_clicked
+        )
+        self.pushButtonSysloggerStart.clicked.connect(
+            DialogSettings.sysloggerstart_clicked
+        )
+        self.pushButtonSysloggerSetup.clicked.connect(
+            DialogSettings.sysloggersetup_clicked
+        )
+        self.pushButtonSysloggerStop.clicked.connect(
+            DialogSettings.sysloggerstop_clicked
+        )
+        self.pushButtonSysloggerFinish.clicked.connect(
+            DialogSettings.sysloggerfinish_clicked
+        )
+        self.pushButtonFileToConvert.clicked.connect(
+            DialogSettings.sysloggerfiletoconvert_clicked
+        )
+        self.pushButtonConvertTrace.clicked.connect(
+            DialogSettings.sysloggerconverttrace_clicked
+        )
+        self.pushButtonFileToConvertDestination.clicked.connect(
+            DialogSettings.sysloggerfiletoconvertdestination_clicked
+        )
         self.buttonBox.rejected.connect(DialogSettings.reject)
         QtCore.QMetaObject.connectSlotsByName(DialogSettings)
 
@@ -310,49 +342,114 @@ class Ui_DialogSettings(object):
         self.checkBoxDrawGraph.setText(_translate("DialogSettings", "Draw Graph"))
         self.label_4.setText(_translate("DialogSettings", "Default Events"))
         self.checkBoxSyslogger.setText(_translate("DialogSettings", "Syslogger"))
-        self.checkBoxBinderTransaction.setText(_translate("DialogSettings", "Binder Transaction"))
+        self.checkBoxBinderTransaction.setText(
+            _translate("DialogSettings", "Binder Transaction")
+        )
         self.checkBoxSchedSwitch.setText(_translate("DialogSettings", "Sched Switch"))
         self.checkBoxCPUIdle.setText(_translate("DialogSettings", "CPU Idle"))
         self.checkBoxWakeUp.setText(_translate("DialogSettings", "Wake Up"))
         self.label_13.setText(_translate("DialogSettings", "Speed Optimizations"))
-        self.radioButtonNonthreaded.setText(_translate("DialogSettings", "No threading (application will block)"))
-        self.radioButtonMultiThreaded.setText(_translate("DialogSettings", "Multi threaded"))
-        self.radioButtonMultiProcessing.setText(_translate("DialogSettings", "Multi processing"))
-        self.label_14.setText(_translate("DialogSettings", "Use UI Console<br>Only usable with mutlithreading"))
-        self.checkBoxUseUIConsole.setText(_translate("DialogSettings", "Enabled (restart required)"))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.pageApp), _translate("DialogSettings", "Application"))
+        self.radioButtonNonthreaded.setText(
+            _translate("DialogSettings", "No threading (application will block)")
+        )
+        self.radioButtonMultiThreaded.setText(
+            _translate("DialogSettings", "Multi threaded")
+        )
+        self.radioButtonMultiProcessing.setText(
+            _translate("DialogSettings", "Multi processing")
+        )
+        self.label_14.setText(
+            _translate(
+                "DialogSettings", "Use UI Console<br>Only usable with mutlithreading"
+            )
+        )
+        self.checkBoxUseUIConsole.setText(
+            _translate("DialogSettings", "Enabled (restart required)")
+        )
+        self.toolBox.setItemText(
+            self.toolBox.indexOf(self.pageApp),
+            _translate("DialogSettings", "Application"),
+        )
         self.label_6.setText(_translate("DialogSettings", "Flags"))
-        self.checkBoxTraceThreads.setToolTip(_translate("DialogSettings", "can be specified to disable tracing of threads (runtime and CPU asignment), and therefore to minimize overhead when only wanting to trace e.g. power consumption"))
+        self.checkBoxTraceThreads.setToolTip(
+            _translate(
+                "DialogSettings",
+                "can be specified to disable tracing of threads (runtime and CPU asignment), and therefore to minimize overhead when only wanting to trace e.g. power consumption",
+            )
+        )
         self.checkBoxTraceThreads.setText(_translate("DialogSettings", "Trace Threads"))
-        self.checkBoxChromeGovernor.setToolTip(_translate("DialogSettings", "instructs trace-cmd to also enable and trace tracepoints implemented by the chrome governor"))
-        self.checkBoxChromeGovernor.setText(_translate("DialogSettings", "Chrome Governor"))
-        self.label_7.setText(_translate("DialogSettings", "Manal Syslogger<br> Commands"))
+        self.checkBoxChromeGovernor.setToolTip(
+            _translate(
+                "DialogSettings",
+                "instructs trace-cmd to also enable and trace tracepoints implemented by the chrome governor",
+            )
+        )
+        self.checkBoxChromeGovernor.setText(
+            _translate("DialogSettings", "Chrome Governor")
+        )
+        self.label_7.setText(
+            _translate("DialogSettings", "Manal Syslogger<br> Commands")
+        )
         self.pushButtonSysloggerSetup.setText(_translate("DialogSettings", "Setup"))
         self.pushButtonSysloggerStart.setText(_translate("DialogSettings", "Start"))
         self.pushButtonSysloggerStop.setText(_translate("DialogSettings", "Stop"))
         self.pushButtonSysloggerFinish.setText(_translate("DialogSettings", "Finish"))
-        self.label_8.setText(_translate("DialogSettings", "Pull Syslogger <br>Data to Folder"))
-        self.lineEditSyslogPullFolder.setPlaceholderText(_translate("DialogSettings", "Destination folder"))
+        self.label_8.setText(
+            _translate("DialogSettings", "Pull Syslogger <br>Data to Folder")
+        )
+        self.lineEditSyslogPullFolder.setPlaceholderText(
+            _translate("DialogSettings", "Destination folder")
+        )
         self.pushButtonSysloggerPull.setText(_translate("DialogSettings", "Pull"))
-        self.lineEditSyslogPullFilename.setPlaceholderText(_translate("DialogSettings", "New file name"))
+        self.lineEditSyslogPullFilename.setPlaceholderText(
+            _translate("DialogSettings", "New file name")
+        )
         self.label_9.setText(_translate("DialogSettings", "Process Tracecmd<br>File"))
-        self.lineEditConvertSource.setPlaceholderText(_translate("DialogSettings", "Input file"))
-        self.lineEditConvertDestination.setPlaceholderText(_translate("DialogSettings", "Destination folder"))
+        self.lineEditConvertSource.setPlaceholderText(
+            _translate("DialogSettings", "Input file")
+        )
+        self.lineEditConvertDestination.setPlaceholderText(
+            _translate("DialogSettings", "Destination folder")
+        )
         self.pushButtonConvertTrace.setText(_translate("DialogSettings", "Process"))
-        self.label_10.setToolTip(_translate("DialogSettings", "CPU to run/pin the logging thread on"))
+        self.label_10.setToolTip(
+            _translate("DialogSettings", "CPU to run/pin the logging thread on")
+        )
         self.label_10.setText(_translate("DialogSettings", "Logging Thread <br>CPU"))
         self.label_11.setText(_translate("DialogSettings", "Interval"))
-        self.label_12.setText(_translate("DialogSettings", "System Properties<br>to Trace"))
-        self.checkBoxCPUInfo.setToolTip(_translate("DialogSettings", "Log CPU system/user/idle time and state"))
+        self.label_12.setText(
+            _translate("DialogSettings", "System Properties<br>to Trace")
+        )
+        self.checkBoxCPUInfo.setToolTip(
+            _translate("DialogSettings", "Log CPU system/user/idle time and state")
+        )
         self.checkBoxCPUInfo.setText(_translate("DialogSettings", "CPU Information"))
-        self.checkBoxCPUFrequency.setToolTip(_translate("DialogSettings", "Log CPU frequency for each first CPU in a policy group"))
+        self.checkBoxCPUFrequency.setToolTip(
+            _translate(
+                "DialogSettings",
+                "Log CPU frequency for each first CPU in a policy group",
+            )
+        )
         self.checkBoxCPUFrequency.setText(_translate("DialogSettings", "CPU Frequency"))
-        self.checkBoxPower.setToolTip(_translate("DialogSettings", "Log Power consumption via ina231 sensors"))
+        self.checkBoxPower.setToolTip(
+            _translate("DialogSettings", "Log Power consumption via ina231 sensors")
+        )
         self.checkBoxPower.setText(_translate("DialogSettings", "INA231 Power"))
-        self.checkBoxMali.setToolTip(_translate("DialogSettings", "Log mali GPU information"))
+        self.checkBoxMali.setToolTip(
+            _translate("DialogSettings", "Log mali GPU information")
+        )
         self.checkBoxMali.setText(_translate("DialogSettings", "Mali GPU"))
-        self.checkBoxTemp.setToolTip(_translate("DialogSettings", "Log CPU and GPU temperature on Exynos boards"))
-        self.checkBoxTemp.setText(_translate("DialogSettings", "CPU and GPU Temperature"))
-        self.checkBoxNetwork.setToolTip(_translate("DialogSettings", "Log network interface rx/tx stats"))
+        self.checkBoxTemp.setToolTip(
+            _translate("DialogSettings", "Log CPU and GPU temperature on Exynos boards")
+        )
+        self.checkBoxTemp.setText(
+            _translate("DialogSettings", "CPU and GPU Temperature")
+        )
+        self.checkBoxNetwork.setToolTip(
+            _translate("DialogSettings", "Log network interface rx/tx stats")
+        )
         self.checkBoxNetwork.setText(_translate("DialogSettings", "Network Rx/Tx"))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.pageSyslogger), _translate("DialogSettings", "Syslogger"))
+        self.toolBox.setItemText(
+            self.toolBox.indexOf(self.pageSyslogger),
+            _translate("DialogSettings", "Syslogger"),
+        )

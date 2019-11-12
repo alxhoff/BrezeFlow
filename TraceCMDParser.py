@@ -54,17 +54,24 @@ class TracecmdProcessor:
 
     def print_event_count(self):
         try:
-            print "--- Total events: " + str(self.event_count.sched_switch + self.event_count.cpu_idle
-                                             + self.event_count.sched_switch + self.event_count.binder_transaction +
-                                             + self.event_count.cpu_freq + self.event_count.mali)
+            print "--- Total events: " + str(
+                self.event_count.sched_switch
+                + self.event_count.cpu_idle
+                + self.event_count.sched_switch
+                + self.event_count.binder_transaction
+                + +self.event_count.cpu_freq
+                + self.event_count.mali
+            )
             print "------ Sched switch: " + str(self.event_count.sched_switch)
             print "------ CPU idle: " + str(self.event_count.cpu_idle)
             print "------ CPU freq: " + str(self.event_count.cpu_freq)
-            print "------ Binder transactions: " + str(self.event_count.binder_transaction)
+            print "------ Binder transactions: " + str(
+                self.event_count.binder_transaction
+            )
             print "------ Mali: " + str(self.event_count.mali)
             print "------ Temp: " + str(self.event_count.temp)
         except Exception, e:
-            print("Print event count failed, %s" % e)
+            print ("Print event count failed, %s" % e)
 
     def _process_trace(self, preamble):
         """ Sequentially process trace events.
@@ -96,50 +103,72 @@ class TracecmdProcessor:
 
             self.event_count.sched_switch += 1
 
-            prev_state = 'R'
+            prev_state = "R"
             prev_state_int = event.num_field("prev_state")
             if prev_state_int == 1:
-                prev_state = 'S'
+                prev_state = "S"
             elif prev_state_int == 2:
-                prev_state = 'D'
+                prev_state = "D"
             elif prev_state_int == 4:
-                prev_state = 'T'
+                prev_state = "T"
             elif prev_state_int == 8:
-                prev_state = 't'
+                prev_state = "t"
             elif prev_state_int == 16:
-                prev_state = 'Z'
+                prev_state = "Z"
             elif prev_state_int == 32:
-                prev_state = 'X'
+                prev_state = "X"
             elif prev_state_int == 64:
-                prev_state = 'x'
+                prev_state = "x"
             elif prev_state_int == 128:
-                prev_state = 'K'
+                prev_state = "K"
             elif prev_state_int == 256:
-                prev_state = 'W'
+                prev_state = "W"
             elif prev_state_int == 512:
-                prev_state = 'P'
+                prev_state = "P"
 
             name = event.str_field("prev_comm")
             next_pid = event.num_field("next_pid")
             next_name = event.str_field("next_comm")
-            self.processed_events.append(EventSchedSwitch(pid=event.pid, ts=int(round(event.ts / 1000.0)),
-                                                          cpu=event.cpu, name=name, prev_state=prev_state,
-                                                          next_pid=next_pid, next_name=next_name))
+            self.processed_events.append(
+                EventSchedSwitch(
+                    pid=event.pid,
+                    ts=int(round(event.ts / 1000.0)),
+                    cpu=event.cpu,
+                    name=name,
+                    prev_state=prev_state,
+                    next_pid=next_pid,
+                    next_name=next_name,
+                )
+            )
         elif event.name == "cpu_idle":
             self.event_count.cpu_idle += 1
 
             state = event.num_field("state")
             state = 1 if state == 4294967295 else 0
-            self.idle_events.append(EventIdle(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
-                                              name=event.name, state=state))
+            self.idle_events.append(
+                EventIdle(
+                    ts=int(round(event.ts / 1000.0)),
+                    cpu=event.cpu,
+                    name=event.name,
+                    state=state,
+                )
+            )
 
         elif event.name == "cpu_freq":
             self.event_count.cpu_freq += 1
 
             target_cpu = event.num_field("cpu")
             freq = event.num_field("freq") * 1000
-            self.processed_events.append(EventFreqChange(pid=event.pid, ts=int(round(event.ts / 1000.0)),
-                                                         cpu=event.cpu, freq=freq, util=0, target_cpu=target_cpu))
+            self.processed_events.append(
+                EventFreqChange(
+                    pid=event.pid,
+                    ts=int(round(event.ts / 1000.0)),
+                    cpu=event.cpu,
+                    freq=freq,
+                    util=0,
+                    target_cpu=target_cpu,
+                )
+            )
 
         elif event.name == "binder_transaction":
             self.event_count.binder_transaction += 1
@@ -153,10 +182,20 @@ class TracecmdProcessor:
                 to_thread = to_proc
             trans_num = event.num_field("debug_id")
 
-            self.processed_events.append(EventBinderTransaction(pid=event.pid, ts=int(round(event.ts / 1000.0)),
-                                                                cpu=event.cpu, name=event.name, reply=reply,
-                                                                dest_proc=to_proc, target_pid=to_thread, flags=flags,
-                                                                code=code, tran_num=trans_num))
+            self.processed_events.append(
+                EventBinderTransaction(
+                    pid=event.pid,
+                    ts=int(round(event.ts / 1000.0)),
+                    cpu=event.cpu,
+                    name=event.name,
+                    reply=reply,
+                    dest_proc=to_proc,
+                    target_pid=to_thread,
+                    flags=flags,
+                    code=code,
+                    tran_num=trans_num,
+                )
+            )
 
         elif event.name == "mali":
             self.event_count.mali += 1
@@ -164,8 +203,15 @@ class TracecmdProcessor:
             util = event.num_field("load")
             freq = event.num_field("freq") * 1000000
 
-            self.processed_events.append(EventMaliUtil(pid=event.pid, ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
-                                                       util=util, freq=freq))
+            self.processed_events.append(
+                EventMaliUtil(
+                    pid=event.pid,
+                    ts=int(round(event.ts / 1000.0)),
+                    cpu=event.cpu,
+                    util=util,
+                    freq=freq,
+                )
+            )
 
         elif event.name == "exynos_temp":
             self.event_count.temp += 1
@@ -177,9 +223,18 @@ class TracecmdProcessor:
             little = (big0 + big1 + big2 + big3) / 4.0
             gpu = event.num_field("t4") / 1000
 
-            self.temp_events.append(EventTempInfo(ts=int(round(event.ts / 1000.0)), cpu=event.cpu,
-                                                                  big0=big0, big1=big1, big2=big2, big3=big3,
-                                                                  little=little, gpu=gpu))
+            self.temp_events.append(
+                EventTempInfo(
+                    ts=int(round(event.ts / 1000.0)),
+                    cpu=event.cpu,
+                    big0=big0,
+                    big1=big1,
+                    big2=big2,
+                    big3=big3,
+                    little=little,
+                    gpu=gpu,
+                )
+            )
 
         else:
             pass  # print "Unknown event %s" % event.name

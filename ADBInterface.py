@@ -21,10 +21,11 @@ class ADBInterface:
     device's ADB connection.
 
     """
+
     current_interface = None
 
     def __init__(self):
-        signer = sign_m2crypto.M2CryptoSigner(op.expanduser('~/.android/adbkey'))
+        signer = sign_m2crypto.M2CryptoSigner(op.expanduser("~/.android/adbkey"))
         self.device = adb_commands.AdbCommands()
         self.device.ConnectDevice(rsa_keys=[signer])
         ADBInterface.current_interface = self
@@ -47,7 +48,7 @@ class ADBInterface:
         :param filename: File which is to be written into
         :param contents: String contents that is to be written into file
         """
-        command = 'echo ' + contents + ' > ' + filename
+        command = "echo " + contents + " > " + filename
         self.device.Shell(command)
 
     def clear_file(self, filename):
@@ -63,7 +64,7 @@ class ADBInterface:
         :param filename: File that is to be appended to
         :param contents: String contents that is to be appended to the target file
         """
-        command = 'echo ' + contents + ' >> ' + filename
+        command = "echo " + contents + " >> " + filename
         self.device.Shell(command)
 
     def read_file(self, filename):
@@ -82,6 +83,6 @@ class ADBInterface:
         :param dest_filename: File path and name, relative to working directory, where the pulled file
         should be stored
         """
-        f = open(dest_filename, 'wb+')
+        f = open(dest_filename, "wb+")
         f.write(self.device.Pull(target_file))
         f.close()

@@ -48,7 +48,10 @@ class ProcessBranch:
         self.cpu = None
         self.cpus = cpus
         self.gpu = gpu
-        self.energy = [0.0, 0.0]  # calculated upon request at the end between given intervals
+        self.energy = [
+            0.0,
+            0.0,
+        ]  # calculated upon request at the end between given intervals
         self.duration = 0
 
     def _connect_to_cpu_event(self, cpu):
@@ -59,8 +62,11 @@ class ProcessBranch:
         :param cpu: CPU index to which the PID branch wishes to subscribe
         """
         try:
-            dispatcher.connect(self._handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
-                               sender=dispatcher.Any)
+            dispatcher.connect(
+                self._handle_cpu_freq_change,
+                signal=self.cpus[cpu].signal_freq,
+                sender=dispatcher.Any,
+            )
         except IndexError:
             print "CPUs not init'd"
             sys.exit(1)
@@ -71,8 +77,11 @@ class ProcessBranch:
         :param cpu: CPU index from which the PID branch should be unsubscribed
         """
         try:
-            dispatcher.disconnect(self._handle_cpu_freq_change, signal=self.cpus[cpu].signal_freq,
-                                  sender=dispatcher.Any)
+            dispatcher.disconnect(
+                self._handle_cpu_freq_change,
+                signal=self.cpus[cpu].signal_freq,
+                sender=dispatcher.Any,
+            )
         except IndexError:
             print "IndexError in disconnecting from cpu"
             sys.exit(1)
@@ -85,9 +94,14 @@ class ProcessBranch:
         if self.tasks:
 
             try:
-                self.tasks[-1].add_cpu_gpu_event(self.cpus[self.cpu].events[-1].time, self.cpu,
-                                                 self.cpus[self.cpu].prev_freq, self.cpus[self.cpu].prev_util,
-                                                 self.gpu.freq, self.gpu.util)
+                self.tasks[-1].add_cpu_gpu_event(
+                    self.cpus[self.cpu].events[-1].time,
+                    self.cpu,
+                    self.cpus[self.cpu].prev_freq,
+                    self.cpus[self.cpu].prev_util,
+                    self.gpu.freq,
+                    self.gpu.util,
+                )
             except IndexError:
                 print "IndexError in handling CPU freq change"
                 sys.exit(1)
@@ -102,8 +116,14 @@ class ProcessBranch:
 
             try:
                 if self.cpus[event.cpu].freq != self.cpus[self.cpu].freq:
-                    self.tasks[-1].add_cpu_gpu_event(event.time, self.cpu, self.cpus[self.cpu].freq,
-                                                     self.cpus[self.cpu].util, self.gpu.freq, self.gpu.util)
+                    self.tasks[-1].add_cpu_gpu_event(
+                        event.time,
+                        self.cpu,
+                        self.cpus[self.cpu].freq,
+                        self.cpus[self.cpu].util,
+                        self.gpu.freq,
+                        self.gpu.util,
+                    )
             except IndexError:
                 print "IndexError in handing CPU num change"
                 sys.exit(1)
@@ -144,12 +164,14 @@ class ProcessBranch:
             if (task.start_time < start_time) and (task.finish_time > start_time):
 
                 try:
-                    energy_delta = [((task.finish_time - start_time) / task.duration * component) for component in
-                                    task.energy]
+                    energy_delta = [
+                        ((task.finish_time - start_time) / task.duration * component)
+                        for component in task.energy
+                    ]
                     for i in range(len(tasks_stats.energy)):
                         tasks_stats.energy[i] += energy_delta[i]
 
-                    tasks_stats.duration += (task.finish_time - start_time)
+                    tasks_stats.duration += task.finish_time - start_time
 
                 except ZeroDivisionError:
                     continue
@@ -157,12 +179,14 @@ class ProcessBranch:
             elif (task.start_time <= finish_time) and (task.finish_time > finish_time):
 
                 try:
-                    energy_delta = [((finish_time - task.start_time) / task.duration * component) for component in
-                                    task.energy]
+                    energy_delta = [
+                        ((finish_time - task.start_time) / task.duration * component)
+                        for component in task.energy
+                    ]
                     for i in range(len(tasks_stats.energy)):
                         tasks_stats.energy[i] += energy_delta[i]
 
-                    tasks_stats.duration += (finish_time - task.start_time)
+                    tasks_stats.duration += finish_time - task.start_time
 
                 except ZeroDivisionError:
                     continue
@@ -183,11 +207,16 @@ class ProcessBranch:
     def get_optimization_timeline(self, start_us, interval_count, interval_us):
         finish_time = start_us + (interval_count * interval_us)
         # [DVFS,Task realloc]
-        optimizations_timeline = np.full(interval_count * 2, [0]).reshape(interval_count, 2)
+        optimizations_timeline = np.full(interval_count * 2, [0]).reshape(
+            interval_count, 2
+        )
 
         for task in self.tasks:
-            if start_us < task.start_time and task.start_time + task.duration <= finish_time:
-                index = int(round((task.start_time - start_us)/interval_us))
+            if (
+                start_us < task.start_time
+                and task.start_time + task.duration <= finish_time
+            ):
+                index = int(round((task.start_time - start_us) / interval_us))
                 if task.optimization_info.dvfs_possible():
                     optimizations_timeline[index][1] += 1
                 if task.optimization_info.realloc_possible():
@@ -229,31 +258,70 @@ class ProcessBranch:
 
                 if event.prev_state == str(ThreadState.INTERRUPTIBLE_SLEEP_S):
 
-                    self.active = False  # Current task has ended and new one will be needed
+                    self.active = (
+                        False  # Current task has ended and new one will be needed
+                    )
 
                     toi = self.tasks[-1]
                     toi.add_event(event, subgraph=subgraph)
                     toi.finish()
-                    utils_g = ('{}% '.format(round(k[1], 2)) for k in enumerate(toi.util))
+                    utils_g = (
+                        "{}% ".format(round(k[1], 2)) for k in enumerate(toi.util)
+                    )
                     utils = ""
                     for entry in utils_g:
                         utils += str(entry)
-                    label = "{}.{} ==> {}.{}\nPID: {}\nCPU: {} @ {} Hz\nUtil: {}\nTemp: {}\nGPU: {}Hz Util {}% " \
-                            "\n Duration: {} CPU Cycles: {}\nEnergy: {};{}\n Dependency: {} Dependent: #{} " \
-                            "\nProc: '{}'\nThread: '{}'\nNode Type: {} ID: #{}".format(
-                        str(toi.start_time)[:-6], str(toi.start_time)[-6:], str(toi.finish_time)[:-6],
-                        str(toi.finish_time)[-6:], event.pid, event.cpu, event.cpu_freq[0 if event.cpu < 4 else 1],
-                        utils, toi.temp, event.gpu_freq, event.gpu_util, toi.duration, toi.cpu_cycles,
-                        toi.energy[1], toi.energy[0], toi.dependency.type,
-                        toi.dependency.prev_task.id if toi.dependency.prev_task else "None",
-                        self.pname, self.tname, toi.__class__.__name__, toi.id)
+                    label = (
+                        "{}.{} ==> {}.{}\nPID: {}\nCPU: {} @ {} Hz\nUtil: {}\nTemp: {}\nGPU: {}Hz Util {}% "
+                        "\n Duration: {} CPU Cycles: {}\nEnergy: {};{}\n Dependency: {} Dependent: #{} "
+                        "\nProc: '{}'\nThread: '{}'\nNode Type: {} ID: #{}".format(
+                            str(toi.start_time)[:-6],
+                            str(toi.start_time)[-6:],
+                            str(toi.finish_time)[:-6],
+                            str(toi.finish_time)[-6:],
+                            event.pid,
+                            event.cpu,
+                            event.cpu_freq[0 if event.cpu < 4 else 1],
+                            utils,
+                            toi.temp,
+                            event.gpu_freq,
+                            event.gpu_util,
+                            toi.duration,
+                            toi.cpu_cycles,
+                            toi.energy[1],
+                            toi.energy[0],
+                            toi.dependency.type,
+                            toi.dependency.prev_task.id
+                            if toi.dependency.prev_task
+                            else "None",
+                            self.pname,
+                            self.tname,
+                            toi.__class__.__name__,
+                            toi.id,
+                        )
+                    )
 
-                    self.graph.add_node(self.tasks[-1], label=label, fillcolor='darkolivegreen3',
-                                        style='filled,bold,rounded', shape='box')
+                    self.graph.add_node(
+                        self.tasks[-1],
+                        label=label,
+                        fillcolor="darkolivegreen3",
+                        style="filled,bold,rounded",
+                        shape="box",
+                    )
 
                     if subgraph:
-                        self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[0], color='blue', dir='forward')
-                        self.graph.add_edge(self.tasks[-1], self.tasks[-1].events[-1], color='red', dir='back')
+                        self.graph.add_edge(
+                            self.tasks[-1],
+                            self.tasks[-1].events[0],
+                            color="blue",
+                            dir="forward",
+                        )
+                        self.graph.add_edge(
+                            self.tasks[-1],
+                            self.tasks[-1].events[-1],
+                            color="red",
+                            dir="back",
+                        )
 
                     return
 
@@ -272,13 +340,22 @@ class ProcessBranch:
                 self.tasks[-1].add_event(event, subgraph=subgraph)
                 self.active = True
 
-                if len(self.tasks) >= 2:  # Connecting task in the same PID branch for visual aid
-                    self.graph.add_edge(self.tasks[-2], self.tasks[-1], color='lightseagreen', style='dashed')
+                if (
+                    len(self.tasks) >= 2
+                ):  # Connecting task in the same PID branch for visual aid
+                    self.graph.add_edge(
+                        self.tasks[-2],
+                        self.tasks[-1],
+                        color="lightseagreen",
+                        style="dashed",
+                    )
                     if self.tasks[-1].dependency.type != DependencyType.BINDER:
                         self.tasks[-1].dependency.type = DependencyType.TASK
 
                     # Create dependency from current task to calling task
-                    if not self.tasks[-1].dependency.prev_task:  # If not already set because of a Binder dependency
+                    if not self.tasks[
+                        -1
+                    ].dependency.prev_task:  # If not already set because of a Binder dependency
                         self.tasks[-1].dependency.prev_task = self.tasks[-2]
 
                     # Create dependency from calling task to current task
@@ -298,13 +375,22 @@ class ProcessBranch:
             btoi = self.binder_tasks[-1]
             btoi.add_event(event, subgraph=subgraph)
             btoi.finish()
-            label = "{}.{} ==> {}.{}\nPID: {} Dest PID: {}\nType: {}\nTrans: {}\nThread: '{}'\nNode Type: {} ID: #{}"\
-                .format(
-                str(btoi.events[0].time)[:-6], str(btoi.events[0].time)[-6:],
-                str(btoi.events[-1].time)[:-6], str(btoi.events[-1].time)[-6:], str(event.pid),
-                str(event.target_pid), str(btoi.events[0].trans_type), str(event.transaction),
-                str(btoi.name), str(btoi.__class__.__name__), btoi.id)
-            self.graph.add_node(btoi, label=label, fillcolor='coral', style='filled,bold', shape='box')
+            label = "{}.{} ==> {}.{}\nPID: {} Dest PID: {}\nType: {}\nTrans: {}\nThread: '{}'\nNode Type: {} ID: #{}".format(
+                str(btoi.events[0].time)[:-6],
+                str(btoi.events[0].time)[-6:],
+                str(btoi.events[-1].time)[:-6],
+                str(btoi.events[-1].time)[-6:],
+                str(event.pid),
+                str(event.target_pid),
+                str(btoi.events[0].trans_type),
+                str(event.transaction),
+                str(btoi.name),
+                str(btoi.__class__.__name__),
+                btoi.id,
+            )
+            self.graph.add_node(
+                btoi, label=label, fillcolor="coral", style="filled,bold", shape="box"
+            )
 
             return
 

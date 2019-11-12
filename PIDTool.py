@@ -36,7 +36,7 @@ class PIDTool:
         main_pid = self._find_main_pid()
         if main_pid is None:
             print("Failed to find main PID for given application: {}".format(name))
-            raise Exception('Valid application not given')
+            raise Exception("Valid application not given")
         else:
             print("---- Main PID found --- %d" % main_pid.pid)
             self.app_pids = dict()
@@ -122,7 +122,9 @@ class PIDTool:
             if re.search("(grep)", line):
                 continue
 
-            regex_line = re.findall(r"(\d+) \d+ +\d+:\d+ {(Binder:(\d+)_.+)} (.+)", line)
+            regex_line = re.findall(
+                r"(\d+) \d+ +\d+:\d+ {(Binder:(\d+)_.+)} (.+)", line
+            )
             pid = int(regex_line[0][0])
             tname = regex_line[0][1]
             pname = regex_line[0][3]
@@ -134,7 +136,9 @@ class PIDTool:
             parent_pid = int(regex_line[0][2])
 
             if not any(proc == parent_pid for proc in self.system_pids.keys()):
-                parent_thread = self.adb_device.command("busybox ps -T | grep " + str(parent_pid))
+                parent_thread = self.adb_device.command(
+                    "busybox ps -T | grep " + str(parent_pid)
+                )
                 parent_thread = parent_thread.splitlines()
                 for l in parent_thread:
                     if re.search("(Binder)", l):
@@ -228,7 +232,9 @@ class PIDTool:
         """
         res = ""
         try:
-            res = self.adb_device.command("busybox ps -T | grep Binder | grep " + str(pid))
+            res = self.adb_device.command(
+                "busybox ps -T | grep Binder | grep " + str(pid)
+            )
             res = res.splitlines()
         except Exception:
             pass
