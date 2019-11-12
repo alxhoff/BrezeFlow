@@ -11,7 +11,7 @@ __status__ = "Beta"
 import sys
 
 from pydispatch import dispatcher
-
+import numpy as np
 from Dependencies import DependencyType
 from Nodes import *
 from SystemEvents import JobType, ThreadState
@@ -179,6 +179,21 @@ class ProcessBranch:
                 return tasks_stats
 
         return tasks_stats
+
+    def get_optimization_timeline(self, start_us, interval_count, interval_us):
+        finish_time = start_us + (interval_count * interval_us)
+        # [DVFS,Task realloc]
+        optimizations_timeline = np.full(interval_count * 2, [0]).reshape(interval_count, 2)
+
+        for task in self.tasks:
+            if start_us < task.start_time and task.start_time + task.duration <= finish_time:
+                index = int(round((task.start_time - start_us)/interval_us))
+                if task.optimization_info.dvfs_possible():
+                    optimizations_timeline[index][1] += 1
+                if task.optimization_info.realloc_possible():
+                    optimizations_timeline[index][0] += 1
+
+        return optimizations_timeline
 
     def add_event(self, event, event_type=JobType.UNKNOWN, subgraph=False):
         """ Handles the adding of events to the branch, specifically making sure that there is an active task

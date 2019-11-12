@@ -118,10 +118,13 @@ class ProcessTree:
 
             total_energy = 0.0
             optimizations_found = [0, 0]
+            timeline_interval = 0.05
+            timeline_intervals = int(round(duration/timeline_interval)) + 1
+            optimization_timeline_total = np.full(timeline_intervals * 2, [0]).reshape(timeline_intervals, 2)
 
             with open(file_prefix + "_optimizations.csv", "w+") as f_op:
                 op_writer = csv.writer(f_op, delimiter=',')
-                op_writer.writerow(["Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core",
+                op_writer.writerow(["Op ID", "Task PID", "Task Name", "TS", "Duration", "Core", "Freq", "New Core",
                                     "New Core's Old Freq", "New Freq", "Original Core's Prev Util",
                                     "New Core's Prev Util", "New Core's New Util", "Optimization Type"])
                 op_writer.writerow([])
@@ -151,9 +154,6 @@ class ProcessTree:
 
                     ### OPTIMAL EVALUATION
                     for task in branch.tasks:
-
-                        if task.start_time == 286786253:
-                            print("wait ehre")
 
                         if task.cpu_cycles == 0:  # Tasks that started at the end of the trace time
                             continue
@@ -221,11 +221,12 @@ class ProcessTree:
 
                                         if little_freq != task.events[0].cpu_freq[0]:
                                             task.optimization_info.add_optim_type(OptimizationInfoType.DVFS)
+                                            optimizations_found[1] += 1
 
                                         task.optimization_info.set_message("Task can be reallocated")
 
-                                        op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
-                                                            task.events[0].cpu,
+                                        op_writer.writerow([task.optimization_info.ID, task.pid, task.name,
+                                                            task.start_time, task.duration, task.events[0].cpu,
                                                             task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
                                                             little_core_index, task.events[0].cpu_freq[0],
                                                             little_freq, cur_core_util, cur_core_util,
@@ -271,6 +272,7 @@ class ProcessTree:
                                     core_utils[task.events[0].cpu] -= task_load
                                     core_utils[lowest_util_core_index] += task_load
                                     task.optimization_info.add_optim_type(OptimizationInfoType.REALLOC)
+                                    optimizations_found[0] += 1
 
                             for freq in freqs:
 
@@ -283,28 +285,10 @@ class ProcessTree:
 
                                 if all(core_util <= 100.0 for core_util in core_utils_new_freq):
 
-                                    # new_duration = scaling_factor * task.duration  # TODO all task durations
-                                    # finish_time_on_little = int(round(task.start_time + new_duration))
-                                    #
-                                    # try:
-                                    #     depender_start_time = task.dependency.depender.start_time
-                                    # except Exception as e:
-                                    #     depender_start_time = 0
-                                    #     print "Task {} at time {} has no depender".format(task.events[0].name,
-                                    #                                                       task.events[0].time)
-                                    #
-                                    # if (finish_time_on_little < depender_start_time) and (depender_start_time != 0):
-                                    #     task.optimization_info.set_info(
-                                    #             OptimizationInfoType.LONG_EXEC_DURATION.value,
-                                    #             "Execution of task would clash with depender task")
-                                    #     print("Clash")
-                                    #
-                                    #     continue
-
                                     task.optimization_info.set_message("DVFS optimization possible")
                                     task.optimization_info.add_optim_type(OptimizationInfoType.DVFS)
-                                    op_writer.writerow([task.pid, task.name, task.start_time, task.duration,
-                                                        task.events[0].cpu,
+                                    op_writer.writerow([task.optimization_info.ID, task.pid, task.name,
+                                                        task.start_time, task.duration, task.events[0].cpu,
                                                         task.events[0].cpu_freq[0 if task.events[0].cpu < 4 else 1],
                                                         lowest_util_core_index, cur_cpu_freq, freq, cur_core_util,
                                                         target_core_util,
@@ -313,9 +297,30 @@ class ProcessTree:
                                     optimizations_found[1] += 1
                                     break
 
+                    optimization_timeline = branch.get_optimization_timeline(start_time, timeline_intervals,
+                                                                             timeline_interval * 1000000)
+                    optimization_timeline_total = np.add(optimization_timeline_total, optimization_timeline)
+
             results_writer.writerow([])
             results_writer.writerow(["Optimizations", "Reallocations", "DVFS"])
             results_writer.writerow(["", optimizations_found[0], optimizations_found[1]])
+            results_writer.writerow([])
+
+            results_writer.writerow(["Optimization Timeline"])
+            results_writer.writerow(["TS (uS)", "Offset (S)", "DVFS Count", "Realloc Count", "Total Count"])
+
+            total_timeline_dvfs = 0
+            total_timeline_realloc = 0
+            for i in range(optimization_timeline_total.shape[0]):
+                total_timeline_realloc += optimization_timeline_total[i][0]
+                total_timeline_dvfs += optimization_timeline_total[i][1]
+                offset = timeline_interval * i
+                results_writer.writerow([start_time + offset * 1000000, offset, optimization_timeline_total[i][1],
+                                         optimization_timeline_total[i][0], optimization_timeline_total[i][0] +
+                                         optimization_timeline_total[i][1]])
+
+            results_writer.writerow(["", "Totals", total_timeline_dvfs, total_timeline_realloc, total_timeline_dvfs +
+                                     total_timeline_realloc])
             results_writer.writerow([])
 
             results_writer.writerow(["PID", "Process Name", "Thread Name", "Task Count", "Energy", "Duration"])
@@ -336,9 +341,7 @@ class ProcessTree:
             results_writer.writerow([])
             results_writer.writerow(["Energy Timeline"])
 
-            timeline_interval = 0.05
-            energy_timeline = [[(0.0, 0.0), 0.0, (0.0, 0.0, 0.0), 0.0, 0] for _ in range(int(
-                    duration / timeline_interval) + 1)]
+            energy_timeline = [[(0.0, 0.0), 0.0, (0.0, 0.0, 0.0), 0.0, 0] for _ in range(timeline_intervals)]
 
             for i, second in enumerate(energy_timeline):
 
