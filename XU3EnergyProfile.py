@@ -16,7 +16,7 @@ class XU3RegressionModel:
                 energy = voltage * (a1 * voltage * freq * util + a2 * temp + a3)
     """
 
-    migration_factor = 1.7058
+    migration_factor = 2.0237
 
     little_freqs = [1000000000, 1100000000, 1200000000, 1300000000, 1400000000]
 
