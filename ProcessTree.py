@@ -221,9 +221,6 @@ class ProcessTree:
                             for task in branch.tasks:
                                 error_task = task.id
 
-                                if task.id == 1730:
-                                    print "wait here"
-
                                 if (
                                     task.cpu_cycles == 0
                                 ):  # Tasks that started at the end of the trace time
@@ -839,29 +836,31 @@ class ProcessTree:
                         # Create dependency
                         self.process_branches[pending_binder_node.target_pid].tasks[
                             -1
-                        ].dependency.type = DependencyType.BINDER
+                        ].dependency.type = DependencyType.BINDER ##
 
                         if (
                             pending_binder_node.target_pid
                             == pending_binder_node.caller_pid
                         ):  # Task signaling itself
                             # Create dependency from current task to calling task
-                            self.process_branches[pending_binder_node.target_pid].tasks[
-                                -1
-                            ].dependency.prev_task = self.process_branches[
-                                pending_binder_node.caller_pid
-                            ].tasks[
-                                -2
-                            ]
+                            try:
+                                self.process_branches[pending_binder_node.target_pid].tasks[-1].dependency.prev_task = self.process_branches[
+                                    pending_binder_node.caller_pid
+                                ].tasks[
+                                    -2
+                                ]
 
-                            # Create dependency from calling task to current task
-                            self.process_branches[pending_binder_node.caller_pid].tasks[
-                                -2
-                            ].dependency.next_task = self.process_branches[
-                                pending_binder_node.target_pid
-                            ].tasks[
-                                -1
-                            ]
+                                # Create dependency from calling task to current task
+                                self.process_branches[pending_binder_node.caller_pid].tasks[
+                                    -2
+                                ].dependency.next_task = self.process_branches[
+                                    pending_binder_node.target_pid
+                                ].tasks[
+                                    -1
+                                ]
+                            except IndexError: # First task for PID
+                                pass
+
                         else:
                             # Create dependency from current task to calling task
                             self.process_branches[pending_binder_node.target_pid].tasks[

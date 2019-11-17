@@ -1022,16 +1022,19 @@ class EnergyDebugger:
         except Exception, e:
             print ("Creating trace processor failed, %s" % e)
 
-        self.trace_processor.process_trace(
-            progress_signal=self.progress_signal,
-            metrics=self.sys_metrics,
-            tracecmd=self.tc_processor,
-            duration=self.duration,
-            draw=self.graph,
-            test=self.event_count,
-            subgraph=self.subgraph,
-            subdir=self.results_subdir,
-        )
+        try:
+            self.trace_processor.process_trace(
+                progress_signal=self.progress_signal,
+                metrics=self.sys_metrics,
+                tracecmd=self.tc_processor,
+                duration=self.duration,
+                draw=self.graph,
+                test=self.event_count,
+                subgraph=self.subgraph,
+                subdir=self.results_subdir,
+            )
+        except Exception, e:
+            raise Exception(e)
 
         print "Run took a total of %s seconds to run" % (time.time() - start_time)
 

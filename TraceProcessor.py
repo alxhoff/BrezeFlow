@@ -148,6 +148,7 @@ class TraceProcessor:
                             break
                     except Exception, e:
                         error_event = x
+                        e = str(e) + " event {}".format(error_event)
                         raise Exception(e)
             else:
                 for x, event in enumerate(tracecmd.processed_events):
@@ -161,6 +162,7 @@ class TraceProcessor:
                             break
                     except Exception, e:
                         error_event = x
+                        e = str(e) + " event {}".format(error_event)
                         raise Exception(e)
             if progress_signal:
                 progress_signal.emit(100)

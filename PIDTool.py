@@ -267,7 +267,7 @@ class PIDTool:
         if pid_no in self.app_pids:
             return self.app_pids[pid_no]
         elif pid_no in self.system_pids:
-            return self.app_pids[pid_no]
+            return self.system_pids[pid_no]
         elif pid_no in self.binder_pids:
             return self.binder_pids[pid_no]
         else:
