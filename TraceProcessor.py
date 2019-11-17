@@ -101,9 +101,9 @@ class TraceProcessor:
             if progress_signal:
                 progress_signal.emit(100)
             metrics.sys_temp_history.temps = np.block(temp_history)
-            print (" --- COMPLETED in %s seconds" % (time.time() - start_time))
+            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
         except Exception, e:
-            print ("Error processing temperatures: %s" % e)
+            print("Error processing temperatures: %s" % e)
             return
 
         try:
@@ -116,9 +116,9 @@ class TraceProcessor:
                 process_tree.handle_idle_event(event)
             if progress_signal:
                 progress_signal.emit(100)
-            print (" --- COMPLETED in {} seconds".format(time.time() - start_time))
+            print(" --- COMPLETED in {} seconds".format(time.time() - start_time))
         except Exception, e:
-            print ("Error building utilization trees: %s" % e)
+            print("Error building utilization trees: %s" % e)
             return
 
         try:
@@ -131,7 +131,7 @@ class TraceProcessor:
                 trace_start_time, trace_finish_time, metrics.current_gpu_util
             )
         except Exception, e:
-            print ("Error initializing GPU util: %s" % e)
+            print("Error initializing GPU util: %s" % e)
             return
 
         try:
@@ -164,29 +164,29 @@ class TraceProcessor:
                         raise Exception(e)
             if progress_signal:
                 progress_signal.emit(100)
-            print (" --- COMPLETED in %s seconds" % (time.time() - start_time))
-            print (
+            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
+            print(
                 " ------ Sched switch events in %s seconds"
                 % process_tree.sched_switch_time
             )
-            print (" ------ Binder events in %s seconds" % process_tree.binder_time)
-            print (" ------ Freq events in %s seconds" % process_tree.freq_time)
+            print(" ------ Binder events in %s seconds" % process_tree.binder_time)
+            print(" ------ Freq events in %s seconds" % process_tree.freq_time)
         except Exception, e:
-            print ("Error processing event {}: {}".format(error_event, e))
+            print("Error processing event {}: {}".format(error_event, e))
             return
 
         try:
             start_time = time.time()
             sys.stdout.write("Finishing process tree")
             optimizations_found = process_tree.finish_tree(self.filename, subdir)
-            print (" --- COMPLETED in {} seconds".format(time.time() - start_time))
-            print (
+            print(" --- COMPLETED in {} seconds".format(time.time() - start_time))
+            print(
                 "Found {} realloc & {} DVFS optimizations".format(
                     optimizations_found[0], optimizations_found[1]
                 )
             )
         except Exception, e:
-            print ("Error finishing tree: %s" % e)
+            print("Error finishing tree: %s" % e)
             return
 
         if draw:
@@ -194,9 +194,9 @@ class TraceProcessor:
             start_time = time.time()
             draw_graph = Grapher(process_tree, subdir)
             draw_graph.draw_graph()
-            print (" --- COMPLETED in %s seconds" % (time.time() - start_time))
+            print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
 
-        print (
+        print(
             "** Processing finished in %s seconds **"
             % (time.time() - process_start_time)
         )
