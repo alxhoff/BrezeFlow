@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'MainInterface.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.1
+# Created by: PyQt5 UI code generator 5.13.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -674,6 +674,13 @@ class Ui_MainWindow(object):
         self.checkBoxTestAutomation.setFont(font)
         self.checkBoxTestAutomation.setObjectName("checkBoxTestAutomation")
         self.verticalLayout_13.addWidget(self.checkBoxTestAutomation)
+        self.checkBoxTestAutomationPrompt = QtWidgets.QCheckBox(self.frame_6)
+        font = QtGui.QFont()
+        font.setBold(False)
+        font.setWeight(50)
+        self.checkBoxTestAutomationPrompt.setFont(font)
+        self.checkBoxTestAutomationPrompt.setObjectName("checkBoxTestAutomationPrompt")
+        self.verticalLayout_13.addWidget(self.checkBoxTestAutomationPrompt)
         self.formLayout_3 = QtWidgets.QFormLayout()
         self.formLayout_3.setObjectName("formLayout_3")
         self.label_29 = QtWidgets.QLabel(self.frame_6)
@@ -909,6 +916,9 @@ class Ui_MainWindow(object):
         self.label_28.setText(_translate("MainWindow", "Test Automation"))
         self.checkBoxTestAutomation.setText(
             _translate("MainWindow", "Use test automation")
+        )
+        self.checkBoxTestAutomationPrompt.setText(
+            _translate("MainWindow", "Prompt between tests")
         )
         self.label_29.setText(_translate("MainWindow", "Number of<br>tests"))
         self.label_30.setText(_translate("MainWindow", "Tests Completed"))

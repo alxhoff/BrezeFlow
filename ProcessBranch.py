@@ -263,7 +263,7 @@ class ProcessBranch:
                     )
 
                     toi = self.tasks[-1]
-                    toi.add_event(event, subgraph=subgraph)
+                    toi.add_event(event, subgraph=subgraph)  ##
                     toi.finish()
                     utils_g = (
                         "{}% ".format(round(k[1], 2)) for k in enumerate(toi.util)

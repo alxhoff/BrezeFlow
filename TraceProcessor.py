@@ -130,7 +130,12 @@ class TraceProcessor:
             metrics.sys_util_history.gpu.init(
                 trace_start_time, trace_finish_time, metrics.current_gpu_util
             )
+        except Exception, e:
+            print ("Error initializing GPU util: %s" % e)
+            return
 
+        try:
+            error_event = 0
             if test:
                 for x, event in enumerate(tracecmd.processed_events[:test]):
                     if (
@@ -138,8 +143,12 @@ class TraceProcessor:
                         and trace_start_time <= event.time <= trace_finish_time
                     ):
                         progress_signal.emit(round(float(x) / test * 100, 2))
-                    if process_tree.handle_event(event, subgraph):
-                        break
+                    try:
+                        if process_tree.handle_event(event, subgraph):
+                            break
+                    except Exception, e:
+                        error_event = x
+                        raise Exception(e)
             else:
                 for x, event in enumerate(tracecmd.processed_events):
                     if (
@@ -147,8 +156,12 @@ class TraceProcessor:
                         and trace_start_time <= event.time <= trace_finish_time
                     ):
                         progress_signal.emit(round(float(x) / num_events * 100, 2))
-                    if process_tree.handle_event(event, subgraph):
-                        break
+                    try:
+                        if process_tree.handle_event(event, subgraph):
+                            break
+                    except Exception, e:
+                        error_event = x
+                        raise Exception(e)
             if progress_signal:
                 progress_signal.emit(100)
             print (" --- COMPLETED in %s seconds" % (time.time() - start_time))
@@ -159,7 +172,7 @@ class TraceProcessor:
             print (" ------ Binder events in %s seconds" % process_tree.binder_time)
             print (" ------ Freq events in %s seconds" % process_tree.freq_time)
         except Exception, e:
-            print ("Error processing events: %s" % e)
+            print ("Error processing event {}: {}".format(error_event, e))
             return
 
         try:

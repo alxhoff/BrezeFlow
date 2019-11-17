@@ -186,7 +186,7 @@ class TaskNode:
                             (event.cpu / 4) * 4 + 3
                         ].get_util(event.time)
                     )
-
+                    ##
                     self.temp = [
                         SystemMetrics.current_metrics.get_temp(
                             event.time, (event.cpu / 4) * 4 + 0

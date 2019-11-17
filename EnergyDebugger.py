@@ -709,6 +709,13 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                             open_func=self.openallresults,
                             subdir=self.application_name + "/" + str(x) + "/",
                         )
+                        if self.checkBoxTestAutomationPrompt.isChecked():
+                            QMessageBox.information(
+                                self,
+                                "Test finished",
+                                "Press OK to continue",
+                                QMessageBox.Ok,
+                            )
                         self.changed_test_count.emit(str(x - test_start_value + 1))
                         self.changed_test_progress.emit(
                             round(float(x + 1) / float(no_of_tests) * 100)

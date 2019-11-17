@@ -127,7 +127,7 @@ class CPUUtilizationTable(UtilizationTable):
 
         try:
             return self.utils[ts - self.start_time - 1]
-        except IndexError:
+        except Exception:
             return 0.0
 
     def add_idle_event(self, event):
