@@ -67,6 +67,9 @@ class UtilizationWindow:
 
     def add_state(self, state, duration):
 
+        if duration > self.window_duration:
+            duration = self.window_duration
+
         if self.buffer_duration + duration > self.window_duration:
             self.remove_duration_front(
                 self.buffer_duration + duration - self.window_duration
@@ -103,6 +106,7 @@ class UtilizationWindow:
                         self.on_time -= duration
                     duration = 0
                     break
+            break
 
         self.remove_states(entries_to_delete)
 

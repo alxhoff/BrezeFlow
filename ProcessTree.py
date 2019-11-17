@@ -116,7 +116,7 @@ class ProcessTree:
         file_folder = "results/"
 
         if subdir:
-            file_folder += subdir + "/"
+            file_folder += subdir
 
         if not os.path.exists(file_folder):
             os.makedirs(file_folder)

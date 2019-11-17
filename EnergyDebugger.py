@@ -545,17 +545,19 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.actionOpenSettings.triggered.connect(self.opensettingsmenu)
         self.actionAbout.triggered.connect(self.openaboutdialog)
 
-    def openallresults(self):
-        self.openresults()
-        self.openoptimizations()
+    def openallresults(self, subdir=None):
+        self.openresults(subdir)
+        self.openoptimizations(subdir)
 
-    def openresults(self):
-        self.openfile(self.tableWidgetResults, "_results.csv")
+    def openresults(self, subdir=None):
+        self.openfile(self.tableWidgetResults, "_results.csv", subdir=subdir)
 
-    def openoptimizations(self):
-        self.openfile(self.tableWidgetOptimizations, "_optimizations.csv")
+    def openoptimizations(self, subdir=None):
+        self.openfile(
+            self.tableWidgetOptimizations, "_optimizations.csv", subdir=subdir
+        )
 
-    def openfile(self, table_widget, file_suffix):
+    def openfile(self, table_widget, file_suffix, subdir=None):
         if not table_widget:
             return
 
@@ -570,9 +572,14 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.application_name = self.lineEditApplicationName.text()
         if self.application_name == "":
             return
-        results_filename = os.path.join(
-            self.results_path, self.application_name + file_suffix
-        )
+        if subdir is not None:
+            results_filename = os.path.join(
+                self.results_path, subdir + self.application_name + file_suffix
+            )
+        else:
+            results_filename = os.path.join(
+                self.results_path, self.application_name + file_suffix
+            )
 
         try:
             col_count = 0
@@ -687,25 +694,28 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 self.progressBarTestsCompleted.setValue(0)
 
                 for x in range(test_start_value, test_start_value + no_of_tests):
-                    buttonrunprocess(
-                        self.adb,
-                        self.application_name,
-                        self.duration,
-                        self.events,
-                        self.events_to_process,
-                        self.preamble,
-                        self.subgraph,
-                        self.graph,
-                        self.skip_tracing,
-                        progress_signal=self.changed_progress,
-                        open_func=self.openallresults,
-                        subdir=self.application_name + "/" + str(x),
-                    )
-                    self.changed_test_count.emit(str(x - test_start_value + 1))
-                    self.changed_test_progress.emit(
-                        round(float(x + 1) / float(no_of_tests) * 100)
-                    )
-
+                    try:
+                        buttonrunprocess(
+                            self.adb,
+                            self.application_name,
+                            self.duration,
+                            self.events,
+                            self.events_to_process,
+                            self.preamble,
+                            self.subgraph,
+                            self.graph,
+                            self.skip_tracing,
+                            progress_signal=self.changed_progress,
+                            open_func=self.openallresults,
+                            subdir=self.application_name + "/" + str(x) + "/",
+                        )
+                        self.changed_test_count.emit(str(x - test_start_value + 1))
+                        self.changed_test_progress.emit(
+                            round(float(x + 1) / float(no_of_tests) * 100)
+                        )
+                    except Exception, e:
+                        print ("test failed, retrying")
+                        x -= 1
             else:
                 if bool(
                     int(self.settings.value("OptimizeWithThreads", defaultValue=1))
@@ -820,8 +830,8 @@ def buttonrunprocess(
             results_subdir=subdir,
         )
         current_debugger.run()
-        if open_func:
-            open_func()
+        if open_func is not None:
+            open_func(subdir)
     except Exception, e:
         print ("Error: {}".format(e))
 
