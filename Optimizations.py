@@ -16,8 +16,10 @@ optimization_ID = 0
 class OptimizationInfoType(Enum):
 
     NONE = 0
-    DVFS = 0b1
-    REALLOC = 0b10
+    B2L_REALLOC = 0b1
+    DVFS = 0b10
+    SAME_CLUSTER_REALLOC = 0b100
+    DVFS_AFTER_REALLOC = 0b1000
 
     def __str__(self):
         return "%s" % self.name
@@ -41,10 +43,21 @@ class OptimizationInfo:
                 ret += ", "
             ret += "DVFS"
 
-        if self.optim_type & OptimizationInfoType.REALLOC.value:
+        if self.optim_type & OptimizationInfoType.B2L_REALLOC.value:
             if ret != "":
                 ret += ", "
             ret += "Task Reallocation"
+
+        if self.optim_type & OptimizationInfoType.SAME_CLUSTER_REALLOC.value:
+            if ret != "":
+                ret += ", "
+            ret += "Reallocated within cluster"
+
+        if self.optim_type & OptimizationInfoType.DVFS_AFTER_REALLOC.value:
+            if ret != "":
+                ret += ", "
+            ret += "DVFS possible after reallocation"
+
 
         return ret
 
@@ -65,6 +78,16 @@ class OptimizationInfo:
         return False
 
     def realloc_possible(self):
-        if self.optim_type & OptimizationInfoType.REALLOC.value:
+        if self.optim_type & OptimizationInfoType.B2L_REALLOC.value:
+            return True
+        return False
+
+    def cluster_realloc_possible(self):
+        if self.optim_type & OptimizationInfoType.SAME_CLUSTER_REALLOC.value:
+            return True
+        return False
+
+    def dvfs_after_realloc_possible(self):
+        if self.optim_type & OptimizationInfoType.DVFS_AFTER_REALLOC.value:
             return True
         return False

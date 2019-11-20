@@ -183,8 +183,8 @@ class TraceProcessor:
             optimizations_found = process_tree.finish_tree(self.filename, subdir)
             print(" --- COMPLETED in {} seconds".format(time.time() - start_time))
             print(
-                "Found {} realloc & {} DVFS optimizations".format(
-                    optimizations_found[0], optimizations_found[1]
+                "Found {} B2L realloc, {} DVFS, {} Intra-cluster realloc, {} DVFS after realloc".format(
+                    optimizations_found[0], optimizations_found[1], optimizations_found[2], optimizations_found[3]
                 )
             )
         except Exception, e:

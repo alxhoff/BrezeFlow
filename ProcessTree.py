@@ -152,7 +152,8 @@ class ProcessTree:
             results_writer.writerow([])
 
             total_energy = 0.0
-            optimizations_found = [0, 0]
+            # b2l_realloc, dvfs, same cluster realloc, dvfs after realloc
+            optimizations_found = [0, 0, 0, 0]
             timeline_interval = 0.05
             timeline_intervals = int(round(duration / timeline_interval)) + 1
             optimization_timeline_total = np.full(timeline_intervals * 2, [0]).reshape(
@@ -325,17 +326,18 @@ class ProcessTree:
                                                 < depender_start_time
                                             ):
                                                 task.optimization_info.add_optim_type(
-                                                    OptimizationInfoType.REALLOC
+                                                    OptimizationInfoType.B2L_REALLOC
                                                 )
+                                                optimizations_found[0] += 1
 
                                                 if (
                                                     little_freq
                                                     != task.events[0].cpu_freq[0]
                                                 ):
                                                     task.optimization_info.add_optim_type(
-                                                        OptimizationInfoType.DVFS
+                                                        OptimizationInfoType.DVFS_AFTER_REALLOC
                                                     )
-                                                    optimizations_found[1] += 1
+                                                    optimizations_found[3] += 1
 
                                                 task.optimization_info.set_message(
                                                     "Task can be reallocated"
@@ -365,7 +367,6 @@ class ProcessTree:
                                                     ]
                                                 )
 
-                                                optimizations_found[0] += 1
                                                 break
 
                                 # Current core not running at minimum DVFS
@@ -435,9 +436,9 @@ class ProcessTree:
                                                 lowest_util_core_index
                                             ] += task_load
                                             task.optimization_info.add_optim_type(
-                                                OptimizationInfoType.REALLOC
+                                                OptimizationInfoType.SAME_CLUSTER_REALLOC
                                             )
-                                            optimizations_found[0] += 1
+                                            optimizations_found[2] += 1
 
                                     for freq in freqs:
 
@@ -465,6 +466,8 @@ class ProcessTree:
                                             task.optimization_info.add_optim_type(
                                                 OptimizationInfoType.DVFS
                                             )
+                                            optimizations_found[1] += 1
+
                                             op_writer.writerow(
                                                 [
                                                     task.optimization_info.ID,
@@ -490,7 +493,6 @@ class ProcessTree:
                                                     str(task.optimization_info),
                                                 ]
                                             )
-                                            optimizations_found[1] += 1
                                             break
                         except Exception, e:
                             e = str(e) + " task {}".format(error_task)
@@ -507,9 +509,10 @@ class ProcessTree:
                     raise Exception(e)
 
             results_writer.writerow([])
-            results_writer.writerow(["Optimizations", "Reallocations", "DVFS"])
+            results_writer.writerow(["Optimizations", "B2L Reallocations", "DVFS", "Realloc in cluster", "DVFS after "
+                                                                                                         "realloc"])
             results_writer.writerow(
-                ["", optimizations_found[0], optimizations_found[1]]
+                ["", optimizations_found[0], optimizations_found[1], optimizations_found[2], optimizations_found[3]]
             )
             results_writer.writerow([])
 
