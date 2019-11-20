@@ -394,7 +394,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             sys.exit()
 
         self.governor_controller = GovernorController(self.adb)
-        self.setup_governors()
+        self.current_governor = self.setup_governors()
 
     def __del__(self):
         sys.stdout = sys.__stdout__
@@ -432,6 +432,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.pushButtonResetLittleFreqs.clicked.connect(self.reset_little_frequencies)
         self.pushButtonSetBigFreqs.clicked.connect(self.set_big_frequencies)
         self.pushButtonResetBigFreqs.clicked.connect(self.reset_big_frequencies)
+
+        return str(current_governor)
 
     def update_frequency_display(self):
         little_min = str(self.governor_controller.get_min_freq(0))
@@ -475,6 +477,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         self.governor_controller.set_governor(new_governor)
         self.labelCurrentGovernor.setText(new_governor)
+        self.current_governor = str(new_governor)
 
     def console(self):
         cursor = self.textEditConsole.textCursor()
@@ -707,7 +710,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                             self.skip_tracing,
                             progress_signal=self.changed_progress,
                             open_func=self.openallresults,
-                            subdir=self.application_name + "/" + str(x) + "/",
+                            subdir=self.application_name + "/" + self.current_governor + "/" + str(x) + "/",
                         )
                         if self.checkBoxTestAutomationPrompt.isChecked():
                             QMessageBox.information(
