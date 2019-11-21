@@ -102,7 +102,7 @@ class ProcessTree:
                 self.gpu,
             )
 
-    def finish_tree(self, filename, subdir):
+    def finish_tree(self, filename, governor, subdir):
         """ After all events have been added to a tree the tree compiles its energy results and
         writes them to a CSV file. Summaries of each PID's energy consumption as well as total
         tree energy metrics are provided.
@@ -141,6 +141,7 @@ class ProcessTree:
                                        branch.tasks[-1].duration)
 
             results_writer.writerow(["Application", filename])
+            results_writer.writerow(["Governor", governor])
             results_writer.writerow(["Start", start_time / 1000000.0])
             results_writer.writerow(["Finish", finish_time / 1000000.0])
             duration = (finish_time - start_time) * 0.000001

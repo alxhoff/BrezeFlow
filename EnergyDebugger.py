@@ -371,7 +371,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             sys.exit()
 
         self.governor_controller = GovernorController(self.adb)
-        self.current_governor = self.setup_governors()
+        self.governor = self.setup_governors()
 
     def __del__(self):
         sys.stdout = sys.__stdout__
@@ -462,7 +462,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         self.governor_controller.set_governor(new_governor)
         self.labelCurrentGovernor.setText(new_governor)
-        self.current_governor = str(new_governor)
+        self.governor = str(new_governor)
 
     def console(self):
         cursor = self.textEditConsole.textCursor()
@@ -683,6 +683,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                         buttonrunprocess(
                             self.adb,
                             self.application_name,
+                            self.governor,
                             self.duration,
                             self.events,
                             self.events_to_process,
@@ -693,7 +694,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                             progress_signal=self.changed_progress,
                             open_func=self.openallresults,
                             subdir=self.application_name + "/" +
-                            self.current_governor + "/" + str(x) + "/",
+                            self.governor + "/" + str(x) + "/",
                         )
                         if self.checkBoxTestAutomationPrompt.isChecked():
                             QMessageBox.information(
@@ -725,6 +726,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     self.debug_task = QDebuggerThread(
                         self.adb,
                         self.application_name,
+                        self.governor,
                         self.duration,
                         self.events,
                         self.events_to_process,
@@ -753,6 +755,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                         args=(
                             self.adb,
                             self.application_name,
+                            self.governor,
                             self.duration,
                             self.events,
                             self.events_to_process,
@@ -775,6 +778,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     buttonrunprocess(
                         self.adb,
                         self.application_name,
+                        self.governor,
                         self.duration,
                         self.events,
                         self.events_to_process,
@@ -797,6 +801,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 def buttonrunprocess(
         adb,
         application_name,
+        governor,
         duration,
         events,
         events_to_process,
@@ -813,6 +818,7 @@ def buttonrunprocess(
         current_debugger = EnergyDebugger(
             adb=adb,
             application=application_name,
+            governor=governor,
             duration=duration,
             events=events,
             event_count=events_to_process,
@@ -839,6 +845,7 @@ class QDebuggerThread(QThread):
             self,
             adb,
             application_name,
+            governor,
             duration,
             events,
             events_to_process,
@@ -851,6 +858,7 @@ class QDebuggerThread(QThread):
         QThread.__init__(self)
         self.adb = adb
         self.application_name = application_name
+        self.governor = governor
         self.duration = duration
         self.events = events
         self.events_to_process = events_to_process
@@ -864,6 +872,7 @@ class QDebuggerThread(QThread):
         buttonrunprocess(
             self.adb,
             self.application_name,
+            self.governor,
             self.duration,
             self.events,
             self.events_to_process,
@@ -895,6 +904,7 @@ class EnergyDebugger:
             self,
             adb,
             application,
+            governor,
             duration,
             events,
             event_count,
@@ -907,6 +917,7 @@ class EnergyDebugger:
     ):
         self.adb = adb
         self.application = application
+        self.governor = governor
         self.duration = duration
         self.events = []
         self.event_count = event_count
@@ -1010,6 +1021,7 @@ class EnergyDebugger:
 
         try:
             self.trace_processor.process_trace(
+                governor=self.governor,
                 progress_signal=self.progress_signal,
                 metrics=self.sys_metrics,
                 tracecmd=self.tc_processor,

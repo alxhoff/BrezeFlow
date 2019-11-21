@@ -32,6 +32,7 @@ class TraceProcessor:
 
     def process_trace(
             self,
+            governor,
             progress_signal,
             metrics,
             tracecmd,
@@ -178,7 +179,7 @@ class TraceProcessor:
             start_time = time.time()
             sys.stdout.write("Finishing process tree")
             optimizations_found = process_tree.finish_tree(
-                self.filename, subdir)
+                self.filename, governor, subdir)
             print(" --- COMPLETED in {} seconds".format(time.time() -
                                                         start_time))
             print(
