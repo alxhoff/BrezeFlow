@@ -11,7 +11,10 @@ class DependencyType(Enum):
 
 
 class Dependency:
-    def __init__(self, prev_task=None, next_task=None, type=DependencyType.NONE):
+    def __init__(self,
+                 prev_task=None,
+                 next_task=None,
+                 type=DependencyType.NONE):
         self.type = type
         self.prev_task = prev_task  # earlier node
         self.next_task = next_task

@@ -34,7 +34,6 @@ class TaskNode:
     the exec time was last changed, and given that the CPU and frequency have been fixed during
     that time, the cycles is easily updated using a += and the current values (before updating them)
     """
-
     def __init__(self, graph, pid, name):
         global task_ID
 
@@ -79,71 +78,56 @@ class TaskNode:
                 if self.calc_time is 0:
                     self.calc_time = event.time
 
-                if (
-                    self.sys_metric_change_events
-                ):  # Handle event that will change energy consumption
+                if (self.sys_metric_change_events
+                    ):  # Handle event that will change energy consumption
 
                     for x, pe in enumerate(self.sys_metric_change_events):
 
                         if pe.time < self.events[-1].time:
                             continue
                         # calc time is the point until which the energy has been calculated
-                        new_cycles = int(
-                            (pe.time - self.calc_time) * 0.000001 * pe.cpu_frequency
-                        )
+                        new_cycles = int((pe.time - self.calc_time) *
+                                         0.000001 * pe.cpu_frequency)
 
                         self.util = [
                             SystemMetrics.current_metrics.sys_util_history.cpu[
-                                (pe.cpu / 4) * 4 + 0
-                            ].get_util(pe.time)
+                                (pe.cpu / 4) * 4 + 0].get_util(pe.time)
                         ]
                         self.util.append(
                             SystemMetrics.current_metrics.sys_util_history.cpu[
-                                (pe.cpu / 4) * 4 + 1
-                            ].get_util(pe.time)
-                        )
+                                (pe.cpu / 4) * 4 + 1].get_util(pe.time))
                         self.util.append(
                             SystemMetrics.current_metrics.sys_util_history.cpu[
-                                (pe.cpu / 4) * 4 + 2
-                            ].get_util(pe.time)
-                        )
+                                (pe.cpu / 4) * 4 + 2].get_util(pe.time))
                         self.util.append(
                             SystemMetrics.current_metrics.sys_util_history.cpu[
-                                (pe.cpu / 4) * 4 + 3
-                            ].get_util(pe.time)
-                        )
+                                (pe.cpu / 4) * 4 + 3].get_util(pe.time))
 
                         self.temp = [
                             SystemMetrics.current_metrics.get_temp(
-                                pe.time, (pe.cpu / 4) * 4 + 0
-                            )
+                                pe.time, (pe.cpu / 4) * 4 + 0)
                         ]
                         self.temp.append(
                             SystemMetrics.current_metrics.get_temp(
-                                pe.time, (pe.cpu / 4) * 4 + 1
-                            )
-                        )
+                                pe.time, (pe.cpu / 4) * 4 + 1))
                         self.temp.append(
                             SystemMetrics.current_metrics.get_temp(
-                                pe.time, (pe.cpu / 4) * 4 + 2
-                            )
-                        )
+                                pe.time, (pe.cpu / 4) * 4 + 2))
                         self.temp.append(
                             SystemMetrics.current_metrics.get_temp(
-                                pe.time, (pe.cpu / 4) * 4 + 3
-                            )
-                        )
+                                pe.time, (pe.cpu / 4) * 4 + 3))
 
                         cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(
-                            pe.cpu, pe.cpu_frequency, self.util, self.temp
-                        )
+                            pe.cpu, pe.cpu_frequency, self.util, self.temp)
                         cycle_energy = [
-                            component / pe.cpu_frequency for component in cycle_energy
+                            component / pe.cpu_frequency
+                            for component in cycle_energy
                         ]
 
                         self.cpu_cycles += new_cycles
                         new_energy = [
-                            component * new_cycles for component in cycle_energy
+                            component * new_cycles
+                            for component in cycle_energy
                         ]
                         new_summed_energy = [
                             self.energy[i] + new_energy[i]
@@ -155,68 +139,55 @@ class TaskNode:
 
                     del self.sys_metric_change_events[:]  # Remove after processing
 
-                if (
-                    event.time != self.calc_time
-                ):  # Calculate remainder of energy consumption
+                if (event.time != self.calc_time
+                    ):  # Calculate remainder of energy consumption
 
                     cpu_speed = SystemMetrics.current_metrics.get_cpu_core_freq(
-                        event.cpu
-                    )
+                        event.cpu)
                     new_cycles = int(
-                        (event.time - self.calc_time) * 0.000001 * cpu_speed
-                    )
+                        (event.time - self.calc_time) * 0.000001 * cpu_speed)
 
                     self.util = [
                         SystemMetrics.current_metrics.sys_util_history.cpu[
-                            (event.cpu / 4) * 4 + 0
-                        ].get_util(event.time)
+                            (event.cpu / 4) * 4 + 0].get_util(event.time)
                     ]
                     self.util.append(
                         SystemMetrics.current_metrics.sys_util_history.cpu[
-                            (event.cpu / 4) * 4 + 1
-                        ].get_util(event.time)
-                    )
+                            (event.cpu / 4) * 4 + 1].get_util(event.time))
                     self.util.append(
                         SystemMetrics.current_metrics.sys_util_history.cpu[
-                            (event.cpu / 4) * 4 + 2
-                        ].get_util(event.time)
-                    )
+                            (event.cpu / 4) * 4 + 2].get_util(event.time))
                     self.util.append(
                         SystemMetrics.current_metrics.sys_util_history.cpu[
-                            (event.cpu / 4) * 4 + 3
-                        ].get_util(event.time)
-                    )
+                            (event.cpu / 4) * 4 + 3].get_util(event.time))
                     ##
                     self.temp = [
                         SystemMetrics.current_metrics.get_temp(
-                            event.time, (event.cpu / 4) * 4 + 0
-                        )
+                            event.time, (event.cpu / 4) * 4 + 0)
                     ]
                     self.temp.append(
                         SystemMetrics.current_metrics.get_temp(
-                            event.time, (event.cpu / 4) * 4 + 1
-                        )
-                    )
+                            event.time, (event.cpu / 4) * 4 + 1))
                     self.temp.append(
                         SystemMetrics.current_metrics.get_temp(
-                            event.time, (event.cpu / 4) * 4 + 2
-                        )
-                    )
+                            event.time, (event.cpu / 4) * 4 + 2))
                     self.temp.append(
                         SystemMetrics.current_metrics.get_temp(
-                            event.time, (event.cpu / 4) * 4 + 3
-                        )
-                    )
+                            event.time, (event.cpu / 4) * 4 + 3))
 
                     cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(
-                        event.cpu, cpu_speed, self.util, self.temp
-                    )
-                    cycle_energy = [component / cpu_speed for component in cycle_energy]
+                        event.cpu, cpu_speed, self.util, self.temp)
+                    cycle_energy = [
+                        component / cpu_speed for component in cycle_energy
+                    ]
 
                     self.cpu_cycles += new_cycles
-                    new_energy = [component * new_cycles for component in cycle_energy]
+                    new_energy = [
+                        component * new_cycles for component in cycle_energy
+                    ]
                     new_summed_energy = [
-                        self.energy[i] + new_energy[i] for i in range(len(new_energy))
+                        self.energy[i] + new_energy[i]
+                        for i in range(len(new_energy))
                     ]
                     self.energy = new_summed_energy
                     self.duration += event.time - self.calc_time
@@ -233,23 +204,11 @@ class TaskNode:
             if isinstance(event, EventSchedSwitch):
                 self.graph.add_node(
                     event,
-                    label=str(event.time)[:-6]
-                    + "."
-                    + str(event.time)[-6:]
-                    + " CPU: "
-                    + str(event.cpu)
-                    + "\n"
-                    + str(event.pid)
-                    + " ==> "
-                    + str(event.next_pid)
-                    + "\nPrev state: "
-                    + str(event.prev_state)
-                    + "\n"
-                    + event.name
-                    + " --> "
-                    + event.next_name
-                    + "\n"
-                    + str(event.__class__.__name__),
+                    label=str(event.time)[:-6] + "." + str(event.time)[-6:] +
+                    " CPU: " + str(event.cpu) + "\n" + str(event.pid) +
+                    " ==> " + str(event.next_pid) + "\nPrev state: " +
+                    str(event.prev_state) + "\n" + event.name + " --> " +
+                    event.next_name + "\n" + str(event.__class__.__name__),
                     fillcolor="bisque1",
                     style="filled",
                     shape="box",
@@ -257,9 +216,10 @@ class TaskNode:
 
             if len(self.events) >= 2:  # Inter-job edges
 
-                self.graph.add_edge(
-                    self.events[-2], self.events[-1], color="violet", dir="forward"
-                )
+                self.graph.add_edge(self.events[-2],
+                                    self.events[-1],
+                                    color="violet",
+                                    dir="forward")
 
     def finish(self):
         """ Set the time at which the task finished. The last event in a task will be the switch out event
@@ -267,7 +227,8 @@ class TaskNode:
         """
         self.finish_time = self.events[-1].time
 
-    def add_cpu_gpu_event(self, ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util):
+    def add_cpu_gpu_event(self, ts, cpu, cpu_freq, cpu_util, gpu_freq,
+                          gpu_util):
         """ When a frequency or utilization value (needed for energy calculations) changes during a task's
         execution a power event is added to a list that is then processed when the task ends. This allows
         for accurate calculation of energy values over the duration of the task as there is a recorded history
@@ -282,8 +243,7 @@ class TaskNode:
         :return:
         """
         self.sys_metric_change_events.append(
-            FreqPowerEvent(ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util)
-        )
+            FreqPowerEvent(ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util))
 
 
 class BinderNode(TaskNode):

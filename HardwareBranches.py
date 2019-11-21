@@ -16,7 +16,6 @@ class CPUBranch:
     retaining to frequency values and utilization.
 
     """
-
     def __init__(self, cpu_number, initial_freq, initial_util, graph):
 
         self.cpu_num = cpu_number
@@ -62,7 +61,6 @@ class GPUBranch:
     The GPU branch stores a chronological history of all events that relate to the
     GPU's metrics
     """
-
     def __init__(self, initial_freq, initial_util, graph):
 
         self.freq = initial_freq
@@ -84,9 +82,8 @@ class GPUBranch:
         :param event: A EventMaliUtil to be added to the GPU branch
         """
         if self.events:
-            if (event.freq != self.events[-1].freq) or (
-                event.util != self.events[-1].util
-            ):
+            if (event.freq != self.events[-1].freq) or (event.util !=
+                                                        self.events[-1].util):
                 self.events.append(event)
         else:
             self.events.append(event)

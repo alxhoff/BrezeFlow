@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Tracecmd trace events are wrapped into event objects that can then be handled to construct a task graph of the target
 application.
@@ -60,10 +59,15 @@ class Event:
     """ All traced events for task graph extraction always provide the PID that is involved with the event,
     the timestamp of the event, the CPU on which the event occurred and the name of the event.
     """
-
-    def __init__(
-        self, pid, ts, name, cpu=0, freq_l=0, freq_b=0, gpu_freq=0, gpu_util=0
-    ):
+    def __init__(self,
+                 pid,
+                 ts,
+                 name,
+                 cpu=0,
+                 freq_l=0,
+                 freq_b=0,
+                 gpu_freq=0,
+                 gpu_util=0):
         self.pid = pid
         self.time = ts
         self.cpu = cpu
@@ -79,7 +83,6 @@ class EventSchedSwitch(Event):
     out is also provided. This is useful to check if a thread was finished executing and in a sleeping
     state when it was swapped off of the CPU.
     """
-
     def __init__(self, pid, ts, cpu, name, prev_state, next_pid, next_name):
         Event.__init__(self, pid=pid, ts=ts, cpu=cpu, name=name)
 
@@ -91,7 +94,6 @@ class EventSchedSwitch(Event):
 class EventFreqChange(Event):
     """ The frequency of the systems' CPUs is changed when a cpu_freq event occurs
     """
-
     def __init__(self, pid, ts, cpu, freq, util, target_cpu):
         Event.__init__(self, pid=pid, ts=ts, cpu=cpu, name="freq change")
 
@@ -110,7 +112,6 @@ class EventIdle(Event):
     of a thread when executing.
 
     """
-
     def __init__(self, ts, cpu, name, state):
         Event.__init__(self, pid=0, ts=ts, cpu=cpu, name=name)
 
@@ -121,10 +122,8 @@ class EventBinderTransaction(Event):
     """ Binder transactions represent a half (first or second) of an IPC call between two threads.
 
     """
-
-    def __init__(
-        self, pid, ts, cpu, name, reply, dest_proc, target_pid, flags, code, tran_num
-    ):
+    def __init__(self, pid, ts, cpu, name, reply, dest_proc, target_pid, flags,
+                 code, tran_num):
         Event.__init__(self, pid=pid, ts=ts, cpu=cpu, name=name)
 
         if reply == 0:
@@ -157,7 +156,6 @@ class EventMaliUtil(Event):
     """ Mali GPU metrics are found through the syslogger 'mali' events.
 
     """
-
     def __init__(self, pid, ts, cpu, util, freq):
         Event.__init__(self, pid=pid, ts=ts, cpu=cpu, name="mali util")
 
@@ -170,7 +168,6 @@ class EventTempInfo(Event):
     periodic 'exynos_temp' syslogger events.
 
     """
-
     def __init__(self, ts, cpu, big0, big1, big2, big3, little, gpu):
         Event.__init__(self, pid=0, ts=ts, cpu=cpu, name="temp")
 
@@ -193,7 +190,6 @@ class FreqPowerEvent:
     The event stores a snapshot of the system's metrics at the time of the event, before the
     metrics are changed to their new values.
     """
-
     def __init__(self, ts, cpu, cpu_freq, cpu_util, gpu_freq, gpu_util):
         self.time = ts
         self.cpu = cpu
@@ -213,7 +209,6 @@ class FirstHalfBinderTransaction:
     This list is used to match the second half of the binder transaction to any
     pending first halves.
     """
-
     def __init__(self, event, parent_pid, pidtracer):
         self.parent_pid = parent_pid
         self.child_pids = pidtracer.find_child_binder_threads(parent_pid)
@@ -225,7 +220,6 @@ class CompletedBinderTransaction:
     binder process. This binder process allocates the second half of the transaction to one of its
     child threads.
     """
-
     def __init__(self, second_half_event, first_half_event=None):
 
         self.first_half = first_half_event

@@ -41,18 +41,23 @@ parser.add_argument(
     required=False,
     help="Enables the use of command line arguments",
 )
-parser.add_argument(
-    "-a", "--app", required=False, help="Specifies the name of the game to be traced"
-)
-parser.add_argument(
-    "-d", "--duration", required=False, type=float, help="The duration to trace"
-)
-parser.add_argument(
-    "-e", "--events", required=False, help="Events that are to be traced"
-)
-parser.add_argument(
-    "-s", "--skip-clear", action="store_true", help="Skip clearing trace settings"
-)
+parser.add_argument("-a",
+                    "--app",
+                    required=False,
+                    help="Specifies the name of the game to be traced")
+parser.add_argument("-d",
+                    "--duration",
+                    required=False,
+                    type=float,
+                    help="The duration to trace")
+parser.add_argument("-e",
+                    "--events",
+                    required=False,
+                    help="Events that are to be traced")
+parser.add_argument("-s",
+                    "--skip-clear",
+                    action="store_true",
+                    help="Skip clearing trace settings")
 parser.add_argument(
     "-g",
     "--draw",
@@ -75,7 +80,8 @@ parser.add_argument(
     "-p",
     "--preamble",
     required=False,
-    help="Specifies the number of seconds that be discarded at the begining of tracing",
+    help=
+    "Specifies the number of seconds that be discarded at the begining of tracing",
 )
 
 args = parser.parse_args()
@@ -96,70 +102,56 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
         # Application
         self.lineEditApplicationName.setText(
-            settings.value("DefaultApplication", defaultValue="")
-        )
+            settings.value("DefaultApplication", defaultValue=""))
         self.doubleSpinBoxDuration.setValue(
-            float(settings.value("DefaultDuration", defaultValue=0.0))
-        )
+            float(settings.value("DefaultDuration", defaultValue=0.0)))
         self.doubleSpinBoxPreamble.setValue(
-            float(settings.value("DefaultPreamble", defaultValue=0.0))
-        )
+            float(settings.value("DefaultPreamble", defaultValue=0.0)))
         self.checkBoxDrawGraph.setChecked(
-            bool(int(settings.value("DefaultDrawGraph", defaultValue=0)))
-        )
+            bool(int(settings.value("DefaultDrawGraph", defaultValue=0))))
         self.checkBoxWakeUp.setChecked(
-            bool(int(settings.value("DefaultEventWakeUp", defaultValue=0)))
-        )
+            bool(int(settings.value("DefaultEventWakeUp", defaultValue=0))))
         self.checkBoxSchedSwitch.setChecked(
-            bool(int(settings.value("DefaultEventSchedSwitch", defaultValue=1)))
-        )
+            bool(int(settings.value("DefaultEventSchedSwitch",
+                                    defaultValue=1))))
         self.checkBoxCPUIdle.setChecked(
-            bool(int(settings.value("DefaultEventCPUIdle", defaultValue=0)))
-        )
+            bool(int(settings.value("DefaultEventCPUIdle", defaultValue=0))))
         self.checkBoxBinderTransaction.setChecked(
-            bool(int(settings.value("DefaultEventBinderTransaction", defaultValue=1)))
-        )
+            bool(
+                int(
+                    settings.value("DefaultEventBinderTransaction",
+                                   defaultValue=1))))
         self.checkBoxSyslogger.setChecked(
-            bool(int(settings.value("DefaultEventSyslogger", defaultValue=1)))
-        )
+            bool(int(settings.value("DefaultEventSyslogger", defaultValue=1))))
         self.radioButtonMultiThreaded.setChecked(
-            bool(int(settings.value("OptimizeWithThreads", defaultValue=1)))
-        )
+            bool(int(settings.value("OptimizeWithThreads", defaultValue=1))))
         self.radioButtonMultiProcessing.setChecked(
-            bool(int(settings.value("OptimizeWithProcesses", defaultValue=1)))
-        )
+            bool(int(settings.value("OptimizeWithProcesses", defaultValue=1))))
         self.radioButtonNonthreaded.setChecked(
-            bool(int(settings.value("OptimizeNone", defaultValue=1)))
-        )
+            bool(int(settings.value("OptimizeNone", defaultValue=1))))
         self.checkBoxUseUIConsole.setChecked(
-            bool(int(settings.value("UseUIConsole", defaultValue=1)))
-        )
+            bool(int(settings.value("UseUIConsole", defaultValue=1))))
 
         # Syslogger
         self.spinBoxCPU.setValue(
-            int(settings.value("DefaultSysloggerCPU", defaultValue=2))
-        )
+            int(settings.value("DefaultSysloggerCPU", defaultValue=2)))
         self.spinBoxInterval.setValue(
-            int(settings.value("DefaultSysloggerInterval", defaultValue=5))
-        )
+            int(settings.value("DefaultSysloggerInterval", defaultValue=5)))
         self.checkBoxCPUInfo.setChecked(
-            bool(int(settings.value("DefaultSysloggerCPUInfo", defaultValue=1)))
-        )
+            bool(int(settings.value("DefaultSysloggerCPUInfo",
+                                    defaultValue=1))))
         self.checkBoxCPUFrequency.setChecked(
-            bool(int(settings.value("DefaultSysloggerCPUFreq", defaultValue=1)))
-        )
+            bool(int(settings.value("DefaultSysloggerCPUFreq",
+                                    defaultValue=1))))
         self.checkBoxPower.setChecked(
-            bool(int(settings.value("DefaultSysloggerPower", defaultValue=1)))
-        )
+            bool(int(settings.value("DefaultSysloggerPower", defaultValue=1))))
         self.checkBoxMali.setChecked(
-            bool(int(settings.value("DefaultSysloggerMali", defaultValue=1)))
-        )
+            bool(int(settings.value("DefaultSysloggerMali", defaultValue=1))))
         self.checkBoxTemp.setChecked(
-            bool(int(settings.value("DefaultSysloggerTemp", defaultValue=1)))
-        )
+            bool(int(settings.value("DefaultSysloggerTemp", defaultValue=1))))
         self.checkBoxNetwork.setChecked(
-            bool(int(settings.value("DefaultSysloggerNetwork", defaultValue=0)))
-        )
+            bool(int(settings.value("DefaultSysloggerNetwork",
+                                    defaultValue=0))))
 
     def sysloggerstart_clicked(self):
         pass
@@ -175,11 +167,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
 
     def sysloggerpull_clicked(self):
         if self.lineEditSyslogPullFilename.text():
-            pull_location = (
-                self.lineEditSyslogPullFolder.text()
-                + "/"
-                + self.lineEditSyslogPullFilename.text()
-            )
+            pull_location = (self.lineEditSyslogPullFolder.text() + "/" +
+                             self.lineEditSyslogPullFilename.text())
         else:
             pull_location = self.lineEditSyslogPullFolder.text() + "/trace.dat"
         try:
@@ -187,8 +176,8 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
             adb.pull_file("/data/local/tmp/trace.dat", pull_location)
         except Exception, e:
             QMessageBox.critical(
-                self, "Error", "Pulling file via ADB failed\n\n Error: {}".format(e)
-            )
+                self, "Error",
+                "Pulling file via ADB failed\n\n Error: {}".format(e))
             raise Exception(e)
             self.close()
 
@@ -202,8 +191,11 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
     def sysloggerfiletoconvert_clicked(self):
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getOpenFileName(
-            self, "QFileDialog.getOpenFileName()", "", "All Files (*)", options=options
-        )
+            self,
+            "QFileDialog.getOpenFileName()",
+            "",
+            "All Files (*)",
+            options=options)
         self.lineEditConvertSource.setText(filename)
 
     def sysloggerfiletoconvertdestination_clicked(self):
@@ -227,81 +219,64 @@ class SettingsMenu(QDialog, SettingsDialog.Ui_DialogSettings):
             QMessageBox.warning(self, "Error", error_str, QMessageBox.Ok)
 
         if not os.path.isfile(self.lineEditConvertSource.text()):
-            QMessageBox.critical(
-                self, "Error", "The trace source file does not exist", QMessageBox.Ok
-            )
+            QMessageBox.critical(self, "Error",
+                                 "The trace source file does not exist",
+                                 QMessageBox.Ok)
 
-        os.system(
-            "trace_conv.py -i "
-            + self.lineEditConvertSource.text()
-            + " -o "
-            + self.lineEditConvertDestination.text()
-        )
-        QMessageBox.information(
-            self, "Trace convert", "Converting trace complete", QMessageBox.Ok
-        )
+        os.system("trace_conv.py -i " + self.lineEditConvertSource.text() +
+                  " -o " + self.lineEditConvertDestination.text())
+        QMessageBox.information(self, "Trace convert",
+                                "Converting trace complete", QMessageBox.Ok)
 
     def accept(self):
 
         # Application
-        self.settings.setValue(
-            "DefaultApplication", self.lineEditApplicationName.text()
-        )
-        self.settings.setValue("DefaultDuration", self.doubleSpinBoxDuration.value())
-        self.settings.setValue("DefaultPreamble", self.doubleSpinBoxPreamble.value())
-        self.settings.setValue(
-            "DefaultDrawGraph", int(self.checkBoxDrawGraph.isChecked())
-        )
-        self.settings.setValue(
-            "DefaultEventSchedSwitch", int(self.checkBoxSchedSwitch.isChecked())
-        )
-        self.settings.setValue(
-            "DefaultEventCPUIdle", int(self.checkBoxCPUIdle.isChecked())
-        )
+        self.settings.setValue("DefaultApplication",
+                               self.lineEditApplicationName.text())
+        self.settings.setValue("DefaultDuration",
+                               self.doubleSpinBoxDuration.value())
+        self.settings.setValue("DefaultPreamble",
+                               self.doubleSpinBoxPreamble.value())
+        self.settings.setValue("DefaultDrawGraph",
+                               int(self.checkBoxDrawGraph.isChecked()))
+        self.settings.setValue("DefaultEventSchedSwitch",
+                               int(self.checkBoxSchedSwitch.isChecked()))
+        self.settings.setValue("DefaultEventCPUIdle",
+                               int(self.checkBoxCPUIdle.isChecked()))
         self.settings.setValue(
             "DefaultEventBinderTransaction",
             int(self.checkBoxBinderTransaction.isChecked()),
         )
+        self.settings.setValue("DefaultEventSyslogger",
+                               int(self.checkBoxSyslogger.isChecked()))
+        self.settings.setValue("DefaultEventWakeUp",
+                               int(self.checkBoxWakeUp.isChecked()))
+        self.settings.setValue("OptimizeWithThreads",
+                               int(self.radioButtonMultiThreaded.isChecked()))
         self.settings.setValue(
-            "DefaultEventSyslogger", int(self.checkBoxSyslogger.isChecked())
-        )
-        self.settings.setValue(
-            "DefaultEventWakeUp", int(self.checkBoxWakeUp.isChecked())
-        )
-        self.settings.setValue(
-            "OptimizeWithThreads", int(self.radioButtonMultiThreaded.isChecked())
-        )
-        self.settings.setValue(
-            "OptimizeWithProcesses", int(self.radioButtonMultiProcessing.isChecked())
-        )
-        self.settings.setValue(
-            "OptimizeNone", int(self.radioButtonNonthreaded.isChecked())
-        )
-        self.settings.setValue(
-            "UseUIConsole", int(self.checkBoxUseUIConsole.isChecked())
-        )
+            "OptimizeWithProcesses",
+            int(self.radioButtonMultiProcessing.isChecked()))
+        self.settings.setValue("OptimizeNone",
+                               int(self.radioButtonNonthreaded.isChecked()))
+        self.settings.setValue("UseUIConsole",
+                               int(self.checkBoxUseUIConsole.isChecked()))
 
         # Syslogger
         self.settings.setValue("DefaultSysloggerCPU", self.spinBoxCPU.value())
-        self.settings.setValue("DefaultSysloggerInterval", self.spinBoxInterval.value())
-        self.settings.setValue(
-            "DefaultSysloggerCPUInfo", int(self.checkBoxCPUInfo.isChecked())
-        )
-        self.settings.setValue(
-            "DefaultSysloggerCPUFreq", int(self.checkBoxCPUFrequency.isChecked())
-        )
-        self.settings.setValue(
-            "DefaultSysloggerPower", int(self.checkBoxPower.isChecked())
-        )
-        self.settings.setValue(
-            "DefaultSysloggerMali", int(self.checkBoxMali.isChecked())
-        )
-        self.settings.setValue(
-            "DefaultSysloggerTemp", int(self.checkBoxTemp.isChecked())
-        )
-        self.settings.setValue(
-            "DefaultSysloggerNetwork", int(self.checkBoxNetwork.isChecked())
-        )
+        self.settings.setValue("DefaultSysloggerInterval",
+                               self.spinBoxInterval.value())
+        self.settings.setValue("DefaultSysloggerCPUInfo",
+                               int(self.checkBoxCPUInfo.isChecked()))
+        self.settings.setValue("DefaultSysloggerCPUFreq",
+                               int(self.checkBoxCPUFrequency.isChecked()))
+        self.settings.setValue("DefaultSysloggerPower",
+                               int(self.checkBoxPower.isChecked()))
+        self.settings.setValue("DefaultSysloggerMali",
+                               int(self.checkBoxMali.isChecked()))
+        self.settings.setValue("DefaultSysloggerTemp",
+                               int(self.checkBoxTemp.isChecked()))
+        self.settings.setValue("DefaultSysloggerNetwork",
+                               int(self.checkBoxNetwork.isChecked()))
 
         super(SettingsMenu, self).accept()
 
@@ -339,36 +314,38 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.setupsettings()
         self.getsettings()
 
-        console_colour = QPalette(QColor(255, 255, 255, 255), QColor(0, 0, 0, 255))
+        console_colour = QPalette(QColor(255, 255, 255, 255),
+                                  QColor(0, 0, 0, 255))
         self.textEditConsole.setPalette(console_colour)
-        self.UI_console = bool(int(self.settings.value("UseUIConsole", defaultValue=1)))
+        self.UI_console = bool(
+            int(self.settings.value("UseUIConsole", defaultValue=1)))
         if self.UI_console:
             sys.stdout = EmittingStream(textWritten=self.normal_output_written)
             sys.stderr = EmittingStream(textWritten=self.normal_output_written)
         else:
             self.textEditConsole.setText(
                 "Standard console being used, this console can be enabled in the settings "
-                "menu"
-            )
+                "menu")
 
         # Persistant settings
         self.checkBoxSkipTracing.setChecked(
-            bool(int(self.settings.value("SkipTracing", defaultValue=0)))
-        )
-        self.checkBoxSkipTracing.stateChanged.connect(self.save_persistent_settings)
+            bool(int(self.settings.value("SkipTracing", defaultValue=0))))
+        self.checkBoxSkipTracing.stateChanged.connect(
+            self.save_persistent_settings)
 
         # Threading
         self.jobs = []
         self.console_queue = Queue.Queue()
-        self.console_task = threading.Thread(target=self.console, args=()).start()
+        self.console_task = threading.Thread(target=self.console,
+                                             args=()).start()
         self.debug_task = None
         self.changed_progress.connect(self.progressBar.setValue)
         self.changed_test_count.connect(self.labelTestsCompleted.setText)
-        self.changed_test_progress.connect(self.progressBarTestsCompleted.setValue)
+        self.changed_test_progress.connect(
+            self.progressBarTestsCompleted.setValue)
 
         self.results_path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "results/"
-        )
+            os.path.dirname(os.path.realpath(__file__)), "results/")
         self.trace_file = None
         self.results_file = None
         self.graph_file = None
@@ -389,7 +366,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         try:
             self.adb = ADBInterface()
         except Exception, e:
-            print ("Could not open an ADB connection to device")
+            print("Could not open an ADB connection to device")
             self.close()
             sys.exit()
 
@@ -406,7 +383,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.console_task._stop_event.set()
 
     def save_persistent_settings(self):
-        self.settings.setValue("SkipTracing", int(self.checkBoxSkipTracing.isChecked()))
+        self.settings.setValue("SkipTracing",
+                               int(self.checkBoxSkipTracing.isChecked()))
 
     def setup_governors(self):
         governors = self.governor_controller.get_governors()
@@ -428,10 +406,13 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         self.update_frequency_display()
 
-        self.pushButtonSetLittleFreqs.clicked.connect(self.set_little_frequencies)
-        self.pushButtonResetLittleFreqs.clicked.connect(self.reset_little_frequencies)
+        self.pushButtonSetLittleFreqs.clicked.connect(
+            self.set_little_frequencies)
+        self.pushButtonResetLittleFreqs.clicked.connect(
+            self.reset_little_frequencies)
         self.pushButtonSetBigFreqs.clicked.connect(self.set_big_frequencies)
-        self.pushButtonResetBigFreqs.clicked.connect(self.reset_big_frequencies)
+        self.pushButtonResetBigFreqs.clicked.connect(
+            self.reset_big_frequencies)
 
         return str(current_governor)
 
@@ -450,13 +431,17 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.lineEditBigMaxFreq.setText(big_max)
 
     def set_little_frequencies(self):
-        self.governor_controller.set_min_freq(0, self.lineEditLittleMinFreq.text())
-        self.governor_controller.set_max_freq(0, self.lineEditLittleMaxFreq.text())
+        self.governor_controller.set_min_freq(
+            0, self.lineEditLittleMinFreq.text())
+        self.governor_controller.set_max_freq(
+            0, self.lineEditLittleMaxFreq.text())
         self.update_frequency_display()
 
     def set_big_frequencies(self):
-        self.governor_controller.set_min_freq(4, self.lineEditBigMinFreq.text())
-        self.governor_controller.set_max_freq(4, self.lineEditBigMaxFreq.text())
+        self.governor_controller.set_min_freq(4,
+                                              self.lineEditBigMinFreq.text())
+        self.governor_controller.set_max_freq(4,
+                                              self.lineEditBigMaxFreq.text())
         self.update_frequency_display()
 
     def reset_little_frequencies(self):
@@ -489,48 +474,48 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 self.textEditConsole.setTextCursor(cursor)
                 self.textEditConsole.ensureCursorVisible()
             except Exception, e:
-                print ("Updating console failed, %s" % e)
+                print("Updating console failed, %s" % e)
 
     def normal_output_written(self, text):
         try:
             self.console_queue.put(str(text))
         except Exception, e:
-            print ("Writing to UI console failed, %s" % e)
+            print("Writing to UI console failed, %s" % e)
 
     def getsettings(self):
         self.lineEditApplicationName.setText(
-            self.settings.value("DefaultApplication", defaultValue="")
-        )
+            self.settings.value("DefaultApplication", defaultValue=""))
         self.doubleSpinBoxDuration.setValue(
-            float(self.settings.value("DefaultDuration", defaultValue=0.0))
-        )
+            float(self.settings.value("DefaultDuration", defaultValue=0.0)))
         self.doubleSpinBoxPreamble.setValue(
-            float(self.settings.value("DefaultPreamble", defaultValue=0.0))
-        )
-        if float(self.settings.value("DefaultPreamble", defaultValue=0.0)) != 0.0:
+            float(self.settings.value("DefaultPreamble", defaultValue=0.0)))
+        if float(self.settings.value("DefaultPreamble",
+                                     defaultValue=0.0)) != 0.0:
             self.checkBoxPreamble.setChecked(True)
         self.checkBoxDrawGraph.setChecked(
-            bool(int(self.settings.value("DefaultDrawGraph", defaultValue=0)))
-        )
+            bool(int(self.settings.value("DefaultDrawGraph", defaultValue=0))))
         self.checkBoxWakeUp.setChecked(
-            bool(int(self.settings.value("DefaultEventWakeUp", defaultValue=0)))
-        )
+            bool(int(self.settings.value("DefaultEventWakeUp",
+                                         defaultValue=0))))
         self.checkBoxSchedSwitch.setChecked(
-            bool(int(self.settings.value("DefaultEventSchedSwitch", defaultValue=1)))
-        )
+            bool(
+                int(
+                    self.settings.value("DefaultEventSchedSwitch",
+                                        defaultValue=1))))
         self.checkBoxCPUIdle.setChecked(
-            bool(int(self.settings.value("DefaultEventCPUIdle", defaultValue=0)))
-        )
+            bool(
+                int(self.settings.value("DefaultEventCPUIdle",
+                                        defaultValue=0))))
         self.checkBoxBinderTransaction.setChecked(
             bool(
                 int(
-                    self.settings.value("DefaultEventBinderTransaction", defaultValue=1)
-                )
-            )
-        )
+                    self.settings.value("DefaultEventBinderTransaction",
+                                        defaultValue=1))))
         self.checkBoxSyslogger.setChecked(
-            bool(int(self.settings.value("DefaultEventSyslogger", defaultValue=1)))
-        )
+            bool(
+                int(
+                    self.settings.value("DefaultEventSyslogger",
+                                        defaultValue=1))))
 
     def setupsettings(self):
         self.settings = QSettings("HoffSoft", "Android Energy Debugger")
@@ -539,7 +524,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.pushButtonRun.clicked.connect(self.buttonrun)
         self.pushButtonKillADB.clicked.connect(self.buttonkilladb)
         self.pushButtonDisplayResults.clicked.connect(self.openresults)
-        self.pushButtonDisplayOptimizations.clicked.connect(self.openoptimizations)
+        self.pushButtonDisplayOptimizations.clicked.connect(
+            self.openoptimizations)
         self.pushButtonDisplayBinderLog.clicked.connect(self.openbinderlog)
 
     def setupmenu(self):
@@ -556,9 +542,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.openfile(self.tableWidgetResults, "_results.csv", subdir=subdir)
 
     def openoptimizations(self, subdir=None):
-        self.openfile(
-            self.tableWidgetOptimizations, "_optimizations.csv", subdir=subdir
-        )
+        self.openfile(self.tableWidgetOptimizations,
+                      "_optimizations.csv",
+                      subdir=subdir)
 
     def openfile(self, table_widget, file_suffix, subdir=None):
         if not table_widget:
@@ -567,9 +553,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         table_widget.setRowCount(0)
 
         if self.lineEditApplicationName.text() is None:
-            QMessageBox.warning(
-                self, "Error", "Application is not specified", QMessageBox.Ok
-            )
+            QMessageBox.warning(self, "Error", "Application is not specified",
+                                QMessageBox.Ok)
             return
 
         self.application_name = self.lineEditApplicationName.text()
@@ -577,12 +562,11 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             return
         if subdir is not None:
             results_filename = os.path.join(
-                self.results_path, subdir + self.application_name + file_suffix
-            )
+                self.results_path,
+                subdir + self.application_name + file_suffix)
         else:
             results_filename = os.path.join(
-                self.results_path, self.application_name + file_suffix
-            )
+                self.results_path, self.application_name + file_suffix)
 
         try:
             col_count = 0
@@ -608,7 +592,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         try:
             settings_menu.exec_()
         except Exception, e:
-            print (e)
+            print(e)
             self.close()
             sys.exit()
 
@@ -621,21 +605,19 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
     def openbinderlog(self):
         if self.lineEditApplicationName.text() is None:
-            QMessageBox.warning(
-                self, "Error", "Application is not specified", QMessageBox.Ok
-            )
+            QMessageBox.warning(self, "Error", "Application is not specified",
+                                QMessageBox.Ok)
             return
 
         self.application_name = self.lineEditApplicationName.text()
 
         try:
             self.binder_log_file = open(
-                os.path.join(self.results_path, self.application_name + ".tlog"), "r"
-            )
+                os.path.join(self.results_path,
+                             self.application_name + ".tlog"), "r")
         except Exception:
-            QMessageBox.warning(
-                self, "Error", "Binder log does not exist", QMessageBox.Ok
-            )
+            QMessageBox.warning(self, "Error", "Binder log does not exist",
+                                QMessageBox.Ok)
             return
 
         self.binder_log = []
@@ -687,16 +669,16 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
             self.graph = self.checkBoxDrawGraph.isChecked()
             self.skip_tracing = self.checkBoxSkipTracing.isChecked()
 
-            if (
-                self.checkBoxTestAutomation.isChecked()
-            ):  # TODO allow test automation to be multithreaded
+            if (self.checkBoxTestAutomation.isChecked()
+                ):  # TODO allow test automation to be multithreaded
                 no_of_tests = self.spinBoxNoOfTests.value()
                 test_start_value = self.spinBoxStartTestValue.value()
 
                 self.labelTestsCompleted.setText("0")
                 self.progressBarTestsCompleted.setValue(0)
 
-                for x in range(test_start_value, test_start_value + no_of_tests):
+                for x in range(test_start_value,
+                               test_start_value + no_of_tests):
                     try:
                         buttonrunprocess(
                             self.adb,
@@ -710,7 +692,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                             self.skip_tracing,
                             progress_signal=self.changed_progress,
                             open_func=self.openallresults,
-                            subdir=self.application_name + "/" + self.current_governor + "/" + str(x) + "/",
+                            subdir=self.application_name + "/" +
+                            self.current_governor + "/" + str(x) + "/",
                         )
                         if self.checkBoxTestAutomationPrompt.isChecked():
                             QMessageBox.information(
@@ -719,24 +702,25 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                                 "Press OK to continue",
                                 QMessageBox.Ok,
                             )
-                        self.changed_test_count.emit(str(x - test_start_value + 1))
+                        self.changed_test_count.emit(
+                            str(x - test_start_value + 1))
                         self.changed_test_progress.emit(
-                            round(float(x + 1) / float(no_of_tests) * 100)
-                        )
+                            round(float(x + 1) / float(no_of_tests) * 100))
                     except Exception, e:
-                        print ("test failed, retrying")
+                        print("test failed, retrying")
                         x -= 1
             else:
                 if bool(
-                    int(self.settings.value("OptimizeWithThreads", defaultValue=1))
-                ):
-                    print ("Running debugger with multithreading")
+                        int(
+                            self.settings.value("OptimizeWithThreads",
+                                                defaultValue=1))):
+                    print("Running debugger with multithreading")
 
                     if self.debug_task:
                         try:
                             self.debug_task.terminate()
                         except Exception:
-                            print ("Could not terminate current debug task")
+                            print("Could not terminate current debug task")
                             return
                     self.debug_task = QDebuggerThread(
                         self.adb,
@@ -750,12 +734,14 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                         self.skip_tracing,
                         self.openallresults,
                     )
-                    self.debug_task.changed_progress.connect(self.progressBar.setValue)
+                    self.debug_task.changed_progress.connect(
+                        self.progressBar.setValue)
                     self.debug_task.start()
                 elif bool(
-                    int(self.settings.value("OptimizeWithProcesses", defaultValue=1))
-                ):
-                    print (
+                        int(
+                            self.settings.value("OptimizeWithProcesses",
+                                                defaultValue=1))):
+                    print(
                         "Running debugger with multiprocessing, outputing to system console"
                     )
                     # Separate processes means that the generated process cannot access the UI console created in the
@@ -782,11 +768,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     proc.start()
                     if self.UI_console:
                         sys.stdout = EmittingStream(
-                            textWritten=self.normal_output_written
-                        )
+                            textWritten=self.normal_output_written)
                         sys.stderr = EmittingStream(
-                            textWritten=self.normal_output_written
-                        )
+                            textWritten=self.normal_output_written)
                 else:
                     buttonrunprocess(
                         self.adb,
@@ -811,18 +795,18 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
 
 def buttonrunprocess(
-    adb,
-    application_name,
-    duration,
-    events,
-    events_to_process,
-    preamble,
-    subgraph,
-    graph,
-    skip_tracing,
-    progress_signal=None,
-    open_func=None,
-    subdir=None,
+        adb,
+        application_name,
+        duration,
+        events,
+        events_to_process,
+        preamble,
+        subgraph,
+        graph,
+        skip_tracing,
+        progress_signal=None,
+        open_func=None,
+        subdir=None,
 ):
 
     try:
@@ -843,26 +827,26 @@ def buttonrunprocess(
         if open_func is not None:
             open_func(subdir)
     except Exception, e:
-        print ("Error: {}".format(e))
+        print("Error: {}".format(e))
 
-    print (" ------ FINISHED ------")
+    print(" ------ FINISHED ------")
 
 
 class QDebuggerThread(QThread):
     changed_progress = pyqtSignal(int)
 
     def __init__(
-        self,
-        adb,
-        application_name,
-        duration,
-        events,
-        events_to_process,
-        preamble,
-        subgraph,
-        graph,
-        skip_tracing,
-        open_func,
+            self,
+            adb,
+            application_name,
+            duration,
+            events,
+            events_to_process,
+            preamble,
+            subgraph,
+            graph,
+            skip_tracing,
+            open_func,
     ):
         QThread.__init__(self)
         self.adb = adb
@@ -908,18 +892,18 @@ class CommandInterface:
 
 class EnergyDebugger:
     def __init__(
-        self,
-        adb,
-        application,
-        duration,
-        events,
-        event_count,
-        preamble,
-        graph,
-        subgraph,
-        skip_tracing,
-        progress_signal,
-        results_subdir,
+            self,
+            adb,
+            application,
+            duration,
+            events,
+            event_count,
+            preamble,
+            graph,
+            subgraph,
+            skip_tracing,
+            progress_signal,
+            results_subdir,
     ):
         self.adb = adb
         self.application = application
@@ -933,7 +917,6 @@ class EnergyDebugger:
         self.skip_tracing = skip_tracing
         self.progress_signal = progress_signal
         self.results_subdir = results_subdir
-
         """ Required objects for tracking system metrics and interfacing with a target system, connected
         via an ADB connection.
         """
@@ -943,14 +926,15 @@ class EnergyDebugger:
             self.pid_tool = PIDTool(self.adb, self.application)
         except Exception, e:
             raise Exception("Trace failed: {}".format(e))
-        print ("PIDs gathered --- %s Sec" % (time.time() - start_time))
+        print("PIDs gathered --- %s Sec" % (time.time() - start_time))
         start_time = time.time()
         self.trace_processor = TraceProcessor(self.pid_tool, self.application)
-        print ("Trace processor created --- %s Sec" % (time.time() - start_time))
+        print("Trace processor created --- %s Sec" %
+              (time.time() - start_time))
         start_time = time.time()
         self.sys_metrics = SystemMetrics(self.adb)
-        print ("System metrics initialized --- %s Sec" % (time.time() - start_time))
-
+        print("System metrics initialized --- %s Sec" %
+              (time.time() - start_time))
         """ The tracer object stores the configuration for the ftrace trace that is to be performed on the
         target system.
         """
@@ -963,7 +947,7 @@ class EnergyDebugger:
             events=events,
             duration=duration,
         )
-        print ("Tracer created --- %s Sec" % (time.time() - start_time))
+        print("Tracer created --- %s Sec" % (time.time() - start_time))
 
         if self.duration > 6:
             print "WARNING: Running traces over 6 seconds can cause issue due to data loss from trace buffer size " "limitations"
@@ -977,7 +961,7 @@ class EnergyDebugger:
 
         start_time = time.time()
         self.sys_logger = SysLogger(self.adb)
-        print ("Syslogger created --- %s Sec" % (time.time() - start_time))
+        print("Syslogger created --- %s Sec" % (time.time() - start_time))
 
     def normalOutputWritten(self, text):
         cursor = self.textEditConsole.textCursor()
@@ -1006,8 +990,7 @@ class EnergyDebugger:
             try:
                 self.tracer.get_trace_results()
             except Exception, e:
-                print ("Getting trace results failed, %s" % e)
-
+                print("Getting trace results failed, %s" % e)
         """ The tracecmd data pulled (.dat suffix) is then iterated through and the trace events are systematically
         processed. Results are generated into a CSV file, saved to the working directory under the same name as the 
         target
@@ -1023,7 +1006,7 @@ class EnergyDebugger:
             self.tc_processor = TracecmdProcessor(dat_path, self.preamble)
             self.tc_processor.print_event_count()
         except Exception, e:
-            print ("Creating trace processor failed, %s" % e)
+            print("Creating trace processor failed, %s" % e)
 
         try:
             self.trace_processor.process_trace(
@@ -1039,7 +1022,8 @@ class EnergyDebugger:
         except Exception, e:
             raise Exception(e)
 
-        print "Run took a total of %s seconds to run" % (time.time() - start_time)
+        print "Run took a total of %s seconds to run" % (time.time() -
+                                                         start_time)
 
 
 if __name__ == "__main__":

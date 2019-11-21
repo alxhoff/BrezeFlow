@@ -80,14 +80,11 @@ class XU3RegressionModel:
 
                 reg_const = XU3RegressionModel.little_reg_const
 
-                energy[0] = (
-                    reg_const["static"]
-                    + reg_const["freq"] * freq
-                    + reg_const["util0"] * util[0]
-                    + reg_const["util1"] * util[1]
-                    + reg_const["util2"] * util[2]
-                    + reg_const["util3"] * util[3]
-                )
+                energy[0] = (reg_const["static"] + reg_const["freq"] * freq +
+                             reg_const["util0"] * util[0] +
+                             reg_const["util1"] * util[1] +
+                             reg_const["util2"] * util[2] +
+                             reg_const["util3"] * util[3])
 
                 return energy
 
@@ -95,18 +92,16 @@ class XU3RegressionModel:
 
                 reg_const = XU3RegressionModel.big_reg_const
 
-                energy[1] = (
-                    reg_const["static"]
-                    + reg_const["temp0"] * temp[0]
-                    + reg_const["temp1"] * temp[1]
-                    + reg_const["temp2"] * temp[2]
-                    + reg_const["temp3"] * temp[3]
-                    + reg_const["freq"] * freq
-                    + reg_const["util0"] * util[0]
-                    + reg_const["util1"] * util[1]
-                    + reg_const["util2"] * util[2]
-                    + reg_const["util3"] * util[3]
-                )
+                energy[1] = (reg_const["static"] +
+                             reg_const["temp0"] * temp[0] +
+                             reg_const["temp1"] * temp[1] +
+                             reg_const["temp2"] * temp[2] +
+                             reg_const["temp3"] * temp[3] +
+                             reg_const["freq"] * freq +
+                             reg_const["util0"] * util[0] +
+                             reg_const["util1"] * util[1] +
+                             reg_const["util2"] * util[2] +
+                             reg_const["util3"] * util[3])
 
                 return energy
 
@@ -120,11 +115,7 @@ class XU3RegressionModel:
 
         reg_const = XU3RegressionModel.GPU_reg_const
 
-        energy = (
-            reg_const["static"]
-            + reg_const["freq"] * freq
-            + reg_const["util"] * util
-            + reg_const["temp"] * temp
-        )
+        energy = (reg_const["static"] + reg_const["freq"] * freq +
+                  reg_const["util"] * util + reg_const["temp"] * temp)
 
         return energy

@@ -25,7 +25,8 @@ class ADBInterface:
     current_interface = None
 
     def __init__(self):
-        signer = sign_m2crypto.M2CryptoSigner(op.expanduser("~/.android/adbkey"))
+        signer = sign_m2crypto.M2CryptoSigner(
+            op.expanduser("~/.android/adbkey"))
         self.device = adb_commands.AdbCommands()
         self.device.ConnectDevice(rsa_keys=[signer])
         ADBInterface.current_interface = self

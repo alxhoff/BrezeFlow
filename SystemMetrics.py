@@ -19,7 +19,6 @@ __status__ = "Beta"
 class TempLogEntry:
     """ Stores a snapshot of the system's temperatures at a given timestamp.
     """
-
     def __init__(self, ts, big0, big1, big2, big3, little, gpu):
         self.time = ts
         self.big = [big0, big1, big2, big3]
@@ -30,7 +29,6 @@ class TempLogEntry:
 class SystemTemps:
     """ A timeline of system temperature snapshots.
     """
-
     def __init__(self):
         self.temps = []
         self.initial_time = 0
@@ -40,7 +38,6 @@ class SystemTemps:
 class UtilizationSlice:
     """ Records a slice of a utilization timeline.
         """
-
     def __init__(self, start_time, finish_time, freq=0, state=0, util=0):
         self.start_time = start_time
         self.util = util
@@ -71,9 +68,8 @@ class UtilizationWindow:
             duration = self.window_duration
 
         if self.buffer_duration + duration > self.window_duration:
-            self.remove_duration_front(
-                self.buffer_duration + duration - self.window_duration
-            )
+            self.remove_duration_front(self.buffer_duration + duration -
+                                       self.window_duration)
 
         self.add_state_entry(state, duration)
 
@@ -176,8 +172,7 @@ class GPUUtilizationTable(UtilizationTable):
                 event.time - self.start_time,
                 freq=event.freq,
                 util=self.current_util,
-            )
-        )
+            ))
 
         self.current_util = event.util
         self.last_event_time = event.time - self.start_time
@@ -209,7 +204,8 @@ class GPUUtilizationTable(UtilizationTable):
         energy = 0
 
         if finish_time == 0:
-            relative_finish_time = self.events[-1].time + self.events[-1].duration
+            relative_finish_time = self.events[-1].time + self.events[
+                -1].duration
         else:
             relative_finish_time = finish_time - self.start_time
 
@@ -224,17 +220,13 @@ class GPUUtilizationTable(UtilizationTable):
             cycles = 0
 
             temp = SystemMetrics.current_metrics.get_temp(
-                event.start_time + self.start_time, -1
-            )
+                event.start_time + self.start_time, -1)
 
             assert temp != 0, "GPU temp found to be zero at time %d" % (
-                event.start_time + self.start_time
-            )
+                event.start_time + self.start_time)
 
-            cycle_energy = (
-                XU3RegressionModel.get_gpu_cycle_energy(event.freq, event.util, temp)
-                / event.freq
-            )
+            cycle_energy = (XU3RegressionModel.get_gpu_cycle_energy(
+                event.freq, event.util, temp) / event.freq)
 
             assert cycle_energy != 0, "freq: %d, util: %d, temp: %d" % (
                 event.freq,
@@ -244,12 +236,11 @@ class GPUUtilizationTable(UtilizationTable):
 
             #  Start event
             if (relative_start_time >= event.start_time) and (
-                relative_start_time < (event.start_time + event.duration)
-            ):
+                    relative_start_time < (event.start_time + event.duration)):
 
                 duration = (
-                    event.duration - (relative_start_time - event.start_time)
-                ) * 0.000001
+                    event.duration -
+                    (relative_start_time - event.start_time)) * 0.000001
                 cycles = duration * event.freq
 
                 assert cycles != 0, (
@@ -260,16 +251,15 @@ class GPUUtilizationTable(UtilizationTable):
                         event.start_time,
                         event.freq,
                         cycles,
-                    )
-                )
+                    ))
             #  End event
-            elif (relative_finish_time >= event.start_time) and (
-                relative_finish_time < (event.start_time + event.duration)
-            ):
+            elif (relative_finish_time >=
+                  event.start_time) and (relative_finish_time <
+                                         (event.start_time + event.duration)):
 
                 duration = (
-                    event.duration - (relative_finish_time - event.start_time)
-                ) * 0.000001
+                    event.duration -
+                    (relative_finish_time - event.start_time)) * 0.000001
                 cycles = duration * event.freq
 
                 assert cycles != 0, (
@@ -280,12 +270,11 @@ class GPUUtilizationTable(UtilizationTable):
                         event.start_time,
                         event.freq,
                         cycles,
-                    )
-                )
+                    ))
             # Middle event
-            elif (relative_start_time < event.start_time) and (
-                relative_finish_time > (event.start_time + event.duration)
-            ):
+            elif (relative_start_time <
+                  event.start_time) and (relative_finish_time >
+                                         (event.start_time + event.duration)):
 
                 duration = event.duration * 0.000001
                 cycles = duration * event.freq
@@ -392,16 +381,13 @@ class SystemMetrics:
             else:
                 if core == -1:
                     return self.sys_temp_history.temps[
-                        ts - self.sys_temp_history.initial_time
-                    ].gpu
+                        ts - self.sys_temp_history.initial_time].gpu
                 elif core <= 3:
                     return self.sys_temp_history.temps[
-                        ts - self.sys_temp_history.initial_time
-                    ].little
+                        ts - self.sys_temp_history.initial_time].little
                 else:
                     return self.sys_temp_history.temps[
-                        ts - self.sys_temp_history.initial_time
-                    ].big[core % 4]
+                        ts - self.sys_temp_history.initial_time].big[core % 4]
         except IndexError:
             print "Temperature could not be retrieved for time %d" % ts
             sys.exit(1)
@@ -415,14 +401,9 @@ class SystemMetrics:
             try:
                 frequencies.append(
                     int(
-                        self.adb.command(
-                            "cat /sys/devices/system/cpu/cpu"
-                            + str(core)
-                            + "/cpufreq/scaling_cur_freq"
-                        )
-                    )
-                    * 1000
-                )
+                        self.adb.command("cat /sys/devices/system/cpu/cpu" +
+                                         str(core) +
+                                         "/cpufreq/scaling_cur_freq")) * 1000)
             except ValueError:  # Big is off
                 frequencies.append(0)
 
@@ -436,7 +417,8 @@ class SystemMetrics:
         return int(self.adb.command("cat /sys/class/misc/mali0/device/clock"))
 
     def _get_gpu_util(self):
-        return int(self.adb.command("cat /sys/class/misc/mali0/device/utilization"))
+        return int(
+            self.adb.command("cat /sys/class/misc/mali0/device/utilization"))
 
     def get_cpu_core_freq(self, core):
         return self.current_core_freqs[core]

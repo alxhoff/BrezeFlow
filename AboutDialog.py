@@ -6,7 +6,6 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -18,12 +17,12 @@ class Ui_Dialog(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(Dialog)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label.sizePolicy().hasHeightForWidth())
         self.label.setSizePolicy(sizePolicy)
         self.label.setObjectName("label")
         self.verticalLayout.addWidget(self.label)
@@ -57,28 +56,24 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "About Android Energy Debugger"))
+        Dialog.setWindowTitle(
+            _translate("Dialog", "About Android Energy Debugger"))
         self.label.setText(
-            _translate("Dialog", "<b>About Android Energy Debugger </b>")
-        )
+            _translate("Dialog", "<b>About Android Energy Debugger </b>"))
         self.label_2.setText(
             _translate(
                 "Dialog",
                 "The Android Energy Debugger is a tool designed to retrieve the task execution grap and task energy consumption metrics of a desired Android application. This is done by using the Linux FTrace framework, custom kernel tracepoints and a multi-CPU power model.",
-            )
-        )
+            ))
         self.label_3.setText(
             _translate(
                 "Dialog",
                 "Developed by Alex Hoffman at the Technical University of Munich. To contact or for furthur infomration please write to or see:",
-            )
-        )
+            ))
         self.label_4.setText(
             _translate(
                 "Dialog",
                 "alex.hoffman@tum.de<br>Public repository on <a href=https://github.com/alxhoff/Android-Energy-Debugger>GitHub</a>",
-            )
-        )
+            ))
         self.label_5.setText(
-            _translate("Dialog", "Thank you for your support and interest.")
-        )
+            _translate("Dialog", "Thank you for your support and interest."))

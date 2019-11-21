@@ -7,9 +7,11 @@ import argparse
 from tracecmd import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-i", "--input-file", nargs=1, default=["trace.dat"], help="Input trace file"
-)
+parser.add_argument("-i",
+                    "--input-file",
+                    nargs=1,
+                    default=["trace.dat"],
+                    help="Input trace file")
 parser.add_argument(
     "-o",
     "--output-folder",
@@ -214,7 +216,8 @@ class RunInfo:
             # compute values more reasonable
             i = -2
             while i >= -len(self.measurements):
-                diff_ns = self.measurements[-1].raw_ts - self.measurements[i].raw_ts
+                diff_ns = self.measurements[-1].raw_ts - self.measurements[
+                    i].raw_ts
                 # 20 ms back in time if possible (otherwise take first sample)
                 if i != -len(self.measurements):
                     if diff_ns < 20000000:
@@ -315,16 +318,10 @@ class TraceStore:
 
     def _is_sys_logger_event(self, ev):
         # checking for ev.comm does not work reliably
-        if (
-            ev.name == "enabled"
-            or ev.name == "iteration"
-            or ev.name == "mali"
-            or ev.name == "cpu_info"
-            or ev.name == "cpu_freq"
-            or ev.name == "ina231"
-            or ev.name == "exynos_temp"
-            or ev.name == "net_stats"
-        ):
+        if (ev.name == "enabled" or ev.name == "iteration" or ev.name == "mali"
+                or ev.name == "cpu_info" or ev.name == "cpu_freq"
+                or ev.name == "ina231" or ev.name == "exynos_temp"
+                or ev.name == "net_stats"):
             return True
         return False
 
@@ -348,26 +345,18 @@ class TraceStore:
         return False
 
     def _is_chrome_event(self, ev):
-        if (
-            ev.name == "scroll_speed"
-            or ev.name == "phase_change"
-            or ev.name == "a15_on_stop"
-            or ev.name == "a15_on_start"
-            or ev.name == "a15_off_stop"
-            or ev.name == "a15_off_start"
-            or ev.name == "touch_start_notifier"
-            or ev.name == "touch_start"
-        ):
+        if (ev.name == "scroll_speed" or ev.name == "phase_change"
+                or ev.name == "a15_on_stop" or ev.name == "a15_on_start"
+                or ev.name == "a15_off_stop" or ev.name == "a15_off_start"
+                or ev.name == "touch_start_notifier"
+                or ev.name == "touch_start"):
             return True
         return False
 
     def _is_sched_event(self, ev):
-        if (
-            ev.name == "sched_wakeup"
-            or ev.name == "sched_wakeup_new"
-            or ev.name == "sched_stat_runtime"
-            or ev.name == "sched_process_fork"
-        ):
+        if (ev.name == "sched_wakeup" or ev.name == "sched_wakeup_new"
+                or ev.name == "sched_stat_runtime"
+                or ev.name == "sched_process_fork"):
             return True
         return False
 
@@ -392,7 +381,6 @@ class TraceStore:
         if not pid in self.threads:
             self.threads[pid] = ThreadInfo(pid, -1, "")
         t = self.threads[pid]
-
         """
         The comm might change during runtime. Most importantly
         it will be the same as the parent comm on a "real" fork
@@ -400,7 +388,6 @@ class TraceStore:
         """
         if t.comm != comm:
             t.comm = comm
-
         """
         Even if a process is migrated, first the runtime is accounted
         and then it is woken up again. So there is no need to trace
@@ -416,7 +403,6 @@ class TraceStore:
             runtime = ev.num_field("runtime")
             stop = ev.ts
             start = ev.ts - runtime
-
             """
             strange but true, as the tracepoint is written
             slightly after the time has been measured, and
@@ -431,7 +417,7 @@ class TraceStore:
                     start = lastRun.stop + 1
 
             if start >= stop:
-                print ("Dropping overlapping runtime")
+                print("Dropping overlapping runtime")
                 return
 
             info = ThreadRunInfo(t, start, stop)
@@ -442,12 +428,10 @@ class TraceStore:
     def _process_event(self, ev):
         if not ev:
             return
-
         """
         We get all events from trace-cmd sorted by ts, even when
         recorded on different CPUs. Therefore no manual sorting necessary.
         """
-
         """
         We handle all scheduler events before all runs, because
         run information might be overlapping and fork events are
@@ -457,7 +441,6 @@ class TraceStore:
         if self._is_sched_event(ev):
             self._process_sched_event(ev)
             return
-
         """
         As we might have some unrelated events in here, we'll simply drop them.
         """
@@ -536,67 +519,67 @@ class TraceStore:
             writer.writeheader()
 
             for m in run.measurements:
-                writer.writerow(
-                    {
-                        PL_TIME: m.raw_ts / 1000000000.0,
-                        PL_TIME_EXT: m.real_ts,
-                        PL_POWER_A15: m.a15_power / 1000000.0
-                        if m.a15_power != -1
-                        else 0,
-                        PL_POWER_A7: m.a7_power / 1000000.0 if m.a7_power != -1 else 0,
-                        PL_POWER_MEM: m.mem_power / 1000000.0
-                        if m.mem_power != -1
-                        else 0,
-                        PL_POWER_GPU: m.gpu_power / 1000000.0
-                        if m.gpu_power != -1
-                        else 0,
-                        PL_POWER_TOTAL: (
-                            m.a15_power + m.a7_power + m.mem_power + m.gpu_power
-                        )
-                        / 1000000.0,
-                        PL_TEMP_A15_1: m.a15_0_temp / 1000
-                        if m.a15_0_temp != -1
-                        else -1,
-                        PL_TEMP_A15_2: m.a15_1_temp / 1000
-                        if m.a15_1_temp != -1
-                        else -1,
-                        PL_TEMP_A15_3: m.a15_2_temp / 1000
-                        if m.a15_2_temp != -1
-                        else -1,
-                        PL_TEMP_A15_4: m.a15_3_temp / 1000
-                        if m.a15_3_temp != -1
-                        else -1,
-                        PL_MALI_UTIL: m.gpu_load,
-                        PL_MALI_FREQ: m.gpu_freq,
-                        PL_MALI_TEMP: m.gpu_temp / 1000 if m.gpu_temp != -1 else -1,
-                        PL_FREQ_A15: m.get_cpu(4).freq,
-                        PL_FREQ_A7: m.get_cpu(0).freq,
-                        PL_USAGE_A15_1: m.get_cpu(4).load,
-                        PL_USAGE_A15_2: m.get_cpu(5).load,
-                        PL_USAGE_A15_3: m.get_cpu(6).load,
-                        PL_USAGE_A15_4: m.get_cpu(7).load,
-                        PL_USAGE_A15_AVG: (
-                            m.get_cpu(4).load
-                            + m.get_cpu(5).load
-                            + m.get_cpu(6).load
-                            + m.get_cpu(7).load
-                        )
-                        / 4,
-                        PL_USAGE_A7_1: m.get_cpu(0).load,
-                        PL_USAGE_A7_2: m.get_cpu(1).load,
-                        PL_USAGE_A7_3: m.get_cpu(2).load,
-                        PL_USAGE_A7_4: m.get_cpu(3).load,
-                        PL_USAGE_A7_AVG: (
-                            m.get_cpu(0).load
-                            + m.get_cpu(1).load
-                            + m.get_cpu(2).load
-                            + m.get_cpu(3).load
-                        )
-                        / 4,
-                        PL_ETH0_RX: m.rx_packets,
-                        PL_ETH0_TX: m.tx_packets,
-                    }
-                )
+                writer.writerow({
+                    PL_TIME:
+                    m.raw_ts / 1000000000.0,
+                    PL_TIME_EXT:
+                    m.real_ts,
+                    PL_POWER_A15:
+                    m.a15_power / 1000000.0 if m.a15_power != -1 else 0,
+                    PL_POWER_A7:
+                    m.a7_power / 1000000.0 if m.a7_power != -1 else 0,
+                    PL_POWER_MEM:
+                    m.mem_power / 1000000.0 if m.mem_power != -1 else 0,
+                    PL_POWER_GPU:
+                    m.gpu_power / 1000000.0 if m.gpu_power != -1 else 0,
+                    PL_POWER_TOTAL:
+                    (m.a15_power + m.a7_power + m.mem_power + m.gpu_power) /
+                    1000000.0,
+                    PL_TEMP_A15_1:
+                    m.a15_0_temp / 1000 if m.a15_0_temp != -1 else -1,
+                    PL_TEMP_A15_2:
+                    m.a15_1_temp / 1000 if m.a15_1_temp != -1 else -1,
+                    PL_TEMP_A15_3:
+                    m.a15_2_temp / 1000 if m.a15_2_temp != -1 else -1,
+                    PL_TEMP_A15_4:
+                    m.a15_3_temp / 1000 if m.a15_3_temp != -1 else -1,
+                    PL_MALI_UTIL:
+                    m.gpu_load,
+                    PL_MALI_FREQ:
+                    m.gpu_freq,
+                    PL_MALI_TEMP:
+                    m.gpu_temp / 1000 if m.gpu_temp != -1 else -1,
+                    PL_FREQ_A15:
+                    m.get_cpu(4).freq,
+                    PL_FREQ_A7:
+                    m.get_cpu(0).freq,
+                    PL_USAGE_A15_1:
+                    m.get_cpu(4).load,
+                    PL_USAGE_A15_2:
+                    m.get_cpu(5).load,
+                    PL_USAGE_A15_3:
+                    m.get_cpu(6).load,
+                    PL_USAGE_A15_4:
+                    m.get_cpu(7).load,
+                    PL_USAGE_A15_AVG:
+                    (m.get_cpu(4).load + m.get_cpu(5).load +
+                     m.get_cpu(6).load + m.get_cpu(7).load) / 4,
+                    PL_USAGE_A7_1:
+                    m.get_cpu(0).load,
+                    PL_USAGE_A7_2:
+                    m.get_cpu(1).load,
+                    PL_USAGE_A7_3:
+                    m.get_cpu(2).load,
+                    PL_USAGE_A7_4:
+                    m.get_cpu(3).load,
+                    PL_USAGE_A7_AVG:
+                    (m.get_cpu(0).load + m.get_cpu(1).load +
+                     m.get_cpu(2).load + m.get_cpu(3).load) / 4,
+                    PL_ETH0_RX:
+                    m.rx_packets,
+                    PL_ETH0_TX:
+                    m.tx_packets,
+                })
 
     def write_powerlogger_csvs(self, output_folder):
         for index in range(len(self.runs)):
@@ -616,9 +599,11 @@ class TraceStore:
 
             for key in self.threads:
                 t = self.threads[key]
-                writer.writerow(
-                    {"pid": t.pid, "comm": t.comm, "ppid": t.ppid,}
-                )
+                writer.writerow({
+                    "pid": t.pid,
+                    "comm": t.comm,
+                    "ppid": t.ppid,
+                })
 
     def write_cpu_activity_csv(self, cpu, output_folder, index):
         run = self.runs[index]
@@ -638,7 +623,6 @@ class TraceStore:
                 return
             start = run.measurements[0].raw_ts
             stop = run.measurements[-1].raw_ts
-
             """
             We will be extracting just that part that belongs
             to a measurement run. The other stuff we can drop
@@ -651,13 +635,11 @@ class TraceStore:
                     continue
 
                 # cut overlapping runs to fit our range
-                writer.writerow(
-                    {
-                        "start": max(r.start, start),
-                        "stop": min(r.stop, stop),
-                        "pid": r.thread.pid,
-                    }
-                )
+                writer.writerow({
+                    "start": max(r.start, start),
+                    "stop": min(r.stop, stop),
+                    "pid": r.thread.pid,
+                })
 
     def write_cpu_activity_csvs(self, output_folder):
         for cpu in self.cpu_activity:
@@ -683,14 +665,12 @@ class TraceStore:
 
         for e in self.runs[index].chrome_events:
             if isinstance(e, PhaseChangeEvent):
-                phases.append(
-                    {
-                        "ts": e.ts,
-                        "use_case": e.use_case,
-                        "rail_mode": e.rail_mode,
-                        "phase": e.phase,
-                    }
-                )
+                phases.append({
+                    "ts": e.ts,
+                    "use_case": e.use_case,
+                    "rail_mode": e.rail_mode,
+                    "phase": e.phase,
+                })
 
         with open(filename, "w") as outfile:
             json.dump(data, outfile)

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Uses the tracecmd python module to parse the tracecmd events, found in a tracecmd .dat file, into event
 objects, found in the SystemEvents module of the energy debugger.
@@ -22,7 +21,6 @@ __status__ = "Beta"
 class EventCounts:
     """ Used simply to track the number of different events that occured throughout the duration of a trace.
     """
-
     def __init__(self):
         self.sched_switch = 0
         self.cpu_idle = 0
@@ -38,7 +36,6 @@ class TracecmdProcessor:
     the trace date has been loaded.
 
     """
-
     def __init__(self, filename, preamble):
         self.processed_events = []
         self.temp_events = []
@@ -55,23 +52,19 @@ class TracecmdProcessor:
     def print_event_count(self):
         try:
             print "--- Total events: " + str(
-                self.event_count.sched_switch
-                + self.event_count.cpu_idle
-                + self.event_count.sched_switch
-                + self.event_count.binder_transaction
-                + +self.event_count.cpu_freq
-                + self.event_count.mali
-            )
+                self.event_count.sched_switch + self.event_count.cpu_idle +
+                self.event_count.sched_switch +
+                self.event_count.binder_transaction +
+                +self.event_count.cpu_freq + self.event_count.mali)
             print "------ Sched switch: " + str(self.event_count.sched_switch)
             print "------ CPU idle: " + str(self.event_count.cpu_idle)
             print "------ CPU freq: " + str(self.event_count.cpu_freq)
             print "------ Binder transactions: " + str(
-                self.event_count.binder_transaction
-            )
+                self.event_count.binder_transaction)
             print "------ Mali: " + str(self.event_count.mali)
             print "------ Temp: " + str(self.event_count.temp)
         except Exception, e:
-            print ("Print event count failed, %s" % e)
+            print("Print event count failed, %s" % e)
 
     def _process_trace(self, preamble):
         """ Sequentially process trace events.
@@ -138,8 +131,7 @@ class TracecmdProcessor:
                     prev_state=prev_state,
                     next_pid=next_pid,
                     next_name=next_name,
-                )
-            )
+                ))
         elif event.name == "cpu_idle":
             self.event_count.cpu_idle += 1
 
@@ -151,8 +143,7 @@ class TracecmdProcessor:
                     cpu=event.cpu,
                     name=event.name,
                     state=state,
-                )
-            )
+                ))
 
         elif event.name == "cpu_freq":
             self.event_count.cpu_freq += 1
@@ -167,8 +158,7 @@ class TracecmdProcessor:
                     freq=freq,
                     util=0,
                     target_cpu=target_cpu,
-                )
-            )
+                ))
 
         elif event.name == "binder_transaction":
             self.event_count.binder_transaction += 1
@@ -194,8 +184,7 @@ class TracecmdProcessor:
                     flags=flags,
                     code=code,
                     tran_num=trans_num,
-                )
-            )
+                ))
 
         elif event.name == "mali":
             self.event_count.mali += 1
@@ -210,8 +199,7 @@ class TracecmdProcessor:
                     cpu=event.cpu,
                     util=util,
                     freq=freq,
-                )
-            )
+                ))
 
         elif event.name == "exynos_temp":
             self.event_count.temp += 1
@@ -233,8 +221,7 @@ class TracecmdProcessor:
                     big3=big3,
                     little=little,
                     gpu=gpu,
-                )
-            )
+                ))
 
         else:
             pass  # print "Unknown event %s" % event.name

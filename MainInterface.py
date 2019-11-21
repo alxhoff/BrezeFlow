@@ -6,7 +6,6 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -22,12 +21,12 @@ class Ui_MainWindow(object):
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setObjectName("splitter")
         self.frame = QtWidgets.QFrame(self.splitter)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.frame.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.frame.sizePolicy().hasHeightForWidth())
         self.frame.setSizePolicy(sizePolicy)
         self.frame.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -42,17 +41,17 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 283, 762))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(
+            self.scrollAreaWidgetContents)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.frameTraceOptions = QtWidgets.QFrame(self.scrollAreaWidgetContents)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        self.frameTraceOptions = QtWidgets.QFrame(
+            self.scrollAreaWidgetContents)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.frameTraceOptions.sizePolicy().hasHeightForWidth()
-        )
+            self.frameTraceOptions.sizePolicy().hasHeightForWidth())
         self.frameTraceOptions.setSizePolicy(sizePolicy)
         self.frameTraceOptions.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frameTraceOptions.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -60,12 +59,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.frameTraceOptions)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.label_6 = QtWidgets.QLabel(self.frameTraceOptions)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label_6.sizePolicy().hasHeightForWidth())
         self.label_6.setSizePolicy(sizePolicy)
         self.label_6.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
         self.label_6.setObjectName("label_6")
@@ -75,24 +74,27 @@ class Ui_MainWindow(object):
         self.label = QtWidgets.QLabel(self.frameTraceOptions)
         self.label.setObjectName("label")
         self.horizontalLayout_3.addWidget(self.label)
-        self.lineEditApplicationName = QtWidgets.QLineEdit(self.frameTraceOptions)
+        self.lineEditApplicationName = QtWidgets.QLineEdit(
+            self.frameTraceOptions)
         self.lineEditApplicationName.setObjectName("lineEditApplicationName")
         self.horizontalLayout_3.addWidget(self.lineEditApplicationName)
         self.verticalLayout_5.addLayout(self.horizontalLayout_3)
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_4.setSizeConstraint(QtWidgets.QLayout.SetNoConstraint)
+        self.horizontalLayout_4.setSizeConstraint(
+            QtWidgets.QLayout.SetNoConstraint)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.label_3 = QtWidgets.QLabel(self.frameTraceOptions)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_3.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label_3.sizePolicy().hasHeightForWidth())
         self.label_3.setSizePolicy(sizePolicy)
         self.label_3.setObjectName("label_3")
         self.horizontalLayout_4.addWidget(self.label_3)
-        self.doubleSpinBoxDuration = QtWidgets.QDoubleSpinBox(self.frameTraceOptions)
+        self.doubleSpinBoxDuration = QtWidgets.QDoubleSpinBox(
+            self.frameTraceOptions)
         self.doubleSpinBoxDuration.setAlignment(QtCore.Qt.AlignCenter)
         self.doubleSpinBoxDuration.setObjectName("doubleSpinBoxDuration")
         self.horizontalLayout_4.addWidget(self.doubleSpinBoxDuration)
@@ -100,26 +102,24 @@ class Ui_MainWindow(object):
         self.horizontalLayout_8 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_8.setObjectName("horizontalLayout_8")
         self.checkBoxDrawGraph = QtWidgets.QCheckBox(self.frameTraceOptions)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.checkBoxDrawGraph.sizePolicy().hasHeightForWidth()
-        )
+            self.checkBoxDrawGraph.sizePolicy().hasHeightForWidth())
         self.checkBoxDrawGraph.setSizePolicy(sizePolicy)
         self.checkBoxDrawGraph.setObjectName("checkBoxDrawGraph")
         self.horizontalLayout_8.addWidget(self.checkBoxDrawGraph)
         self.verticalLayout_5.addLayout(self.horizontalLayout_8)
         self.verticalLayout_2.addWidget(self.frameTraceOptions)
         self.frameEvents = QtWidgets.QFrame(self.scrollAreaWidgetContents)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.frameEvents.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.frameEvents.sizePolicy().hasHeightForWidth())
         self.frameEvents.setSizePolicy(sizePolicy)
         self.frameEvents.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frameEvents.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -127,12 +127,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.frameEvents)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.label_5 = QtWidgets.QLabel(self.frameEvents)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_5.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label_5.sizePolicy().hasHeightForWidth())
         self.label_5.setSizePolicy(sizePolicy)
         self.label_5.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
         self.label_5.setObjectName("label_5")
@@ -160,19 +160,19 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.checkBoxCPUIdle, 1, 1, 1, 1)
         self.checkBoxBinderTransaction = QtWidgets.QCheckBox(self.frameEvents)
         self.checkBoxBinderTransaction.setChecked(True)
-        self.checkBoxBinderTransaction.setObjectName("checkBoxBinderTransaction")
+        self.checkBoxBinderTransaction.setObjectName(
+            "checkBoxBinderTransaction")
         self.gridLayout.addWidget(self.checkBoxBinderTransaction, 0, 1, 1, 1)
         self.verticalLayout_4.addLayout(self.gridLayout)
         self.verticalLayout_2.addWidget(self.frameEvents)
-        self.frameDisplayOptions = QtWidgets.QFrame(self.scrollAreaWidgetContents)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        self.frameDisplayOptions = QtWidgets.QFrame(
+            self.scrollAreaWidgetContents)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.frameDisplayOptions.sizePolicy().hasHeightForWidth()
-        )
+            self.frameDisplayOptions.sizePolicy().hasHeightForWidth())
         self.frameDisplayOptions.setSizePolicy(sizePolicy)
         self.frameDisplayOptions.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frameDisplayOptions.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -180,39 +180,42 @@ class Ui_MainWindow(object):
         self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.frameDisplayOptions)
         self.verticalLayout_9.setObjectName("verticalLayout_9")
         self.label_9 = QtWidgets.QLabel(self.frameDisplayOptions)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_9.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label_9.sizePolicy().hasHeightForWidth())
         self.label_9.setSizePolicy(sizePolicy)
         self.label_9.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
         self.label_9.setObjectName("label_9")
         self.verticalLayout_9.addWidget(self.label_9)
         self.gridLayout_2 = QtWidgets.QGridLayout()
         self.gridLayout_2.setObjectName("gridLayout_2")
-        self.checkBoxDisplayGraph = QtWidgets.QCheckBox(self.frameDisplayOptions)
+        self.checkBoxDisplayGraph = QtWidgets.QCheckBox(
+            self.frameDisplayOptions)
         self.checkBoxDisplayGraph.setObjectName("checkBoxDisplayGraph")
         self.gridLayout_2.addWidget(self.checkBoxDisplayGraph, 0, 1, 1, 1)
-        self.checkBoxDisplayResults = QtWidgets.QCheckBox(self.frameDisplayOptions)
+        self.checkBoxDisplayResults = QtWidgets.QCheckBox(
+            self.frameDisplayOptions)
         self.checkBoxDisplayResults.setChecked(True)
         self.checkBoxDisplayResults.setObjectName("checkBoxDisplayResults")
         self.gridLayout_2.addWidget(self.checkBoxDisplayResults, 0, 0, 1, 1)
-        self.checkBoxDisplayBinderLog = QtWidgets.QCheckBox(self.frameDisplayOptions)
+        self.checkBoxDisplayBinderLog = QtWidgets.QCheckBox(
+            self.frameDisplayOptions)
         self.checkBoxDisplayBinderLog.setObjectName("checkBoxDisplayBinderLog")
         self.gridLayout_2.addWidget(self.checkBoxDisplayBinderLog, 1, 0, 1, 1)
         self.verticalLayout_9.addLayout(self.gridLayout_2)
         self.verticalLayout_2.addWidget(self.frameDisplayOptions)
-        self.frameDebugOptions = QtWidgets.QFrame(self.scrollAreaWidgetContents)
+        self.frameDebugOptions = QtWidgets.QFrame(
+            self.scrollAreaWidgetContents)
         sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Maximum
-        )
+            QtWidgets.QSizePolicy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.frameDebugOptions.sizePolicy().hasHeightForWidth()
-        )
+            self.frameDebugOptions.sizePolicy().hasHeightForWidth())
         self.frameDebugOptions.setSizePolicy(sizePolicy)
         self.frameDebugOptions.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frameDebugOptions.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -220,12 +223,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.frameDebugOptions)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.label_2 = QtWidgets.QLabel(self.frameDebugOptions)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label_2.sizePolicy().hasHeightForWidth())
         self.label_2.setSizePolicy(sizePolicy)
         self.label_2.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.label_2.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
@@ -248,7 +251,8 @@ class Ui_MainWindow(object):
         self.checkBoxPreamble = QtWidgets.QCheckBox(self.frameDebugOptions)
         self.checkBoxPreamble.setObjectName("checkBoxPreamble")
         self.horizontalLayout_6.addWidget(self.checkBoxPreamble)
-        self.doubleSpinBoxPreamble = QtWidgets.QDoubleSpinBox(self.frameDebugOptions)
+        self.doubleSpinBoxPreamble = QtWidgets.QDoubleSpinBox(
+            self.frameDebugOptions)
         self.doubleSpinBoxPreamble.setAlignment(QtCore.Qt.AlignCenter)
         self.doubleSpinBoxPreamble.setObjectName("doubleSpinBoxPreamble")
         self.horizontalLayout_6.addWidget(self.doubleSpinBoxPreamble)
@@ -261,12 +265,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.checkBoxSkipTracing)
         self.verticalLayout_2.addWidget(self.frameDebugOptions)
         self.frame_4 = QtWidgets.QFrame(self.scrollAreaWidgetContents)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.frame_4.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.frame_4.sizePolicy().hasHeightForWidth())
         self.frame_4.setSizePolicy(sizePolicy)
         self.frame_4.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frame_4.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -279,30 +283,30 @@ class Ui_MainWindow(object):
         font.setWeight(75)
         self.label_33.setFont(font)
         self.label_33.setObjectName("label_33")
-        self.verticalLayout_16.addWidget(self.label_33, 0, QtCore.Qt.AlignHCenter)
+        self.verticalLayout_16.addWidget(self.label_33, 0,
+                                         QtCore.Qt.AlignHCenter)
         self.label_34 = QtWidgets.QLabel(self.frame_4)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_34.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label_34.sizePolicy().hasHeightForWidth())
         self.label_34.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setPointSize(13)
         self.label_34.setFont(font)
         self.label_34.setObjectName("label_34")
-        self.verticalLayout_16.addWidget(self.label_34, 0, QtCore.Qt.AlignHCenter)
+        self.verticalLayout_16.addWidget(self.label_34, 0,
+                                         QtCore.Qt.AlignHCenter)
         self.verticalLayout_2.addWidget(self.frame_4, 0, QtCore.Qt.AlignTop)
         self.frameProgress = QtWidgets.QFrame(self.scrollAreaWidgetContents)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.frameProgress.sizePolicy().hasHeightForWidth()
-        )
+            self.frameProgress.sizePolicy().hasHeightForWidth())
         self.frameProgress.setSizePolicy(sizePolicy)
         self.frameProgress.setFrameShape(QtWidgets.QFrame.Box)
         self.frameProgress.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -315,16 +319,17 @@ class Ui_MainWindow(object):
         font.setWeight(75)
         self.label_10.setFont(font)
         self.label_10.setObjectName("label_10")
-        self.verticalLayout_6.addWidget(self.label_10, 0, QtCore.Qt.AlignHCenter)
+        self.verticalLayout_6.addWidget(self.label_10, 0,
+                                        QtCore.Qt.AlignHCenter)
         self.horizontalLayout_11 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_11.setObjectName("horizontalLayout_11")
         self.label_4 = QtWidgets.QLabel(self.frameProgress)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                           QtWidgets.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_4.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label_4.sizePolicy().hasHeightForWidth())
         self.label_4.setSizePolicy(sizePolicy)
         self.label_4.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
         self.label_4.setObjectName("label_4")
@@ -335,19 +340,20 @@ class Ui_MainWindow(object):
         self.horizontalLayout_11.addWidget(self.progressBar)
         self.verticalLayout_6.addLayout(self.horizontalLayout_11)
         self.label_7 = QtWidgets.QLabel(self.frameProgress)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
+                                           QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.label_7.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.label_7.sizePolicy().hasHeightForWidth())
         self.label_7.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setBold(False)
         font.setWeight(50)
         self.label_7.setFont(font)
         self.label_7.setObjectName("label_7")
-        self.verticalLayout_6.addWidget(self.label_7, 0, QtCore.Qt.AlignHCenter)
+        self.verticalLayout_6.addWidget(self.label_7, 0,
+                                        QtCore.Qt.AlignHCenter)
         self.textEditConsole = QtWidgets.QTextEdit(self.frameProgress)
         self.textEditConsole.setAutoFillBackground(True)
         self.textEditConsole.setObjectName("textEditConsole")
@@ -365,14 +371,12 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.addWidget(self.pushButtonKillADB)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
         self.tabOptimizations = QtWidgets.QTabWidget(self.splitter)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
-        )
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                           QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(2)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(
-            self.tabOptimizations.sizePolicy().hasHeightForWidth()
-        )
+            self.tabOptimizations.sizePolicy().hasHeightForWidth())
         self.tabOptimizations.setSizePolicy(sizePolicy)
         self.tabOptimizations.setObjectName("tabOptimizations")
         self.tabResults = QtWidgets.QWidget()
@@ -388,9 +392,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_7.setObjectName("horizontalLayout_7")
         self.pushButtonDisplayResults = QtWidgets.QPushButton(self.tabResults)
         self.pushButtonDisplayResults.setObjectName("pushButtonDisplayResults")
-        self.horizontalLayout_7.addWidget(
-            self.pushButtonDisplayResults, 0, QtCore.Qt.AlignRight
-        )
+        self.horizontalLayout_7.addWidget(self.pushButtonDisplayResults, 0,
+                                          QtCore.Qt.AlignRight)
         self.verticalLayout_8.addLayout(self.horizontalLayout_7)
         self.tabOptimizations.addTab(self.tabResults, "")
         self.tab = QtWidgets.QWidget()
@@ -406,11 +409,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_12.setObjectName("horizontalLayout_12")
         self.pushButtonDisplayOptimizations = QtWidgets.QPushButton(self.tab)
         self.pushButtonDisplayOptimizations.setObjectName(
-            "pushButtonDisplayOptimizations"
-        )
-        self.horizontalLayout_12.addWidget(
-            self.pushButtonDisplayOptimizations, 0, QtCore.Qt.AlignRight
-        )
+            "pushButtonDisplayOptimizations")
+        self.horizontalLayout_12.addWidget(self.pushButtonDisplayOptimizations,
+                                           0, QtCore.Qt.AlignRight)
         self.verticalLayout_10.addLayout(self.horizontalLayout_12)
         self.tabOptimizations.addTab(self.tab, "")
         self.tabBinderLog = QtWidgets.QWidget()
@@ -425,8 +426,10 @@ class Ui_MainWindow(object):
         self.lineEdit_2 = QtWidgets.QLineEdit(self.tabBinderLog)
         self.lineEdit_2.setObjectName("lineEdit_2")
         self.horizontalLayout_10.addWidget(self.lineEdit_2)
-        self.pushButtonRunBinderFilter = QtWidgets.QPushButton(self.tabBinderLog)
-        self.pushButtonRunBinderFilter.setObjectName("pushButtonRunBinderFilter")
+        self.pushButtonRunBinderFilter = QtWidgets.QPushButton(
+            self.tabBinderLog)
+        self.pushButtonRunBinderFilter.setObjectName(
+            "pushButtonRunBinderFilter")
         self.horizontalLayout_10.addWidget(self.pushButtonRunBinderFilter)
         self.verticalLayout_7.addLayout(self.horizontalLayout_10)
         self.textBrowserBinderLog = QtWidgets.QTextBrowser(self.tabBinderLog)
@@ -434,11 +437,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_7.addWidget(self.textBrowserBinderLog)
         self.horizontalLayout_9 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
-        self.pushButtonDisplayBinderLog = QtWidgets.QPushButton(self.tabBinderLog)
-        self.pushButtonDisplayBinderLog.setObjectName("pushButtonDisplayBinderLog")
-        self.horizontalLayout_9.addWidget(
-            self.pushButtonDisplayBinderLog, 0, QtCore.Qt.AlignRight
-        )
+        self.pushButtonDisplayBinderLog = QtWidgets.QPushButton(
+            self.tabBinderLog)
+        self.pushButtonDisplayBinderLog.setObjectName(
+            "pushButtonDisplayBinderLog")
+        self.horizontalLayout_9.addWidget(self.pushButtonDisplayBinderLog, 0,
+                                          QtCore.Qt.AlignRight)
         self.verticalLayout_7.addLayout(self.horizontalLayout_9)
         self.tabOptimizations.addTab(self.tabBinderLog, "")
         self.tabGraph = QtWidgets.QWidget()
@@ -449,9 +453,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
         self.pushButtonDisplayGraph = QtWidgets.QPushButton(self.tabGraph)
         self.pushButtonDisplayGraph.setObjectName("pushButtonDisplayGraph")
-        self.horizontalLayout_13.addWidget(
-            self.pushButtonDisplayGraph, 0, QtCore.Qt.AlignRight
-        )
+        self.horizontalLayout_13.addWidget(self.pushButtonDisplayGraph, 0,
+                                           QtCore.Qt.AlignRight)
         self.verticalLayout_11.addLayout(self.horizontalLayout_13)
         self.tabOptimizations.addTab(self.tabGraph, "")
         self.horizontalLayout.addWidget(self.splitter)
@@ -459,7 +462,8 @@ class Ui_MainWindow(object):
         self.frameGovernorOptions.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.frameGovernorOptions.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frameGovernorOptions.setObjectName("frameGovernorOptions")
-        self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.frameGovernorOptions)
+        self.verticalLayout_12 = QtWidgets.QVBoxLayout(
+            self.frameGovernorOptions)
         self.verticalLayout_12.setObjectName("verticalLayout_12")
         self.label_11 = QtWidgets.QLabel(self.frameGovernorOptions)
         font = QtGui.QFont()
@@ -481,7 +485,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.label_13.setFont(font)
         self.label_13.setObjectName("label_13")
-        self.verticalLayout_15.addWidget(self.label_13, 0, QtCore.Qt.AlignHCenter)
+        self.verticalLayout_15.addWidget(self.label_13, 0,
+                                         QtCore.Qt.AlignHCenter)
         self.labelCurrentGovernor = QtWidgets.QLabel(self.frame_2)
         self.labelCurrentGovernor.setAutoFillBackground(False)
         self.labelCurrentGovernor.setFrameShape(QtWidgets.QFrame.Panel)
@@ -501,7 +506,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.label_12.setFont(font)
         self.label_12.setObjectName("label_12")
-        self.verticalLayout_17.addWidget(self.label_12, 0, QtCore.Qt.AlignHCenter)
+        self.verticalLayout_17.addWidget(self.label_12, 0,
+                                         QtCore.Qt.AlignHCenter)
         self.verticalLayoutGovernors = QtWidgets.QVBoxLayout()
         self.verticalLayoutGovernors.setObjectName("verticalLayoutGovernors")
         self.verticalLayout_17.addLayout(self.verticalLayoutGovernors)
@@ -528,7 +534,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.label_14.setFont(font)
         self.label_14.setObjectName("label_14")
-        self.verticalLayout_14.addWidget(self.label_14, 0, QtCore.Qt.AlignHCenter)
+        self.verticalLayout_14.addWidget(self.label_14, 0,
+                                         QtCore.Qt.AlignHCenter)
         self.label_20 = QtWidgets.QLabel(self.frame_3)
         font = QtGui.QFont()
         font.setUnderline(True)
@@ -560,25 +567,26 @@ class Ui_MainWindow(object):
         self.formLayout_2.setObjectName("formLayout_2")
         self.label_23 = QtWidgets.QLabel(self.frame_3)
         self.label_23.setObjectName("label_23")
-        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_23)
+        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.LabelRole,
+                                    self.label_23)
         self.lineEditLittleMinFreq = QtWidgets.QLineEdit(self.frame_3)
         self.lineEditLittleMinFreq.setObjectName("lineEditLittleMinFreq")
-        self.formLayout_2.setWidget(
-            0, QtWidgets.QFormLayout.FieldRole, self.lineEditLittleMinFreq
-        )
+        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.FieldRole,
+                                    self.lineEditLittleMinFreq)
         self.lineEditLittleMaxFreq = QtWidgets.QLineEdit(self.frame_3)
         self.lineEditLittleMaxFreq.setObjectName("lineEditLittleMaxFreq")
-        self.formLayout_2.setWidget(
-            1, QtWidgets.QFormLayout.FieldRole, self.lineEditLittleMaxFreq
-        )
+        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole,
+                                    self.lineEditLittleMaxFreq)
         self.label_25 = QtWidgets.QLabel(self.frame_3)
         self.label_25.setObjectName("label_25")
-        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_25)
+        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole,
+                                    self.label_25)
         self.verticalLayout_14.addLayout(self.formLayout_2)
         self.horizontalLayout_16 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_16.setObjectName("horizontalLayout_16")
         self.pushButtonResetLittleFreqs = QtWidgets.QPushButton(self.frame_3)
-        self.pushButtonResetLittleFreqs.setObjectName("pushButtonResetLittleFreqs")
+        self.pushButtonResetLittleFreqs.setObjectName(
+            "pushButtonResetLittleFreqs")
         self.horizontalLayout_16.addWidget(self.pushButtonResetLittleFreqs)
         self.pushButtonSetLittleFreqs = QtWidgets.QPushButton(self.frame_3)
         self.pushButtonSetLittleFreqs.setObjectName("pushButtonSetLittleFreqs")
@@ -624,20 +632,20 @@ class Ui_MainWindow(object):
         self.formLayout.setObjectName("formLayout")
         self.label_17 = QtWidgets.QLabel(self.frame_3)
         self.label_17.setObjectName("label_17")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_17)
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole,
+                                  self.label_17)
         self.lineEditBigMinFreq = QtWidgets.QLineEdit(self.frame_3)
         self.lineEditBigMinFreq.setObjectName("lineEditBigMinFreq")
-        self.formLayout.setWidget(
-            0, QtWidgets.QFormLayout.FieldRole, self.lineEditBigMinFreq
-        )
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole,
+                                  self.lineEditBigMinFreq)
         self.lineEditBigMaxFreq = QtWidgets.QLineEdit(self.frame_3)
         self.lineEditBigMaxFreq.setObjectName("lineEditBigMaxFreq")
-        self.formLayout.setWidget(
-            1, QtWidgets.QFormLayout.FieldRole, self.lineEditBigMaxFreq
-        )
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole,
+                                  self.lineEditBigMaxFreq)
         self.label_19 = QtWidgets.QLabel(self.frame_3)
         self.label_19.setObjectName("label_19")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_19)
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole,
+                                  self.label_19)
         self.verticalLayout_14.addLayout(self.formLayout)
         self.horizontalLayout_17 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_17.setObjectName("horizontalLayout_17")
@@ -648,7 +656,8 @@ class Ui_MainWindow(object):
         self.pushButtonSetBigFreqs.setObjectName("pushButtonSetBigFreqs")
         self.horizontalLayout_17.addWidget(self.pushButtonSetBigFreqs)
         self.verticalLayout_14.addLayout(self.horizontalLayout_17)
-        self.verticalLayout_12.addWidget(self.frame_3, 0, QtCore.Qt.AlignVCenter)
+        self.verticalLayout_12.addWidget(self.frame_3, 0,
+                                         QtCore.Qt.AlignVCenter)
         self.label_28 = QtWidgets.QLabel(self.frameGovernorOptions)
         font = QtGui.QFont()
         font.setBold(True)
@@ -679,7 +688,8 @@ class Ui_MainWindow(object):
         font.setBold(False)
         font.setWeight(50)
         self.checkBoxTestAutomationPrompt.setFont(font)
-        self.checkBoxTestAutomationPrompt.setObjectName("checkBoxTestAutomationPrompt")
+        self.checkBoxTestAutomationPrompt.setObjectName(
+            "checkBoxTestAutomationPrompt")
         self.verticalLayout_13.addWidget(self.checkBoxTestAutomationPrompt)
         self.formLayout_3 = QtWidgets.QFormLayout()
         self.formLayout_3.setObjectName("formLayout_3")
@@ -689,7 +699,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.label_29.setFont(font)
         self.label_29.setObjectName("label_29")
-        self.formLayout_3.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_29)
+        self.formLayout_3.setWidget(0, QtWidgets.QFormLayout.LabelRole,
+                                    self.label_29)
         self.spinBoxNoOfTests = QtWidgets.QSpinBox(self.frame_6)
         font = QtGui.QFont()
         font.setBold(False)
@@ -698,16 +709,16 @@ class Ui_MainWindow(object):
         self.spinBoxNoOfTests.setAlignment(QtCore.Qt.AlignCenter)
         self.spinBoxNoOfTests.setMinimum(2)
         self.spinBoxNoOfTests.setObjectName("spinBoxNoOfTests")
-        self.formLayout_3.setWidget(
-            0, QtWidgets.QFormLayout.FieldRole, self.spinBoxNoOfTests
-        )
+        self.formLayout_3.setWidget(0, QtWidgets.QFormLayout.FieldRole,
+                                    self.spinBoxNoOfTests)
         self.label_30 = QtWidgets.QLabel(self.frame_6)
         font = QtGui.QFont()
         font.setBold(False)
         font.setWeight(50)
         self.label_30.setFont(font)
         self.label_30.setObjectName("label_30")
-        self.formLayout_3.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_30)
+        self.formLayout_3.setWidget(2, QtWidgets.QFormLayout.LabelRole,
+                                    self.label_30)
         self.labelTestsCompleted = QtWidgets.QLabel(self.frame_6)
         font = QtGui.QFont()
         font.setBold(False)
@@ -716,16 +727,16 @@ class Ui_MainWindow(object):
         self.labelTestsCompleted.setFrameShape(QtWidgets.QFrame.Box)
         self.labelTestsCompleted.setAlignment(QtCore.Qt.AlignCenter)
         self.labelTestsCompleted.setObjectName("labelTestsCompleted")
-        self.formLayout_3.setWidget(
-            2, QtWidgets.QFormLayout.FieldRole, self.labelTestsCompleted
-        )
+        self.formLayout_3.setWidget(2, QtWidgets.QFormLayout.FieldRole,
+                                    self.labelTestsCompleted)
         self.label_31 = QtWidgets.QLabel(self.frame_6)
         font = QtGui.QFont()
         font.setBold(False)
         font.setWeight(50)
         self.label_31.setFont(font)
         self.label_31.setObjectName("label_31")
-        self.formLayout_3.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_31)
+        self.formLayout_3.setWidget(1, QtWidgets.QFormLayout.LabelRole,
+                                    self.label_31)
         self.spinBoxStartTestValue = QtWidgets.QSpinBox(self.frame_6)
         font = QtGui.QFont()
         font.setBold(False)
@@ -734,20 +745,19 @@ class Ui_MainWindow(object):
         self.spinBoxStartTestValue.setAlignment(QtCore.Qt.AlignCenter)
         self.spinBoxStartTestValue.setMinimum(1)
         self.spinBoxStartTestValue.setObjectName("spinBoxStartTestValue")
-        self.formLayout_3.setWidget(
-            1, QtWidgets.QFormLayout.FieldRole, self.spinBoxStartTestValue
-        )
+        self.formLayout_3.setWidget(1, QtWidgets.QFormLayout.FieldRole,
+                                    self.spinBoxStartTestValue)
         self.progressBarTestsCompleted = QtWidgets.QProgressBar(self.frame_6)
         self.progressBarTestsCompleted.setProperty("value", 0)
-        self.progressBarTestsCompleted.setObjectName("progressBarTestsCompleted")
-        self.formLayout_3.setWidget(
-            3, QtWidgets.QFormLayout.SpanningRole, self.progressBarTestsCompleted
-        )
+        self.progressBarTestsCompleted.setObjectName(
+            "progressBarTestsCompleted")
+        self.formLayout_3.setWidget(3, QtWidgets.QFormLayout.SpanningRole,
+                                    self.progressBarTestsCompleted)
         self.verticalLayout_13.addLayout(self.formLayout_3)
         self.verticalLayout_12.addWidget(self.frame_6)
         self.horizontalLayout.addWidget(
-            self.frameGovernorOptions, 0, QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop
-        )
+            self.frameGovernorOptions, 0,
+            QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1107, 19))
@@ -775,9 +785,8 @@ class Ui_MainWindow(object):
         self.actionQuit.setObjectName("actionQuit")
         self.actionAbout = QtWidgets.QAction(MainWindow)
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(
-            QtGui.QPixmap("../icons/about.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off
-        )
+        icon1.addPixmap(QtGui.QPixmap("../icons/about.png"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionAbout.setIcon(icon1)
         self.actionAbout.setObjectName("actionAbout")
         self.actionOpen_Graph = QtWidgets.QAction(MainWindow)
@@ -788,9 +797,8 @@ class Ui_MainWindow(object):
         self.actionOpenGraph.setObjectName("actionOpenGraph")
         self.actionOpenSettings = QtWidgets.QAction(MainWindow)
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(
-            QtGui.QPixmap("../icons/settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off
-        )
+        icon2.addPixmap(QtGui.QPixmap("../icons/settings.png"),
+                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionOpenSettings.setIcon(icon2)
         self.actionOpenSettings.setObjectName("actionOpenSettings")
         self.actionOpenBinderLog = QtWidgets.QAction(MainWindow)
@@ -801,9 +809,8 @@ class Ui_MainWindow(object):
         self.actionOpenResults.setObjectName("actionOpenResults")
         self.actionQuitProgram = QtWidgets.QAction(MainWindow)
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(
-            QtGui.QPixmap("../icons/quit.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off
-        )
+        icon3.addPixmap(QtGui.QPixmap("../icons/quit.png"), QtGui.QIcon.Normal,
+                        QtGui.QIcon.Off)
         self.actionQuitProgram.setIcon(icon3)
         self.actionQuitProgram.setObjectName("actionQuitProgram")
         self.menuFike.addSeparator()
@@ -823,65 +830,71 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Android Energy Debugger"))
+        MainWindow.setWindowTitle(
+            _translate("MainWindow", "Android Energy Debugger"))
         self.label_6.setText(_translate("MainWindow", "<b>Trace</b>"))
         self.label.setText(_translate("MainWindow", "Application:"))
         self.label_3.setText(_translate("MainWindow", "Trace Duration:"))
         self.checkBoxDrawGraph.setText(
-            _translate("MainWindow", "Draw Graph File (.dot)")
-        )
+            _translate("MainWindow", "Draw Graph File (.dot)"))
         self.label_5.setText(_translate("MainWindow", "<b>Events</b>"))
         self.checkBoxSyslogger.setText(_translate("MainWindow", "Syslogger"))
-        self.pushButtonEventReset.setText(_translate("MainWindow", "Default Events"))
+        self.pushButtonEventReset.setText(
+            _translate("MainWindow", "Default Events"))
         self.checkBoxWakeUp.setText(_translate("MainWindow", "Wake Up"))
-        self.checkBoxSchedSwitch.setText(_translate("MainWindow", "Sched Switch"))
+        self.checkBoxSchedSwitch.setText(
+            _translate("MainWindow", "Sched Switch"))
         self.checkBoxCPUIdle.setText(_translate("MainWindow", "CPU Idle"))
         self.checkBoxBinderTransaction.setText(
-            _translate("MainWindow", "Binder Transaction")
-        )
-        self.label_9.setText(_translate("MainWindow", "<b>Display Options</b>"))
+            _translate("MainWindow", "Binder Transaction"))
+        self.label_9.setText(_translate("MainWindow",
+                                        "<b>Display Options</b>"))
         self.checkBoxDisplayGraph.setText(_translate("MainWindow", "Graph"))
-        self.checkBoxDisplayResults.setText(_translate("MainWindow", "Results"))
-        self.checkBoxDisplayBinderLog.setText(_translate("MainWindow", "Binder Log"))
+        self.checkBoxDisplayResults.setText(_translate("MainWindow",
+                                                       "Results"))
+        self.checkBoxDisplayBinderLog.setText(
+            _translate("MainWindow", "Binder Log"))
         self.label_2.setText(_translate("MainWindow", "<b>Debug Options</b>"))
-        self.checkBoxEvents.setText(_translate("MainWindow", "Events to Process"))
-        self.checkBoxPreamble.setText(_translate("MainWindow", "Custom Preamble"))
-        self.checkBoxSubGraph.setText(_translate("MainWindow", "Draw Node Sub-graphs"))
+        self.checkBoxEvents.setText(
+            _translate("MainWindow", "Events to Process"))
+        self.checkBoxPreamble.setText(
+            _translate("MainWindow", "Custom Preamble"))
+        self.checkBoxSubGraph.setText(
+            _translate("MainWindow", "Draw Node Sub-graphs"))
         self.checkBoxSkipTracing.setText(
-            _translate("MainWindow", "Skip tracing (assumed previously done)")
-        )
+            _translate("MainWindow", "Skip tracing (assumed previously done)"))
         self.label_33.setText(_translate("MainWindow", "Status"))
         self.label_34.setText(_translate("MainWindow", "FINISHED"))
         self.label_10.setText(_translate("MainWindow", "Multithreading only"))
         self.label_4.setText(_translate("MainWindow", "Progress"))
         self.label_7.setText(_translate("MainWindow", "Console"))
         self.pushButtonRun.setText(_translate("MainWindow", "Run"))
-        self.pushButtonKillADB.setText(_translate("MainWindow", "Manually Kill ADB"))
+        self.pushButtonKillADB.setText(
+            _translate("MainWindow", "Manually Kill ADB"))
         self.pushButtonDisplayResults.setText(
-            _translate("MainWindow", "Display Results")
-        )
+            _translate("MainWindow", "Display Results"))
         self.tabOptimizations.setTabText(
             self.tabOptimizations.indexOf(self.tabResults),
             _translate("MainWindow", "Results"),
         )
         self.pushButtonDisplayOptimizations.setText(
-            _translate("MainWindow", "Display Optimizations")
-        )
+            _translate("MainWindow", "Display Optimizations"))
         self.tabOptimizations.setTabText(
             self.tabOptimizations.indexOf(self.tab),
             _translate("MainWindow", "Optimizations"),
         )
         self.label_8.setText(_translate("MainWindow", "Filter:"))
         self.lineEdit_2.setPlaceholderText(
-            _translate("MainWindow", "Search for lines containing....")
-        )
+            _translate("MainWindow", "Search for lines containing...."))
         self.pushButtonRunBinderFilter.setText(_translate("MainWindow", "Run"))
-        self.pushButtonDisplayBinderLog.setText(_translate("MainWindow", "Display Log"))
+        self.pushButtonDisplayBinderLog.setText(
+            _translate("MainWindow", "Display Log"))
         self.tabOptimizations.setTabText(
             self.tabOptimizations.indexOf(self.tabBinderLog),
             _translate("MainWindow", "Binder Log"),
         )
-        self.pushButtonDisplayGraph.setText(_translate("MainWindow", "Display Graph"))
+        self.pushButtonDisplayGraph.setText(
+            _translate("MainWindow", "Display Graph"))
         self.tabOptimizations.setTabText(
             self.tabOptimizations.indexOf(self.tabGraph),
             _translate("MainWindow", "Graph"),
@@ -900,7 +913,8 @@ class Ui_MainWindow(object):
         self.label_26.setText(_translate("MainWindow", "New"))
         self.label_23.setText(_translate("MainWindow", "Min Freq"))
         self.label_25.setText(_translate("MainWindow", "Max Freq"))
-        self.pushButtonResetLittleFreqs.setText(_translate("MainWindow", "Reset"))
+        self.pushButtonResetLittleFreqs.setText(
+            _translate("MainWindow", "Reset"))
         self.pushButtonSetLittleFreqs.setText(_translate("MainWindow", "Set"))
         self.label_15.setText(_translate("MainWindow", "big"))
         self.label_21.setText(_translate("MainWindow", "Current"))
@@ -915,11 +929,9 @@ class Ui_MainWindow(object):
         self.pushButtonSetBigFreqs.setText(_translate("MainWindow", "Set"))
         self.label_28.setText(_translate("MainWindow", "Test Automation"))
         self.checkBoxTestAutomation.setText(
-            _translate("MainWindow", "Use test automation")
-        )
+            _translate("MainWindow", "Use test automation"))
         self.checkBoxTestAutomationPrompt.setText(
-            _translate("MainWindow", "Prompt between tests")
-        )
+            _translate("MainWindow", "Prompt between tests"))
         self.label_29.setText(_translate("MainWindow", "Number of<br>tests"))
         self.label_30.setText(_translate("MainWindow", "Tests Completed"))
         self.labelTestsCompleted.setText(_translate("MainWindow", "0"))
@@ -936,8 +948,10 @@ class Ui_MainWindow(object):
         self.actionOpenGraph.setShortcut(_translate("MainWindow", "Ctrl+O"))
         self.actionOpenSettings.setText(_translate("MainWindow", "Settings"))
         self.actionOpenSettings.setShortcut(_translate("MainWindow", "Ctrl+S"))
-        self.actionOpenBinderLog.setText(_translate("MainWindow", "Open Binder Log"))
+        self.actionOpenBinderLog.setText(
+            _translate("MainWindow", "Open Binder Log"))
         self.actionOpenTrace.setText(_translate("MainWindow", "Open Trace"))
-        self.actionOpenResults.setText(_translate("MainWindow", "Open Results"))
+        self.actionOpenResults.setText(_translate("MainWindow",
+                                                  "Open Results"))
         self.actionQuitProgram.setText(_translate("MainWindow", "Quit"))
         self.actionQuitProgram.setShortcut(_translate("MainWindow", "Ctrl+Q"))

@@ -22,7 +22,6 @@ class TraceProcessor:
     then processing the stored trace events, compiling required metric histories and process branches as
     well as the final process tree.
     """
-
     def __init__(self, pidt, filename):
         """
         :param pidt: PID tool object that has all the PIDs relevant to the target application stored
@@ -32,15 +31,15 @@ class TraceProcessor:
         self.filename = filename
 
     def process_trace(
-        self,
-        progress_signal,
-        metrics,
-        tracecmd,
-        duration,
-        draw=None,
-        test=None,
-        subgraph=False,
-        subdir=None,
+            self,
+            progress_signal,
+            metrics,
+            tracecmd,
+            duration,
+            draw=None,
+            test=None,
+            subgraph=False,
+            subdir=None,
     ):
         """ There are a number of steps required in processing a given trace. This is outlined below.
 
@@ -80,24 +79,24 @@ class TraceProcessor:
             start_time = time.time()
             sys.stdout.write("Building temp trees")
             if len(tracecmd.temp_events):
-                metrics.sys_temp_history.initial_time = tracecmd.temp_events[0].time
-                metrics.sys_temp_history.end_time = tracecmd.temp_events[-1].time
+                metrics.sys_temp_history.initial_time = tracecmd.temp_events[
+                    0].time
+                metrics.sys_temp_history.end_time = tracecmd.temp_events[
+                    -1].time
             else:
                 raise Exception("No temp events")
 
             temp_history = []
             no_temp_events = len(tracecmd.temp_events)
             temp_history.append(
-                process_tree.handle_temp_event(tracecmd.temp_events[0], None)
-            )
+                process_tree.handle_temp_event(tracecmd.temp_events[0], None))
             for x in range(len(tracecmd.temp_events[1:])):
                 if progress_signal:
-                    progress_signal.emit((round(float(x) / no_temp_events * 100, 2)))
+                    progress_signal.emit(
+                        (round(float(x) / no_temp_events * 100, 2)))
                 temp_history.append(
-                    process_tree.handle_temp_event(
-                        tracecmd.temp_events[x + 1], tracecmd.temp_events[x]
-                    )
-                )
+                    process_tree.handle_temp_event(tracecmd.temp_events[x + 1],
+                                                   tracecmd.temp_events[x]))
             if progress_signal:
                 progress_signal.emit(100)
             metrics.sys_temp_history.temps = np.block(temp_history)
@@ -112,11 +111,13 @@ class TraceProcessor:
             sys.stdout.write("Building utilization trees")
             for x, event in enumerate(tracecmd.idle_events):
                 if progress_signal:
-                    progress_signal.emit(round(float(x) / no_idle_events * 100, 2))
+                    progress_signal.emit(
+                        round(float(x) / no_idle_events * 100, 2))
                 process_tree.handle_idle_event(event)
             if progress_signal:
                 progress_signal.emit(100)
-            print(" --- COMPLETED in {} seconds".format(time.time() - start_time))
+            print(" --- COMPLETED in {} seconds".format(time.time() -
+                                                        start_time))
         except Exception, e:
             print("Error building utilization trees: %s" % e)
             return
@@ -127,9 +128,9 @@ class TraceProcessor:
             sys.stdout.write("Processing %d events" % num_events)
 
             # TODO does it matter if the first event is a mali event?
-            metrics.sys_util_history.gpu.init(
-                trace_start_time, trace_finish_time, metrics.current_gpu_util
-            )
+            metrics.sys_util_history.gpu.init(trace_start_time,
+                                              trace_finish_time,
+                                              metrics.current_gpu_util)
         except Exception, e:
             print("Error initializing GPU util: %s" % e)
             return
@@ -138,10 +139,8 @@ class TraceProcessor:
             error_event = 0
             if test:
                 for x, event in enumerate(tracecmd.processed_events[:test]):
-                    if (
-                        progress_signal
-                        and trace_start_time <= event.time <= trace_finish_time
-                    ):
+                    if (progress_signal and trace_start_time <= event.time <=
+                            trace_finish_time):
                         progress_signal.emit(round(float(x) / test * 100, 2))
                     try:
                         if process_tree.handle_event(event, subgraph):
@@ -152,11 +151,10 @@ class TraceProcessor:
                         raise Exception(e)
             else:
                 for x, event in enumerate(tracecmd.processed_events):
-                    if (
-                        progress_signal
-                        and trace_start_time <= event.time <= trace_finish_time
-                    ):
-                        progress_signal.emit(round(float(x) / num_events * 100, 2))
+                    if (progress_signal and trace_start_time <= event.time <=
+                            trace_finish_time):
+                        progress_signal.emit(
+                            round(float(x) / num_events * 100, 2))
                     try:
                         if process_tree.handle_event(event, subgraph):
                             break
@@ -167,11 +165,10 @@ class TraceProcessor:
             if progress_signal:
                 progress_signal.emit(100)
             print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
-            print(
-                " ------ Sched switch events in %s seconds"
-                % process_tree.sched_switch_time
-            )
-            print(" ------ Binder events in %s seconds" % process_tree.binder_time)
+            print(" ------ Sched switch events in %s seconds" %
+                  process_tree.sched_switch_time)
+            print(" ------ Binder events in %s seconds" %
+                  process_tree.binder_time)
             print(" ------ Freq events in %s seconds" % process_tree.freq_time)
         except Exception, e:
             print("Error processing event {}: {}".format(error_event, e))
@@ -180,13 +177,14 @@ class TraceProcessor:
         try:
             start_time = time.time()
             sys.stdout.write("Finishing process tree")
-            optimizations_found = process_tree.finish_tree(self.filename, subdir)
-            print(" --- COMPLETED in {} seconds".format(time.time() - start_time))
+            optimizations_found = process_tree.finish_tree(
+                self.filename, subdir)
+            print(" --- COMPLETED in {} seconds".format(time.time() -
+                                                        start_time))
             print(
-                "Found {} B2L realloc, {} DVFS, {} Intra-cluster realloc, {} DVFS after realloc".format(
-                    optimizations_found[0], optimizations_found[1], optimizations_found[2], optimizations_found[3]
-                )
-            )
+                "Found {} B2L realloc, {} DVFS, {} Intra-cluster realloc, {} DVFS after realloc"
+                .format(optimizations_found[0], optimizations_found[1],
+                        optimizations_found[2], optimizations_found[3]))
         except Exception, e:
             print("Error finishing tree: %s" % e)
             return
@@ -198,7 +196,5 @@ class TraceProcessor:
             draw_graph.draw_graph()
             print(" --- COMPLETED in %s seconds" % (time.time() - start_time))
 
-        print(
-            "** Processing finished in %s seconds **"
-            % (time.time() - process_start_time)
-        )
+        print("** Processing finished in %s seconds **" %
+              (time.time() - process_start_time))

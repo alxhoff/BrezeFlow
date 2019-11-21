@@ -21,7 +21,6 @@ class EnergyDuration:
     """
     A class to return energy sums from tasks
     """
-
     def __init__(self):
         self.energy = [0.0, 0.0]
         self.duration = 0
@@ -33,7 +32,6 @@ class ProcessBranch:
     each task being comprised of jobs/slices (time spend executing thread between a wake and
     sleep event).
     """
-
     def __init__(self, pid, pname, tname, start, graph, pidtracer, cpus, gpu):
 
         self.pid = pid
@@ -161,13 +159,13 @@ class ProcessBranch:
 
         for task in self.tasks:
             # Task that falls at starting point
-            if (task.start_time < start_time) and (task.finish_time > start_time):
+            if (task.start_time < start_time) and (task.finish_time >
+                                                   start_time):
 
                 try:
-                    energy_delta = [
-                        ((task.finish_time - start_time) / task.duration * component)
-                        for component in task.energy
-                    ]
+                    energy_delta = [((task.finish_time - start_time) /
+                                     task.duration * component)
+                                    for component in task.energy]
                     for i in range(len(tasks_stats.energy)):
                         tasks_stats.energy[i] += energy_delta[i]
 
@@ -176,13 +174,13 @@ class ProcessBranch:
                 except ZeroDivisionError:
                     continue
             # Task that falls at the ending of the second
-            elif (task.start_time <= finish_time) and (task.finish_time > finish_time):
+            elif (task.start_time <= finish_time) and (task.finish_time >
+                                                       finish_time):
 
                 try:
-                    energy_delta = [
-                        ((finish_time - task.start_time) / task.duration * component)
-                        for component in task.energy
-                    ]
+                    energy_delta = [((finish_time - task.start_time) /
+                                     task.duration * component)
+                                    for component in task.energy]
                     for i in range(len(tasks_stats.energy)):
                         tasks_stats.energy[i] += energy_delta[i]
 
@@ -191,7 +189,8 @@ class ProcessBranch:
                 except ZeroDivisionError:
                     continue
             # Middle events
-            elif (task.start_time >= start_time) and (task.finish_time <= finish_time):
+            elif (task.start_time >= start_time) and (task.finish_time <=
+                                                      finish_time):
 
                 for i in range(len(tasks_stats.energy)):
                     tasks_stats.energy[i] += task.energy[i]
@@ -207,15 +206,12 @@ class ProcessBranch:
     def get_optimization_timeline(self, start_us, interval_count, interval_us):
         finish_time = start_us + (interval_count * interval_us)
         # [DVFS,Task realloc]
-        optimizations_timeline = np.full(interval_count * 2, [0]).reshape(
-            interval_count, 2
-        )
+        optimizations_timeline = np.full(interval_count * 2,
+                                         [0]).reshape(interval_count, 2)
 
         for task in self.tasks:
-            if (
-                start_us < task.start_time
-                and task.start_time + task.duration <= finish_time
-            ):
+            if (start_us < task.start_time
+                    and task.start_time + task.duration <= finish_time):
                 index = int(round((task.start_time - start_us) / interval_us))
                 if task.optimization_info.dvfs_possible():
                     optimizations_timeline[index][1] += 1
@@ -265,16 +261,16 @@ class ProcessBranch:
                     toi = self.tasks[-1]
                     toi.add_event(event, subgraph=subgraph)  ##
                     toi.finish()
-                    utils_g = (
-                        "{}% ".format(round(k[1], 2)) for k in enumerate(toi.util)
-                    )
+                    utils_g = ("{}% ".format(round(k[1], 2))
+                               for k in enumerate(toi.util))
                     utils = ""
                     for entry in utils_g:
                         utils += str(entry)
                     label = (
                         "{}.{} ==> {}.{}\nPID: {}\nCPU: {} @ {} Hz\nUtil: {}\nTemp: {}\nGPU: {}Hz Util {}% "
                         "\n Duration: {} CPU Cycles: {}\nEnergy: {};{}\n Dependency: {} Dependent: #{} "
-                        "\nProc: '{}'\nThread: '{}'\nNode Type: {} ID: #{}".format(
+                        "\nProc: '{}'\nThread: '{}'\nNode Type: {} ID: #{}".
+                        format(
                             str(toi.start_time)[:-6],
                             str(toi.start_time)[-6:],
                             str(toi.finish_time)[:-6],
@@ -292,14 +288,12 @@ class ProcessBranch:
                             toi.energy[0],
                             toi.dependency.type,
                             toi.dependency.prev_task.id
-                            if toi.dependency.prev_task
-                            else "None",
+                            if toi.dependency.prev_task else "None",
                             self.pname,
                             self.tname,
                             toi.__class__.__name__,
                             toi.id,
-                        )
-                    )
+                        ))
 
                     self.graph.add_node(
                         self.tasks[-1],
@@ -340,9 +334,8 @@ class ProcessBranch:
                 self.tasks[-1].add_event(event, subgraph=subgraph)
                 self.active = True
 
-                if (
-                    len(self.tasks) >= 2
-                ):  # Connecting task in the same PID branch for visual aid
+                if (len(self.tasks) >= 2
+                    ):  # Connecting task in the same PID branch for visual aid
                     self.graph.add_edge(
                         self.tasks[-2],
                         self.tasks[-1],
@@ -354,8 +347,7 @@ class ProcessBranch:
 
                     # Create dependency from current task to calling task
                     if not self.tasks[
-                        -1
-                    ].dependency.prev_task:  # If not already set because of a Binder dependency
+                            -1].dependency.prev_task:  # If not already set because of a Binder dependency
                         self.tasks[-1].dependency.prev_task = self.tasks[-2]
 
                     # Create dependency from calling task to current task
@@ -366,7 +358,8 @@ class ProcessBranch:
 
         elif event_type == JobType.BINDER_SEND:
 
-            self.binder_tasks.append(BinderNode(self.graph, self.pid, self.tname))
+            self.binder_tasks.append(
+                BinderNode(self.graph, self.pid, self.tname))
             self.binder_tasks[-1].add_event(event, subgraph=subgraph)
 
             return
@@ -388,9 +381,11 @@ class ProcessBranch:
                 str(btoi.__class__.__name__),
                 btoi.id,
             )
-            self.graph.add_node(
-                btoi, label=label, fillcolor="coral", style="filled,bold", shape="box"
-            )
+            self.graph.add_node(btoi,
+                                label=label,
+                                fillcolor="coral",
+                                style="filled,bold",
+                                shape="box")
 
             return
 

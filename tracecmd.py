@@ -21,7 +21,6 @@
 from functools import update_wrapper
 from ctracecmd import *
 from UserDict import DictMixin
-
 """
 Python interface to the tracecmd library for parsing ftrace traces
 
@@ -62,7 +61,6 @@ class Event(object, DictMixin):
     This class can be used to access event data
     according to an event's record and format.
     """
-
     def __init__(self, pevent, record, format):
         self._pevent = pevent
         self._record = record
@@ -119,7 +117,8 @@ class Event(object, DictMixin):
         f = pevent_find_any_field(self._format, name)
         if f is None:
             return None
-        ret, val = pevent_read_number_field(f, pevent_record_data_get(self._record))
+        ret, val = pevent_read_number_field(
+            f, pevent_record_data_get(self._record))
         if ret:
             return None
         return val
@@ -131,7 +130,8 @@ class Event(object, DictMixin):
         return py_field_get_str(f, self._record)
 
     def stack_field(self, long_size):
-        return py_field_get_stack(self._pevent, self._record, self._format, long_size)
+        return py_field_get_stack(self._pevent, self._record, self._format,
+                                  long_size)
 
 
 class TraceSeq(object):
@@ -158,8 +158,7 @@ class Field(object):
 
     def __long__(self):
         ret, val = pevent_read_number_field(
-            self._field, pevent_record_data_get(self._record)
-        )
+            self._field, pevent_record_data_get(self._record))
         if ret:
             raise FieldError("Not a number field")
         return val
@@ -181,7 +180,8 @@ class PEvent(object):
         def l(s, r, e):
             return self._handler(callback, s, r, e)
 
-        py_pevent_register_event_handler(self._pevent, -1, subsys, event_name, l)
+        py_pevent_register_event_handler(self._pevent, -1, subsys, event_name,
+                                         l)
 
     @cached_property
     def file_endian(self):
@@ -201,7 +201,6 @@ class Trace(object):
     The Trace object aggregates the tracecmd structures and functions that are
     used to manage the trace and extract events from it.
     """
-
     def __init__(self, filename):
         self._handle = tracecmd_alloc(filename)
 

@@ -26,9 +26,10 @@ class OptimizationInfoType(Enum):
 
 
 class OptimizationInfo:
-    def __init__(
-        self, graph_node, optim_type=OptimizationInfoType.NONE.value, message=""
-    ):
+    def __init__(self,
+                 graph_node,
+                 optim_type=OptimizationInfoType.NONE.value,
+                 message=""):
 
         self.ID = 0
         self.graph_node = graph_node
@@ -57,7 +58,6 @@ class OptimizationInfo:
             if ret != "":
                 ret += ", "
             ret += "DVFS possible after reallocation"
-
 
         return ret
 
