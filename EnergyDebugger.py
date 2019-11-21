@@ -706,7 +706,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                         self.changed_test_count.emit(
                             str(x - test_start_value + 1))
                         self.changed_test_progress.emit(
-                            round(float(x + 1) / float(no_of_tests) * 100))
+                            round(
+                                float(x - test_start_value + 1) /
+                                float(no_of_tests) * 100))
                     except Exception, e:
                         print("test failed, retrying")
                         x -= 1
