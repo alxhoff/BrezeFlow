@@ -10,6 +10,8 @@ __status__ = "Beta"
 
 import re
 import time
+import sys
+import os
 
 
 class PID:
@@ -28,22 +30,29 @@ class PIDTool:
     """
     def __init__(self, adb_device, name):
 
-        self.adb_device = adb_device
-        self.name = name
-        main_pid = self._find_main_pid()
-        if main_pid is None:
-            print("Failed to find main PID for given application: {}".format(
-                name))
-            raise Exception("Valid application not given")
-        else:
-            print("---- Main PID found --- %d" % main_pid.pid)
-            self.app_pids = dict()
-            self.app_pids[main_pid.pid] = main_pid
-            self.app_pids[0] = PID(0, "idle_proc", "idle_thread")
-            self.system_pids = dict()
-            self.binder_pids = dict()
+        try:
+            self.adb_device = adb_device
+            self.name = name
+            main_pid = self._find_main_pid()
+            if main_pid is None:
+                print(
+                    "Failed to find main PID for given application: {}".format(
+                        name))
+                raise Exception("Valid application not given")
+            else:
+                print("---- Main PID found --- %d" % main_pid.pid)
+                self.app_pids = dict()
+                self.app_pids[main_pid.pid] = main_pid
+                self.app_pids[0] = PID(0, "idle_proc", "idle_thread")
+                self.system_pids = dict()
+                self.binder_pids = dict()
 
-            self._find_all_pid()
+                self._find_all_pid()
+        except Exception, e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            raise Exception("PIDTool __init__: " + str(e))
 
     def _find_all_pid(self):
 

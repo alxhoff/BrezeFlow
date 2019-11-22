@@ -759,31 +759,31 @@ class ProcessTree:
                                 style="bold",
                             )
 
-                        except IndexError:
-                            pass  # Calling task has no nodes yet to link
-
-                        # Switch in new pid which will find pending completed binder transaction and create a
-                        # new task node
-                        self.process_branches[
-                            pending_binder_node.target_pid].add_event(
-                                event,
-                                event_type=JobType.SCHED_SWITCH_IN,
-                                subgraph=subgraph)
-
-                        self.graph.add_edge(  # Edge from binder node to next task
-                            self.binder_branches[
-                                pending_binder_node.binder_thread].
-                            binder_tasks[-1],
+                            # Switch in new pid which will find pending completed binder transaction and create a
+                            # new task node
                             self.process_branches[
-                                pending_binder_node.target_pid].tasks[-1],
-                            color="yellow3",
-                            dir="forward",
-                        )
+                                pending_binder_node.target_pid].add_event(
+                                    event,
+                                    event_type=JobType.SCHED_SWITCH_IN,
+                                    subgraph=subgraph)
 
-                        # Create dependency
-                        self.process_branches[
-                            pending_binder_node.target_pid].tasks[
-                                -1].dependency.type = DependencyType.BINDER  ##
+                            self.graph.add_edge(  # Edge from binder node to next task
+                                self.binder_branches[
+                                    pending_binder_node.binder_thread].
+                                binder_tasks[-1],
+                                self.process_branches[
+                                    pending_binder_node.target_pid].tasks[-1],
+                                color="yellow3",
+                                dir="forward",
+                            )
+
+                            # Create dependency
+                            self.process_branches[
+                                pending_binder_node.target_pid].tasks[
+                                    -1].dependency.type = DependencyType.BINDER
+
+                        except IndexError:
+                            pass  # Calling task has no nodes yet to link, tracing started during transaction
 
                         if (pending_binder_node.target_pid ==
                                 pending_binder_node.caller_pid
@@ -806,19 +806,21 @@ class ProcessTree:
                                 pass
 
                         else:
-                            # Create dependency from current task to calling task
-                            self.process_branches[
-                                pending_binder_node.target_pid].tasks[
-                                    -1].dependency.prev_task = self.process_branches[
-                                        pending_binder_node.
-                                        caller_pid].tasks[-1]
+                            if self.process_branches[
+                                    pending_binder_node.caller_pid].tasks[-1]:
+                                # Create dependency from current task to calling task
+                                self.process_branches[
+                                    pending_binder_node.target_pid].tasks[
+                                        -1].dependency.prev_task = self.process_branches[
+                                            pending_binder_node.
+                                            caller_pid].tasks[-1]
 
-                            # Create dependency from calling task to current task
-                            self.process_branches[
-                                pending_binder_node.caller_pid].tasks[
-                                    -1].dependency.next_task = self.process_branches[
-                                        pending_binder_node.
-                                        target_pid].tasks[-1]
+                                # Create dependency from calling task to current task
+                                self.process_branches[
+                                    pending_binder_node.caller_pid].tasks[
+                                        -1].dependency.next_task = self.process_branches[
+                                            pending_binder_node.
+                                            target_pid].tasks[-1]
 
                         # remove binder task that is now complete
                         del self.completed_binder_calls[x]
