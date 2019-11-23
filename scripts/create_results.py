@@ -2,10 +2,12 @@
 
 import argparse
 import os
+import math
 import csv
 import array
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 
 # Compiles results from a folder containing the results from various apps into
 # a single file with the results all desplayed in a single table
@@ -70,50 +72,50 @@ gov_count = len(governors)
 
 n_groups = app_count
 
-fig, ax = plt.subplots()
-
 #indicies
 index = np.arange(n_groups)
 bar_width = 0.15
 opacity = 0.8
 
-B2L_realloc = 0
-DVFS = 1
-Realloc_in_cluster = 2
-DVFS_after_realloc = 3
+titles = ['Big To Little Reallocations', 'DVFS Misdecisions', 'Intra-Cluster Reallocations', 'DVFS After Reallocations']
 
-#dvfs graph
-x_coords = []
-
-colors = ['b', 'g', 'r', 'y']
-
-y_max = 0
 y_top_margin = 0.2
+colors = ['0', '0.25', '0.5', '0.75']
 
-for x, gov in enumerate(governors):
-    bars = []
-    if x:
-        x_coords.append([x + bar_width for x in x_coords[x - 1]])
-    else:
-        x_coords.append(index)
+plots = []
 
-    for app in app_names:
-        dvfs_val = int(apps[app][gov][DVFS])
-        if dvfs_val > y_max:
-            y_max = dvfs_val
-        bars.append(dvfs_val)
+matplotlib.rcParams['font.serif'] = 'Times New Roman'
 
-    plt.bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
+fig, ax = plt.subplots(
+    2,
+    2,
+    sharex='col',
+)
+fig.subplots_adjust(hspace=0.3, wspace=0.3)
+#figure axes
+#TODO
 
-plt.xlabel('Applications')
-plt.ylabel('Missdecision Count')
+for i in range(2):
+    for j in range(2):
+        x_coords = []
+        y_max = 0
 
-plt.title('DVFS Missdevisions')
+        for x, gov in enumerate(governors):
+            bars = []
+            if x:
+                x_coords.append([x + bar_width for x in x_coords[x - 1]])
+            else:
+                x_coords.append(index)
 
-y_max *= (1 + y_top_margin)
-plt.yticks(np.arange(0, int(round(y_max)), step=20000))
-plt.xticks(index + bar_width, app_names)
-plt.legend()
+            for app in app_names:
+                dvfs_val = int(apps[app][gov][i + j])
+                if dvfs_val > y_max:
+                    y_max = dvfs_val
+                bars.append(dvfs_val)
 
-plt.tight_layout()
+            ax[i, j].bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
+            ax[i, j].set(title=titles[i + j], xticks=index + 1.5 * bar_width, xticklabels=app_names)
+
+fig.legend(labels=governors, ncol=len(governors), loc="lower center", borderaxespad=0.5, frameon=False)
+fig.savefig('result_fig.png', dpi=300, format='png')
 plt.show()

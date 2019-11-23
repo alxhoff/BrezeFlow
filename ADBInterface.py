@@ -47,8 +47,9 @@ class ADBInterface:
         regex_line = re.findall(r"([0-9]+).+process\.media", re_line)
 
         if len(regex_line):
-            self.command("kill {}".format(regex_line[0]))
-            print("killed media proc: {}".format(regex_line[0]))
+            for line in regex_line:
+                self.command("kill {}".format(line))
+                print("killed media proc: {}".format(line))
 
 
     def command(self, command):
