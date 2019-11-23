@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os.path as op
+import re
 
 from adb import adb_commands
 from adb import sign_m2crypto
@@ -29,11 +30,26 @@ class ADBInterface:
             op.expanduser("~/.android/adbkey"))
         self.device = adb_commands.AdbCommands()
         self.device.ConnectDevice(rsa_keys=[signer])
-        ADBInterface.current_interface = self
+        # ADBInterface.current_interface = self
+        self.kill_media()
 
     def __del__(self):
         self.current_interface = None
         self.device.Close()
+
+    # Used for a bug in Lineage OS 7.1 where the media service consumes all network memory, causing ADB errors and
+    # killing the tool
+    def kill_media(self):
+        re_line = self.command("busybox top -n 1 | grep process.media")
+
+        re_line.splitlines()
+
+        regex_line = re.findall(r"([0-9]+).+process\.media", re_line)
+
+        if len(regex_line):
+            self.command("kill {}".format(regex_line[0]))
+            print("killed media proc: {}".format(regex_line[0]))
+
 
     def command(self, command):
         """ Executes a command on the target device.

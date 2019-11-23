@@ -307,6 +307,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.setupUi(self)
         self.show()
 
+        self.buttonkilladb()
+
         self.setupbuttons()
         self.setupmenu()
 
@@ -363,14 +365,14 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
         # Governor control
         self.governorRadioButtons = []
-        try:
-            self.adb = ADBInterface()
-        except Exception, e:
-            print("Could not open an ADB connection to device")
-            self.close()
-            sys.exit()
+        # try:
+        #     self.adb = ADBInterface()
+        # except Exception, e:
+        #     print("Could not open an ADB connection to device")
+        #     self.close()
+        #     sys.exit()
 
-        self.governor_controller = GovernorController(self.adb)
+        self.governor_controller = GovernorController()
         self.governor = self.setup_governors()
 
     def __del__(self):
@@ -681,7 +683,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                                test_start_value + no_of_tests):
                     try:
                         buttonrunprocess(
-                            self.adb,
                             self.application_name,
                             self.governor,
                             self.duration,
@@ -726,7 +727,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                             print("Could not terminate current debug task")
                             return
                     self.debug_task = QDebuggerThread(
-                        self.adb,
                         self.application_name,
                         self.governor,
                         self.duration,
@@ -755,7 +755,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                     proc = multiprocessing.Process(
                         target=buttonrunprocess,
                         args=(
-                            self.adb,
                             self.application_name,
                             self.governor,
                             self.duration,
@@ -778,7 +777,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                             textWritten=self.normal_output_written)
                 else:
                     buttonrunprocess(
-                        self.adb,
                         self.application_name,
                         self.governor,
                         self.duration,
@@ -801,7 +799,6 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
 
 
 def buttonrunprocess(
-        adb,
         application_name,
         governor,
         duration,
@@ -818,7 +815,6 @@ def buttonrunprocess(
 
     try:
         current_debugger = EnergyDebugger(
-            adb=adb,
             application=application_name,
             governor=governor,
             duration=duration,
@@ -845,7 +841,6 @@ class QDebuggerThread(QThread):
 
     def __init__(
             self,
-            adb,
             application_name,
             governor,
             duration,
@@ -858,7 +853,6 @@ class QDebuggerThread(QThread):
             open_func,
     ):
         QThread.__init__(self)
-        self.adb = adb
         self.application_name = application_name
         self.governor = governor
         self.duration = duration
@@ -872,7 +866,6 @@ class QDebuggerThread(QThread):
 
     def run(self):
         buttonrunprocess(
-            self.adb,
             self.application_name,
             self.governor,
             self.duration,
@@ -904,7 +897,6 @@ class CommandInterface:
 class EnergyDebugger:
     def __init__(
             self,
-            adb,
             application,
             governor,
             duration,
@@ -917,7 +909,7 @@ class EnergyDebugger:
             progress_signal,
             results_subdir,
     ):
-        self.adb = adb
+        self.adb = ADBInterface()
         self.application = application
         self.governor = governor
         self.duration = duration

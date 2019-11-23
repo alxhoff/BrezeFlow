@@ -28,7 +28,7 @@ def writerEmptyRow(writer):
 def writeResultsHeader(writer, governor, application):
     writer.writerow(["Governor: {}".format(governor), "Application: {}".format(application)])
     writerEmptyRow(writer)
-    writer.writerow(["Optimizations", "B2L Reallocations", "DVFS", "Realloc in cluster", "DVFS after realloc"])
+    writer.writerow(["B2L Reallocations", "DVFS", "Realloc in cluster", "DVFS after realloc"])
 
 
 def findOptimizationsRow(filepath):
