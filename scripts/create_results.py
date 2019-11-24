@@ -14,7 +14,12 @@ import matplotlib
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-f", "--folder", required=True, type=str, help="Relative location to the folder where results can be found")
+parser.add_argument(
+    "-f",
+    "--folder",
+    required=True,
+    type=str,
+    help="Relative location to the folder where results can be found")
 
 args = parser.parse_args()
 
@@ -50,20 +55,22 @@ for directory, subdirectory, files in os.walk(input_dir):
                     current_governor = gov_dir
                     apps[current_app][current_governor] = []
                     # find compiled file
-                    for dxx, sdxx, fx in os.walk(os.path.join(dx, current_governor)):
+                    for dxx, sdxx, fx in os.walk(
+                            os.path.join(dx, current_governor)):
                         for f in fx:
                             if "compiled" in f:
                                 with open(os.path.join(dxx, f)) as fl:
                                     reader = csv.reader(fl, delimiter=",")
                                     for i, row in enumerate(reader):
                                         if i == 3:
-                                            apps[current_app][current_governor] = row[0:4]
+                                            apps[current_app][
+                                                current_governor] = row[0:5]
 
         for name in app_names:
             writer.writerow([name])
             for gov in governors:
                 res = apps[name][gov]
-                writer.writerow([gov, res[0], res[1], res[2], res[3]])
+                writer.writerow([gov, res[0], res[1], res[2], res[3], res[4]])
             writer.writerow([])
 
 # Bar graph
@@ -77,7 +84,10 @@ index = np.arange(n_groups)
 bar_width = 0.15
 opacity = 0.8
 
-titles = ['Big To Little Reallocations', 'DVFS Misdecisions', 'Intra-Cluster Reallocations', 'DVFS After Reallocations']
+titles = [
+    'Big To Little Reallocations', 'DVFS Misdecisions',
+    'Intra-Cluster Reallocations', 'DVFS After Reallocations'
+]
 
 y_top_margin = 0.2
 colors = ['0', '0.25', '0.5', '0.75']
@@ -86,15 +96,11 @@ plots = []
 
 matplotlib.rcParams['font.serif'] = 'Times New Roman'
 
-fig, ax = plt.subplots(
-    2,
-    2,
-    sharex='col',
-)
+fig, ax = plt.subplots(2, 2, sharex='col')
 fig.subplots_adjust(hspace=0.3, wspace=0.3)
 #figure axes
 #TODO
-
+count = 0
 for i in range(2):
     for j in range(2):
         x_coords = []
@@ -108,14 +114,57 @@ for i in range(2):
                 x_coords.append(index)
 
             for app in app_names:
-                dvfs_val = int(apps[app][gov][i + j])
+                dvfs_val = int(apps[app][gov][count])
                 if dvfs_val > y_max:
                     y_max = dvfs_val
                 bars.append(dvfs_val)
 
-            ax[i, j].bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
-            ax[i, j].set(title=titles[i + j], xticks=index + 1.5 * bar_width, xticklabels=app_names)
+            ax[i, j].bar(x_coords[x],
+                         bars,
+                         bar_width,
+                         alpha=opacity,
+                         color=colors[x],
+                         label=gov)
+            ax[i, j].set(title=titles[count],
+                         xticks=index + 1.5 * bar_width,
+                         xticklabels=app_names)
 
-fig.legend(labels=governors, ncol=len(governors), loc="lower center", borderaxespad=0.5, frameon=False)
+        count += 1
+
+fig.legend(labels=governors,
+           ncol=len(governors),
+           loc="lower center",
+           borderaxespad=0.5,
+           frameon=False)
 fig.savefig('result_fig.png', dpi=300, format='png')
+
+fig2, ax2 = plt.subplots()
+
+x_coords = []
+ymax = 0
+
+for x, gov in enumerate(governors):
+    bars = []
+
+    if x:
+        x_coords.append([x + bar_width for x in x_coords[x - 1]])
+    else:
+        x_coords.append(index)
+
+    for app in app_names:
+        dvfs_val = int(apps[app][gov][4])
+        if dvfs_val > y_max:
+            y_max = dvfs_val
+        bars.append(dvfs_val)
+
+    ax2.bar(x_coords[x],
+            bars,
+            bar_width,
+            alpha=opacity,
+            color=colors[x],
+            label=gov)
+    ax2.set(title='Total Misdecisions',
+            xticks=index + 1.5 * bar_width,
+            xticklabels=app_names)
+
 plt.show()

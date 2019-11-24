@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1107</width>
-    <height>821</height>
+    <height>838</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1122,7 +1122,10 @@
                <set>Qt::AlignCenter</set>
               </property>
               <property name="minimum">
-               <number>2</number>
+               <number>1</number>
+              </property>
+              <property name="value">
+               <number>1</number>
               </property>
              </widget>
             </item>

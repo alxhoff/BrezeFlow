@@ -364,22 +364,20 @@ class Ui_DialogSettings(object):
                        "Use UI Console<br>Only usable with mutlithreading"))
         self.checkBoxUseUIConsole.setText(
             _translate("DialogSettings", "Enabled (restart required)"))
-        self.toolBox.setItemText(
-            self.toolBox.indexOf(self.pageApp),
-            _translate("DialogSettings", "Application"),
-        )
+        self.toolBox.setItemText(self.toolBox.indexOf(self.pageApp),
+                                 _translate("DialogSettings", "Application"))
         self.label_6.setText(_translate("DialogSettings", "Flags"))
         self.checkBoxTraceThreads.setToolTip(
             _translate(
                 "DialogSettings",
-                "can be specified to disable tracing of threads (runtime and CPU asignment), and therefore to minimize overhead when only wanting to trace e.g. power consumption",
+                "can be specified to disable tracing of threads (runtime and CPU asignment), and therefore to minimize overhead when only wanting to trace e.g. power consumption"
             ))
         self.checkBoxTraceThreads.setText(
             _translate("DialogSettings", "Trace Threads"))
         self.checkBoxChromeGovernor.setToolTip(
             _translate(
                 "DialogSettings",
-                "instructs trace-cmd to also enable and trace tracepoints implemented by the chrome governor",
+                "instructs trace-cmd to also enable and trace tracepoints implemented by the chrome governor"
             ))
         self.checkBoxChromeGovernor.setText(
             _translate("DialogSettings", "Chrome Governor"))
@@ -425,8 +423,7 @@ class Ui_DialogSettings(object):
         self.checkBoxCPUFrequency.setToolTip(
             _translate(
                 "DialogSettings",
-                "Log CPU frequency for each first CPU in a policy group",
-            ))
+                "Log CPU frequency for each first CPU in a policy group"))
         self.checkBoxCPUFrequency.setText(
             _translate("DialogSettings", "CPU Frequency"))
         self.checkBoxPower.setToolTip(
@@ -446,7 +443,5 @@ class Ui_DialogSettings(object):
             _translate("DialogSettings", "Log network interface rx/tx stats"))
         self.checkBoxNetwork.setText(
             _translate("DialogSettings", "Network Rx/Tx"))
-        self.toolBox.setItemText(
-            self.toolBox.indexOf(self.pageSyslogger),
-            _translate("DialogSettings", "Syslogger"),
-        )
+        self.toolBox.setItemText(self.toolBox.indexOf(self.pageSyslogger),
+                                 _translate("DialogSettings", "Syslogger"))

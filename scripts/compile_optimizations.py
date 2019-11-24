@@ -8,9 +8,21 @@ import os
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-f", "--folder", required=True, type=str, help="Specify folder where results can be found")
-parser.add_argument("-a", "--application", required=True, type=str, help="Spcifies the applications name")
-parser.add_argument("-g", "--governor", required=True, type=str, help="Specifies the governor used in the test")
+parser.add_argument("-f",
+                    "--folder",
+                    required=True,
+                    type=str,
+                    help="Specify folder where results can be found")
+parser.add_argument("-a",
+                    "--application",
+                    required=True,
+                    type=str,
+                    help="Spcifies the applications name")
+parser.add_argument("-g",
+                    "--governor",
+                    required=True,
+                    type=str,
+                    help="Specifies the governor used in the test")
 
 args = parser.parse_args()
 
@@ -26,9 +38,14 @@ def writerEmptyRow(writer):
 
 
 def writeResultsHeader(writer, governor, application):
-    writer.writerow(["Governor: {}".format(governor), "Application: {}".format(application)])
+    writer.writerow([
+        "Governor: {}".format(governor), "Application: {}".format(application)
+    ])
     writerEmptyRow(writer)
-    writer.writerow(["B2L Reallocations", "DVFS", "Realloc in cluster", "DVFS after realloc", "Total"])
+    writer.writerow([
+        "B2L Reallocations", "DVFS", "Realloc in cluster",
+        "DVFS after realloc", "Total"
+    ])
 
 
 def findOptimizationsRow(filepath):
@@ -57,24 +74,31 @@ def getResults():
             for d, s, f in os.walk(os.path.join(directory, sd)):
                 for r_file in f:
                     if "results" in r_file:
+                        print("{} : {}".format(sd, d))
                         test = os.path.join(d, r_file)
                         res = findOptimizationsRow(test)
+                        res_count += 1
                         if (len(res) != 4):
-                            raise Exception("File {} failed to process".format(test))
+                            raise Exception(
+                                "File {} failed to process".format(test))
                         else:
+                            print("{}".format(res))
                             for i in range(len(res)):
                                 results[i] += int(res[i])
-                                res_count += 1
 
+    total = 0
     for i in range(len(results)):
-        results[i] /= res_count
+        results[i] = int(round(results[i] / res_count))
+        total += results[i]
+
+    results.append(total)
+    print("Total: {}, {}, {}, {} : {}".format(results[0], results[1],
+                                              results[2], results[3],
+                                              results[4]))
     return results
 
 
-try:
-    results = getResults()
-except Exception as e:
-    print(e)
+r = getResults()
 
 output_file = os.path.join(folder, "compiled.csv")
 
@@ -82,4 +106,4 @@ with open(output_file, mode="w+") as f:
     fw = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
 
     writeResultsHeader(fw, governor, application)
-    fw.writerow(results)
+    fw.writerow(r)

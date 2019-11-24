@@ -12,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1107, 821)
+        MainWindow.resize(1107, 838)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
@@ -707,7 +707,8 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         self.spinBoxNoOfTests.setFont(font)
         self.spinBoxNoOfTests.setAlignment(QtCore.Qt.AlignCenter)
-        self.spinBoxNoOfTests.setMinimum(2)
+        self.spinBoxNoOfTests.setMinimum(1)
+        self.spinBoxNoOfTests.setProperty("value", 1)
         self.spinBoxNoOfTests.setObjectName("spinBoxNoOfTests")
         self.formLayout_3.setWidget(0, QtWidgets.QFormLayout.FieldRole,
                                     self.spinBoxNoOfTests)
@@ -772,11 +773,8 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.actionSettings = QtWidgets.QAction(MainWindow)
         icon = QtGui.QIcon()
-        icon.addPixmap(
-            QtGui.QPixmap("../../../../.designer/icons/quit.png"),
-            QtGui.QIcon.Normal,
-            QtGui.QIcon.Off,
-        )
+        icon.addPixmap(QtGui.QPixmap("../../../../.designer/icons/quit.png"),
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionSettings.setIcon(icon)
         self.actionSettings.setObjectName("actionSettings")
         self.actionQuit = QtWidgets.QAction(MainWindow)
@@ -875,14 +873,12 @@ class Ui_MainWindow(object):
             _translate("MainWindow", "Display Results"))
         self.tabOptimizations.setTabText(
             self.tabOptimizations.indexOf(self.tabResults),
-            _translate("MainWindow", "Results"),
-        )
+            _translate("MainWindow", "Results"))
         self.pushButtonDisplayOptimizations.setText(
             _translate("MainWindow", "Display Optimizations"))
         self.tabOptimizations.setTabText(
             self.tabOptimizations.indexOf(self.tab),
-            _translate("MainWindow", "Optimizations"),
-        )
+            _translate("MainWindow", "Optimizations"))
         self.label_8.setText(_translate("MainWindow", "Filter:"))
         self.lineEdit_2.setPlaceholderText(
             _translate("MainWindow", "Search for lines containing...."))
@@ -891,14 +887,12 @@ class Ui_MainWindow(object):
             _translate("MainWindow", "Display Log"))
         self.tabOptimizations.setTabText(
             self.tabOptimizations.indexOf(self.tabBinderLog),
-            _translate("MainWindow", "Binder Log"),
-        )
+            _translate("MainWindow", "Binder Log"))
         self.pushButtonDisplayGraph.setText(
             _translate("MainWindow", "Display Graph"))
         self.tabOptimizations.setTabText(
             self.tabOptimizations.indexOf(self.tabGraph),
-            _translate("MainWindow", "Graph"),
-        )
+            _translate("MainWindow", "Graph"))
         self.label_11.setText(_translate("MainWindow", "Governor Options"))
         self.label_13.setText(_translate("MainWindow", "Current Governor"))
         self.labelCurrentGovernor.setText(_translate("MainWindow", "None"))

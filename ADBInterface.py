@@ -39,9 +39,6 @@ class ADBInterface:
 
     def kill_media(self):
         self.kill_proc("process.media")
-        self.kill_proc("search")
-        self.kill_proc("chrome")
-        self.kill_proc("gapps")
 
     # Used for a bug in Lineage OS 7.1 where the media service consumes all network memory, causing ADB errors and
     # killing the tool
@@ -55,8 +52,7 @@ class ADBInterface:
         if len(regex_line):
             for line in regex_line:
                 self.command("kill {}".format(line))
-                print("killed media proc: {}".format(line))
-
+                print("killed {} proc: {}".format(proc, line))
 
     def command(self, command):
         """ Executes a command on the target device.
