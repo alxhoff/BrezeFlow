@@ -37,10 +37,16 @@ class ADBInterface:
         self.current_interface = None
         self.device.Close()
 
+    def kill_media(self):
+        self.kill_proc("process.media")
+        self.kill_proc("search")
+        self.kill_proc("chrome")
+        self.kill_proc("gapps")
+
     # Used for a bug in Lineage OS 7.1 where the media service consumes all network memory, causing ADB errors and
     # killing the tool
-    def kill_media(self):
-        re_line = self.command("busybox top -n 1 | grep process.media")
+    def kill_proc(self, proc):
+        re_line = self.command("busybox top -n 1 | grep {}".format(proc))
 
         re_line.splitlines()
 
@@ -101,6 +107,7 @@ class ADBInterface:
         :param dest_filename: File path and name, relative to working directory, where the pulled file
         should be stored
         """
+        self.kill_media()
         f = open(dest_filename, "wb+")
         f.write(self.device.Pull(target_file))
         f.close()

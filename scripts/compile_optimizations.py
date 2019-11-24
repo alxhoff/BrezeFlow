@@ -28,7 +28,7 @@ def writerEmptyRow(writer):
 def writeResultsHeader(writer, governor, application):
     writer.writerow(["Governor: {}".format(governor), "Application: {}".format(application)])
     writerEmptyRow(writer)
-    writer.writerow(["B2L Reallocations", "DVFS", "Realloc in cluster", "DVFS after realloc"])
+    writer.writerow(["B2L Reallocations", "DVFS", "Realloc in cluster", "DVFS after realloc", "Total"])
 
 
 def findOptimizationsRow(filepath):
@@ -50,6 +50,7 @@ def findOptimizationsRow(filepath):
 
 
 def getResults():
+    res_count = 0
     results = [0, 0, 0, 0]
     for directory, subdirectory, files in os.walk(input_dir):
         for sd in subdirectory:
@@ -63,7 +64,10 @@ def getResults():
                         else:
                             for i in range(len(res)):
                                 results[i] += int(res[i])
+                                res_count += 1
 
+    for i in range(len(results)):
+        results[i] /= res_count
     return results
 
 
