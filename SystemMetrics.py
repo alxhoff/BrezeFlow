@@ -393,7 +393,8 @@ class SystemMetrics:
             sys.exit(1)
 
     def _get_core_count(self):
-        return int(self.adb.command("nproc"))
+        return 8
+        # return int(self.adb.command("nproc")) #TODO
 
     def _get_core_freqs(self):
         frequencies = []

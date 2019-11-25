@@ -14,12 +14,7 @@ import matplotlib
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument(
-    "-f",
-    "--folder",
-    required=True,
-    type=str,
-    help="Relative location to the folder where results can be found")
+parser.add_argument("-f", "--folder", required=True, type=str, help="Relative location to the folder where results can be found")
 
 args = parser.parse_args()
 
@@ -55,16 +50,14 @@ for directory, subdirectory, files in os.walk(input_dir):
                     current_governor = gov_dir
                     apps[current_app][current_governor] = []
                     # find compiled file
-                    for dxx, sdxx, fx in os.walk(
-                            os.path.join(dx, current_governor)):
+                    for dxx, sdxx, fx in os.walk(os.path.join(dx, current_governor)):
                         for f in fx:
                             if "compiled" in f:
                                 with open(os.path.join(dxx, f)) as fl:
                                     reader = csv.reader(fl, delimiter=",")
                                     for i, row in enumerate(reader):
                                         if i == 3:
-                                            apps[current_app][
-                                                current_governor] = row[0:5]
+                                            apps[current_app][current_governor] = row[0:5]
 
         for name in app_names:
             writer.writerow([name])
@@ -84,15 +77,10 @@ index = np.arange(n_groups)
 bar_width = 0.15
 opacity = 0.8
 
-titles = [
-    'Big To Little Reallocations', 'DVFS Misdecisions',
-    'Intra-Cluster Reallocations', 'DVFS After Reallocations'
-]
+titles = ['Big To Little Reallocations', 'DVFS Misdecisions', 'Intra-Cluster Reallocations', 'DVFS After Reallocations']
 
 y_top_margin = 0.2
 colors = ['0', '0.25', '0.5', '0.75']
-
-plots = []
 
 matplotlib.rcParams['font.serif'] = 'Times New Roman'
 
@@ -119,23 +107,18 @@ for i in range(2):
                     y_max = dvfs_val
                 bars.append(dvfs_val)
 
-            ax[i, j].bar(x_coords[x],
-                         bars,
-                         bar_width,
-                         alpha=opacity,
-                         color=colors[x],
-                         label=gov)
-            ax[i, j].set(title=titles[count],
-                         xticks=index + 1.5 * bar_width,
-                         xticklabels=app_names)
+            ax[i, j].bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
+            ax[i, j].tick_params('x', labelrotation=30)
+            ax[i, j].set(
+                title=titles[count],
+                xticks=index + 1.5 * bar_width,
+            )
+            #  xticklabels=app_names,
+            ax[i, j].set_xticklabels(labels=app_names, horizontalalignment='right')
 
         count += 1
 
-fig.legend(labels=governors,
-           ncol=len(governors),
-           loc="lower center",
-           borderaxespad=0.5,
-           frameon=False)
+fig.legend(labels=governors, ncol=len(governors), loc="lower center", borderaxespad=0.5, frameon=False)
 fig.savefig('result_fig.png', dpi=300, format='png')
 
 fig2, ax2 = plt.subplots()
@@ -157,14 +140,9 @@ for x, gov in enumerate(governors):
             y_max = dvfs_val
         bars.append(dvfs_val)
 
-    ax2.bar(x_coords[x],
-            bars,
-            bar_width,
-            alpha=opacity,
-            color=colors[x],
-            label=gov)
-    ax2.set(title='Total Misdecisions',
-            xticks=index + 1.5 * bar_width,
-            xticklabels=app_names)
+    ax2.bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
+    ax2.set(title='Total Misdecisions', xticks=index + 1.5 * bar_width, xticklabels=app_names)
+
+fig2.savefig('totals_fig.png', dpi=300, format='png')
 
 plt.show()

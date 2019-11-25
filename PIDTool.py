@@ -76,6 +76,7 @@ class PIDTool:
         :return: PID object of the main process for the target application
         """
         if pid is None:
+
             res = self.adb_device.command("ps | grep " + self.name)
         else:
             res = self.adb_device.command("ps | grep " + pid)

@@ -70,6 +70,9 @@ class TraceProcessor:
 
         process_tree = ProcessTree(self.pidt, metrics)
         trace_start_time = tracecmd.processed_events[0].time
+        if len(tracecmd.idle_events) == 0:
+            raise Exception("No idle events to process")
+
         if tracecmd.idle_events[0].time < trace_start_time:
             trace_start_time = tracecmd.idle_events[0].time
         if tracecmd.temp_events[0].time < trace_start_time:

@@ -8,21 +8,9 @@ import os
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("-f",
-                    "--folder",
-                    required=True,
-                    type=str,
-                    help="Specify folder where results can be found")
-parser.add_argument("-a",
-                    "--application",
-                    required=True,
-                    type=str,
-                    help="Spcifies the applications name")
-parser.add_argument("-g",
-                    "--governor",
-                    required=True,
-                    type=str,
-                    help="Specifies the governor used in the test")
+parser.add_argument("-f", "--folder", required=True, type=str, help="Specify folder where results can be found")
+parser.add_argument("-a", "--application", required=True, type=str, help="Spcifies the applications name")
+parser.add_argument("-g", "--governor", required=True, type=str, help="Specifies the governor used in the test")
 
 args = parser.parse_args()
 
@@ -38,14 +26,9 @@ def writerEmptyRow(writer):
 
 
 def writeResultsHeader(writer, governor, application):
-    writer.writerow([
-        "Governor: {}".format(governor), "Application: {}".format(application)
-    ])
+    writer.writerow(["Governor: {}".format(governor), "Application: {}".format(application)])
     writerEmptyRow(writer)
-    writer.writerow([
-        "B2L Reallocations", "DVFS", "Realloc in cluster",
-        "DVFS after realloc", "Total"
-    ])
+    writer.writerow(["B2L Reallocations", "DVFS", "Realloc in cluster", "DVFS after realloc", "Total"])
 
 
 def findOptimizationsRow(filepath):
@@ -66,7 +49,11 @@ def findOptimizationsRow(filepath):
                 pass
 
 
+tests = []
+
+
 def getResults():
+    global tests
     res_count = 0
     results = [0, 0, 0, 0]
     for directory, subdirectory, files in os.walk(input_dir):
@@ -74,15 +61,13 @@ def getResults():
             for d, s, f in os.walk(os.path.join(directory, sd)):
                 for r_file in f:
                     if "results" in r_file:
-                        print("{} : {}".format(sd, d))
                         test = os.path.join(d, r_file)
                         res = findOptimizationsRow(test)
                         res_count += 1
                         if (len(res) != 4):
-                            raise Exception(
-                                "File {} failed to process".format(test))
+                            raise Exception("File {} failed to process".format(test))
                         else:
-                            print("{}".format(res))
+                            tests.append(res)
                             for i in range(len(res)):
                                 results[i] += int(res[i])
 
@@ -92,9 +77,7 @@ def getResults():
         total += results[i]
 
     results.append(total)
-    print("Total: {}, {}, {}, {} : {}".format(results[0], results[1],
-                                              results[2], results[3],
-                                              results[4]))
+    print("Total: {}, {}, {}, {} : {}".format(results[0], results[1], results[2], results[3], results[4]))
     return results
 
 
@@ -107,3 +90,8 @@ with open(output_file, mode="w+") as f:
 
     writeResultsHeader(fw, governor, application)
     fw.writerow(r)
+    fw.writerow([])
+    fw.writerow(["Individual tests"])
+
+    for i, test in enumerate(tests):
+        fw.writerow([i + 1, test[0], test[1], test[2], test[3]])
