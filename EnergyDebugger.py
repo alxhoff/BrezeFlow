@@ -374,7 +374,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         #     sys.exit()
 
         self.governor_controller = GovernorController()
-        self.governor = self.setup_governors()
+        self.governor = self.setup_governors()[0]
 
     def __del__(self):
         sys.stdout = sys.__stdout__
@@ -393,14 +393,15 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         governors = self.governor_controller.get_governors()
         current_governor = self.governor_controller.get_current_governor()
 
-        self.labelCurrentGovernor.setText(str(current_governor))
+        self.labelCurrentLittleGovernor.setText(str(current_governor[0]))
+        self.labelCurrentBigGovernor.setText(str(current_governor[1]))
 
         for governor in governors:
             rb = QRadioButton(governor)
 
             self.governorRadioButtons.append(rb)
 
-            if governor == current_governor:
+            if governor == current_governor[0]:
                 rb.setChecked(True)
             else:
                 rb.setChecked(False)
@@ -464,7 +465,8 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 break
 
         self.governor_controller.set_governor(new_governor)
-        self.labelCurrentGovernor.setText(new_governor)
+        self.labelCurrentLittleGovernor.setText(new_governor)
+        self.labelCurrentBigGovernor.setText(new_governor)
         self.governor = str(new_governor)
 
     def console(self):
@@ -687,7 +689,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                                test_start_value + no_of_tests):
                     try:
                         buttonrunprocess(self.application_name,
-                                         self.governor,
+                                         self.governor[0],
                                          self.duration,
                                          self.events,
                                          self.events_to_process,
@@ -698,7 +700,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                                          progress_signal=self.changed_progress,
                                          open_func=self.openallresults,
                                          subdir=self.application_name + "/" +
-                                         self.governor + "/" + str(x) + "/",
+                                         self.governor[0] + "/" + str(x) + "/",
                                          pid=self.pid)
                         if self.checkBoxTestAutomationPrompt.isChecked():
                             QMessageBox.information(
@@ -731,7 +733,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                             return
                     self.debug_task = QDebuggerThread(
                         self.application_name,
-                        self.governor,
+                        self.governor[0],
                         self.duration,
                         self.events,
                         self.events_to_process,
@@ -759,7 +761,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                         target=buttonrunprocess,
                         args=(
                             self.application_name,
-                            self.governor,
+                            self.governor[0],
                             self.duration,
                             self.events,
                             self.events_to_process,
@@ -781,7 +783,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 else:
                     buttonrunprocess(
                         self.application_name,
-                        self.governor,
+                        self.governor[0],
                         self.duration,
                         self.events,
                         self.events_to_process,

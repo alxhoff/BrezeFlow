@@ -737,7 +737,7 @@
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_15">
-          <item alignment="Qt::AlignHCenter">
+          <item>
            <widget class="QLabel" name="label_13">
             <property name="font">
              <font>
@@ -751,7 +751,40 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="labelCurrentGovernor">
+           <widget class="QLabel" name="label_36">
+            <property name="text">
+             <string>LITTLE</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelCurrentLittleGovernor">
+            <property name="autoFillBackground">
+             <bool>false</bool>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::Panel</enum>
+            </property>
+            <property name="text">
+             <string>None</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+            <property name="margin">
+             <number>5</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_37">
+            <property name="text">
+             <string>big</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelCurrentBigGovernor">
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>

@@ -108,12 +108,12 @@ for i in range(2):
                 bars.append(dvfs_val)
 
             ax[i, j].bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
-            ax[i, j].tick_params('x', labelrotation=30)
             ax[i, j].set(
                 title=titles[count],
                 xticks=index + 1.5 * bar_width,
             )
             #  xticklabels=app_names,
+            ax[i, j].tick_params('x', labelrotation=30)
             ax[i, j].set_xticklabels(labels=app_names, horizontalalignment='right')
 
         count += 1
@@ -142,7 +142,10 @@ for x, gov in enumerate(governors):
 
     ax2.bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
     ax2.set(title='Total Misdecisions', xticks=index + 1.5 * bar_width, xticklabels=app_names)
+    ax2.tick_params('x', labelrotation=30)
+    ax2.set_xticklabels(labels=app_names, horizontalalignment='right')
 
+fig2.legend(loc='lower center', frameon=False, ncol=len(governors))
 fig2.savefig('totals_fig.png', dpi=300, format='png')
 
 plt.show()

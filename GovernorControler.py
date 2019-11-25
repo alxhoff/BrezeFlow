@@ -26,11 +26,16 @@ class GovernorController:
         ).split()
 
     def get_current_governor(self):
+        governors = ["",""]
         adb = ADBInterface()
 
-        return adb.command(
+        governors[0] = adb.command(
             "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor").split(
             )[0]
+        governors[1] = adb.command(
+                "cat /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor").split(
+                )[0]
+        return governors
 
     def set_governor(self, governor):
         adb = ADBInterface()
@@ -38,6 +43,9 @@ class GovernorController:
         adb.command(
             "echo {} > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor".
             format(governor))
+        adb.command(
+                "echo {} > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor".
+                    format(governor))
 
     def get_min_freq(self, cpu):
         adb = ADBInterface()
