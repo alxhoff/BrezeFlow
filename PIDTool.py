@@ -28,12 +28,14 @@ class PIDTool:
     """ Probes the target system using ps and grep to extract all relevant threads to bother the target
     application, system services and binder threads.
     """
-    def __init__(self, adb_device, name):
+    def __init__(self, adb_device, name, pid=None):
 
         try:
             self.adb_device = adb_device
             self.name = name
-            main_pid = self._find_main_pid()
+
+            main_pid = self._find_main_pid(pid)
+
             if main_pid is None:
                 print(
                     "Failed to find main PID for given application: {}".format(
@@ -68,13 +70,15 @@ class PIDTool:
         self._find_binder_pids()
         print("---- Found Binder PIDs --- %s Sec" % (time.time() - start_time))
 
-    def _find_main_pid(self):
+    def _find_main_pid(self, pid=None):
         """ Will find the parent PID of the target application.
 
         :return: PID object of the main process for the target application
         """
-
-        res = self.adb_device.command("ps | grep " + self.name)
+        if pid is None:
+            res = self.adb_device.command("ps | grep " + self.name)
+        else:
+            res = self.adb_device.command("ps | grep " + pid)
         if res == "":
             return None
 

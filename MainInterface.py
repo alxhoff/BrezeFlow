@@ -39,7 +39,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 283, 762))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 283, 792))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(
             self.scrollAreaWidgetContents)
@@ -79,6 +79,15 @@ class Ui_MainWindow(object):
         self.lineEditApplicationName.setObjectName("lineEditApplicationName")
         self.horizontalLayout_3.addWidget(self.lineEditApplicationName)
         self.verticalLayout_5.addLayout(self.horizontalLayout_3)
+        self.horizontalLayout_14 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_14.setObjectName("horizontalLayout_14")
+        self.label_35 = QtWidgets.QLabel(self.frameTraceOptions)
+        self.label_35.setObjectName("label_35")
+        self.horizontalLayout_14.addWidget(self.label_35)
+        self.lineEditAppPID = QtWidgets.QLineEdit(self.frameTraceOptions)
+        self.lineEditAppPID.setObjectName("lineEditAppPID")
+        self.horizontalLayout_14.addWidget(self.lineEditAppPID)
+        self.verticalLayout_5.addLayout(self.horizontalLayout_14)
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_4.setSizeConstraint(
             QtWidgets.QLayout.SetNoConstraint)
@@ -832,6 +841,9 @@ class Ui_MainWindow(object):
             _translate("MainWindow", "Android Energy Debugger"))
         self.label_6.setText(_translate("MainWindow", "<b>Trace</b>"))
         self.label.setText(_translate("MainWindow", "Application:"))
+        self.label_35.setText(_translate("MainWindow", "Manual PID"))
+        self.lineEditAppPID.setPlaceholderText(
+            _translate("MainWindow", "Input PID for hard-to-find apps"))
         self.label_3.setText(_translate("MainWindow", "Trace Duration:"))
         self.checkBoxDrawGraph.setText(
             _translate("MainWindow", "Draw Graph File (.dot)"))

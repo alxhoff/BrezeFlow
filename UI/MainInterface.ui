@@ -51,7 +51,7 @@
              <x>0</x>
              <y>0</y>
              <width>283</width>
-             <height>762</height>
+             <height>792</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -97,6 +97,24 @@
                  </item>
                  <item>
                   <widget class="QLineEdit" name="lineEditApplicationName"/>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_14">
+                 <item>
+                  <widget class="QLabel" name="label_35">
+                   <property name="text">
+                    <string>Manual PID</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="lineEditAppPID">
+                   <property name="placeholderText">
+                    <string>Input PID for hard-to-find apps</string>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>

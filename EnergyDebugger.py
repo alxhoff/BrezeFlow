@@ -362,6 +362,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.graph = False
         self.subgraph = False
         self.skip_tracing = False
+        self.pid = None
 
         # Governor control
         self.governorRadioButtons = []
@@ -649,6 +650,9 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         try:
             self.checkrun()
 
+            if self.lineEditAppPID.text() != "":
+                self.pid = self.lineEditAppPID.text()
+
             self.application_name = self.lineEditApplicationName.text()
             self.duration = self.doubleSpinBoxDuration.value()
             self.events = []
@@ -682,21 +686,20 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                 for x in range(test_start_value,
                                test_start_value + no_of_tests):
                     try:
-                        buttonrunprocess(
-                            self.application_name,
-                            self.governor,
-                            self.duration,
-                            self.events,
-                            self.events_to_process,
-                            self.preamble,
-                            self.subgraph,
-                            self.graph,
-                            self.skip_tracing,
-                            progress_signal=self.changed_progress,
-                            open_func=self.openallresults,
-                            subdir=self.application_name + "/" +
-                            self.governor + "/" + str(x) + "/",
-                        )
+                        buttonrunprocess(self.application_name,
+                                         self.governor,
+                                         self.duration,
+                                         self.events,
+                                         self.events_to_process,
+                                         self.preamble,
+                                         self.subgraph,
+                                         self.graph,
+                                         self.skip_tracing,
+                                         progress_signal=self.changed_progress,
+                                         open_func=self.openallresults,
+                                         subdir=self.application_name + "/" +
+                                         self.governor + "/" + str(x) + "/",
+                                         pid=self.pid)
                         if self.checkBoxTestAutomationPrompt.isChecked():
                             QMessageBox.information(
                                 self,
@@ -811,22 +814,22 @@ def buttonrunprocess(
         progress_signal=None,
         open_func=None,
         subdir=None,
+        pid=None,
 ):
 
     try:
-        current_debugger = EnergyDebugger(
-            application=application_name,
-            governor=governor,
-            duration=duration,
-            events=events,
-            event_count=events_to_process,
-            preamble=preamble,
-            graph=graph,
-            subgraph=subgraph,
-            skip_tracing=skip_tracing,
-            progress_signal=progress_signal,
-            results_subdir=subdir,
-        )
+        current_debugger = EnergyDebugger(application=application_name,
+                                          governor=governor,
+                                          duration=duration,
+                                          events=events,
+                                          event_count=events_to_process,
+                                          preamble=preamble,
+                                          graph=graph,
+                                          subgraph=subgraph,
+                                          skip_tracing=skip_tracing,
+                                          progress_signal=progress_signal,
+                                          results_subdir=subdir,
+                                          pid=pid)
         current_debugger.run()
         if open_func is not None:
             open_func(subdir)
@@ -895,20 +898,19 @@ class CommandInterface:
 
 
 class EnergyDebugger:
-    def __init__(
-            self,
-            application,
-            governor,
-            duration,
-            events,
-            event_count,
-            preamble,
-            graph,
-            subgraph,
-            skip_tracing,
-            progress_signal,
-            results_subdir,
-    ):
+    def __init__(self,
+                 application,
+                 governor,
+                 duration,
+                 events,
+                 event_count,
+                 preamble,
+                 graph,
+                 subgraph,
+                 skip_tracing,
+                 progress_signal,
+                 results_subdir,
+                 pid=None):
         self.adb = ADBInterface()
         self.application = application
         self.governor = governor
@@ -922,13 +924,14 @@ class EnergyDebugger:
         self.skip_tracing = skip_tracing
         self.progress_signal = progress_signal
         self.results_subdir = results_subdir
+        self.pid = pid
         """ Required objects for tracking system metrics and interfacing with a target system, connected
         via an ADB connection.
         """
 
         start_time = time.time()
         try:
-            self.pid_tool = PIDTool(self.adb, self.application)
+            self.pid_tool = PIDTool(self.adb, self.application, self.pid)
         except Exception, e:
             raise Exception("Trace failed: {}".format(e))
         print("PIDs gathered --- %s Sec" % (time.time() - start_time))
