@@ -6,10 +6,10 @@
 RESULTS_DIR=$1
 for D in $RESULTS_DIR*/; do
     if [ -d "${D}" ]; then
-        APP=`basename $D`
+        APP=$(basename $D)
         for dir in $D*/; do
             if [ -d "${dir}" ]; then
-                GOVERNOR=`basename $dir`
+                GOVERNOR=$(basename $dir)
                 COMMAND="python compile_optimizations.py -f $dir -a $APP -g $GOVERNOR"
                 echo $COMMAND
                 eval $COMMAND

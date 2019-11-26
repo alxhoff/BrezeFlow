@@ -68,6 +68,9 @@ for directory, subdirectory, files in os.walk(input_dir):
 
 # Bar graph
 app_count = len(app_names)
+xlabels = []
+for app in app_names:
+    xlabels.append(app.replace("_", " "))
 gov_count = len(governors)
 
 n_groups = app_count
@@ -84,8 +87,9 @@ colors = ['0', '0.25', '0.5', '0.75']
 
 matplotlib.rcParams['font.serif'] = 'Times New Roman'
 
-fig, ax = plt.subplots(2, 2, sharex='col')
-fig.subplots_adjust(hspace=0.3, wspace=0.3)
+fig, ax = plt.subplots(2, 2)
+fig.set_size_inches(8, 6)
+fig.subplots_adjust(hspace=0.6, wspace=-1)
 #figure axes
 #TODO
 count = 0
@@ -108,20 +112,27 @@ for i in range(2):
                 bars.append(dvfs_val)
 
             ax[i, j].bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
+            ax[i, j].set_ylabel('Misdecisions (count/15ms)')
             ax[i, j].set(
                 title=titles[count],
                 xticks=index + 1.5 * bar_width,
             )
             #  xticklabels=app_names,
             ax[i, j].tick_params('x', labelrotation=30)
-            ax[i, j].set_xticklabels(labels=app_names, horizontalalignment='right')
+            ax[i, j].set_xticklabels(labels=xlabels, horizontalalignment='right', wrap=True)
+            ax[i, j].label_outer()
+
+            #  if j == 1:
+            #      ax[i,j].
 
         count += 1
 
-fig.legend(labels=governors, ncol=len(governors), loc="lower center", borderaxespad=0.5, frameon=False)
+fig.legend(labels=governors, ncol=len(governors), loc="upper center", frameon=False)
+fig.tight_layout(pad=2.5)
 fig.savefig('result_fig.png', dpi=300, format='png')
 
 fig2, ax2 = plt.subplots()
+fig2.set_size_inches(8, 4)
 
 x_coords = []
 ymax = 0
@@ -143,9 +154,10 @@ for x, gov in enumerate(governors):
     ax2.bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
     ax2.set(title='Total Misdecisions', xticks=index + 1.5 * bar_width, xticklabels=app_names)
     ax2.tick_params('x', labelrotation=30)
-    ax2.set_xticklabels(labels=app_names, horizontalalignment='right')
+    ax2.set_xticklabels(labels=xlabels, horizontalalignment='right', wrap=True)
 
-fig2.legend(loc='lower center', frameon=False, ncol=len(governors))
+fig2.legend(frameon=False, ncol=len(governors), loc='upper center')
+fig2.tight_layout(pad=2.5)
 fig2.savefig('totals_fig.png', dpi=300, format='png')
 
-plt.show()
+#  plt.show()
