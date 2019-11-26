@@ -374,7 +374,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         #     sys.exit()
 
         self.governor_controller = GovernorController()
-        self.governor = self.setup_governors()[0]
+        self.governor = self.setup_governors()
 
     def __del__(self):
         sys.stdout = sys.__stdout__
@@ -418,7 +418,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
         self.pushButtonResetBigFreqs.clicked.connect(
             self.reset_big_frequencies)
 
-        return str(current_governor)
+        return str(current_governor[0])
 
     def update_frequency_display(self):
         little_min = str(self.governor_controller.get_min_freq(0))
@@ -700,7 +700,7 @@ class MainInterface(QMainWindow, MainInterface.Ui_MainWindow):
                                          progress_signal=self.changed_progress,
                                          open_func=self.openallresults,
                                          subdir=self.application_name + "/" +
-                                         self.governor[0] + "/" + str(x) + "/",
+                                         self.governor + "/" + str(x) + "/",
                                          pid=self.pid)
                         if self.checkBoxTestAutomationPrompt.isChecked():
                             QMessageBox.information(
