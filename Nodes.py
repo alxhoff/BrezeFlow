@@ -144,52 +144,54 @@ class TaskNode:
 
                     cpu_speed = SystemMetrics.current_metrics.get_cpu_core_freq(
                         event.cpu)
-                    new_cycles = int(
-                        (event.time - self.calc_time) * 0.000001 * cpu_speed)
 
-                    self.util = [
-                        SystemMetrics.current_metrics.sys_util_history.cpu[
-                            (event.cpu / 4) * 4 + 0].get_util(event.time)
-                    ]
-                    self.util.append(
-                        SystemMetrics.current_metrics.sys_util_history.cpu[
-                            (event.cpu / 4) * 4 + 1].get_util(event.time))
-                    self.util.append(
-                        SystemMetrics.current_metrics.sys_util_history.cpu[
-                            (event.cpu / 4) * 4 + 2].get_util(event.time))
-                    self.util.append(
-                        SystemMetrics.current_metrics.sys_util_history.cpu[
-                            (event.cpu / 4) * 4 + 3].get_util(event.time))
-                    ##
-                    self.temp = [
-                        SystemMetrics.current_metrics.get_temp(
-                            event.time, (event.cpu / 4) * 4 + 0)
-                    ]
-                    self.temp.append(
-                        SystemMetrics.current_metrics.get_temp(
-                            event.time, (event.cpu / 4) * 4 + 1))
-                    self.temp.append(
-                        SystemMetrics.current_metrics.get_temp(
-                            event.time, (event.cpu / 4) * 4 + 2))
-                    self.temp.append(
-                        SystemMetrics.current_metrics.get_temp(
-                            event.time, (event.cpu / 4) * 4 + 3))
+                    if cpu_speed:  ## TODO error here with GameGovernorx
+                        new_cycles = int(
+                            (event.time - self.calc_time) * 0.000001 * cpu_speed)
 
-                    cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(
-                        event.cpu, cpu_speed, self.util, self.temp)
-                    cycle_energy = [
-                        component / cpu_speed for component in cycle_energy
-                    ]
+                        self.util = [
+                            SystemMetrics.current_metrics.sys_util_history.cpu[
+                                (event.cpu / 4) * 4 + 0].get_util(event.time)
+                        ]
+                        self.util.append(
+                            SystemMetrics.current_metrics.sys_util_history.cpu[
+                                (event.cpu / 4) * 4 + 1].get_util(event.time))
+                        self.util.append(
+                            SystemMetrics.current_metrics.sys_util_history.cpu[
+                                (event.cpu / 4) * 4 + 2].get_util(event.time))
+                        self.util.append(
+                            SystemMetrics.current_metrics.sys_util_history.cpu[
+                                (event.cpu / 4) * 4 + 3].get_util(event.time))
+                        ##
+                        self.temp = [
+                            SystemMetrics.current_metrics.get_temp(
+                                event.time, (event.cpu / 4) * 4 + 0)
+                        ]
+                        self.temp.append(
+                            SystemMetrics.current_metrics.get_temp(
+                                event.time, (event.cpu / 4) * 4 + 1))
+                        self.temp.append(
+                            SystemMetrics.current_metrics.get_temp(
+                                event.time, (event.cpu / 4) * 4 + 2))
+                        self.temp.append(
+                            SystemMetrics.current_metrics.get_temp(
+                                event.time, (event.cpu / 4) * 4 + 3))
 
-                    self.cpu_cycles += new_cycles
-                    new_energy = [
-                        component * new_cycles for component in cycle_energy
-                    ]
-                    new_summed_energy = [
-                        self.energy[i] + new_energy[i]
-                        for i in range(len(new_energy))
-                    ]
-                    self.energy = new_summed_energy
+                        cycle_energy = XU3RegressionModel.get_cpu_per_second_energy(
+                            event.cpu, cpu_speed, self.util, self.temp)
+                        cycle_energy = [
+                            component / cpu_speed for component in cycle_energy
+                        ]
+
+                        self.cpu_cycles += new_cycles
+                        new_energy = [
+                            component * new_cycles for component in cycle_energy
+                        ]
+                        new_summed_energy = [
+                            self.energy[i] + new_energy[i]
+                            for i in range(len(new_energy))
+                        ]
+                        self.energy = new_summed_energy
                     self.duration += event.time - self.calc_time
                     self.calc_time = event.time
 

@@ -83,52 +83,57 @@ opacity = 0.8
 titles = ['Big To Little Reallocations', 'DVFS Misdecisions', 'Intra-Cluster Reallocations', 'DVFS After Reallocations']
 
 y_top_margin = 0.2
-colors = ['0', '0.25', '0.5', '0.75']
+colors = ['0', '0.2', '0.4', '0.6', '0.8']
 
 matplotlib.rcParams['font.serif'] = 'Times New Roman'
 
-fig, ax = plt.subplots(2, 2)
-fig.set_size_inches(8, 6)
-fig.subplots_adjust(hspace=0.6, wspace=-1)
+fig, ax = plt.subplots(4, 1)
+fig.set_size_inches(8, 11)
+fig.subplots_adjust(hspace=0.2)
 #figure axes
 #TODO
 count = 0
-for i in range(2):
-    for j in range(2):
-        x_coords = []
-        y_max = 0
+#  for i in range(1):
+for j in range(4):
+    x_coords = []
+    y_max = 0
 
-        for x, gov in enumerate(governors):
-            bars = []
-            if x:
-                x_coords.append([x + bar_width for x in x_coords[x - 1]])
-            else:
-                x_coords.append(index)
+    for x, gov in enumerate(governors):
+        bars = []
+        if x:
+            x_coords.append([x + bar_width for x in x_coords[x - 1]])
+        else:
+            x_coords.append(index)
 
-            for app in app_names:
-                dvfs_val = int(apps[app][gov][count])
-                if dvfs_val > y_max:
-                    y_max = dvfs_val
-                bars.append(dvfs_val)
+        for app in app_names:
+            dvfs_val = int(apps[app][gov][count])
+            if dvfs_val > y_max:
+                y_max = dvfs_val
+            bars.append(dvfs_val)
 
-            ax[i, j].bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
-            ax[i, j].set_ylabel('Misdecisions (count/15ms)')
-            ax[i, j].set(
-                title=titles[count],
-                xticks=index + 1.5 * bar_width,
-            )
-            #  xticklabels=app_names,
-            ax[i, j].tick_params('x', labelrotation=30)
-            ax[i, j].set_xticklabels(labels=xlabels, horizontalalignment='right', wrap=True)
-            ax[i, j].label_outer()
+        try:
+            ax[j].bar(x_coords[x], bars, bar_width, alpha=opacity, color=colors[x], label=gov)
+        except Exception as e:
+            print("wait here")
+        if j == 3:
+            ax[j].set_ylabel('Misdecisions (count/15ms)')
+        ax[j].set(
+            title=titles[count],
+            xticks=index + 1.5 * bar_width,
+        )
+        #  xticklabels=app_names,
+        ax[j].tick_params('x', labelrotation=30)
+        ax[j].set_xticklabels(labels=xlabels, horizontalalignment='right', wrap=True)
+        ax[j].label_outer()
 
-            #  if j == 1:
-            #      ax[i,j].
+        #  if j == 1:
+        #      ax[i,j].
 
-        count += 1
+    count += 1
 
-fig.legend(labels=governors, ncol=len(governors), loc="upper center", frameon=False)
-fig.tight_layout(pad=2.5)
+gov_legend = ["Powersave+CFS", "Performance+CFS", "Interactive+CFS", "OnDemand+CFS", "GameGovernor"]
+fig.legend(labels=gov_legend, ncol=3, loc="upper center", frameon=False)
+#  fig.tight_layout(pad=4.5)
 fig.savefig('result_fig.png', dpi=300, format='png')
 
 fig2, ax2 = plt.subplots()
